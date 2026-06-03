@@ -1,0 +1,307 @@
+/* ============================================================
+   CLOVA — botanical / "growing garden" fintech design system
+   Light theme. Jade green + warm cream. Gold ONLY for prizes/wins.
+   ============================================================ */
+
+/* tokens set at runtime by Tweaks live on :root inline; defaults here */
+:root {
+  /* Brand palette (overridable by Tweaks via --clover etc.) */
+  --canvas:      #F4F1E8;  /* warm paper cream */
+  --canvas-2:    #F8F6EF;  /* lighter cream */
+  --clover:      #2FA56B;  /* jade — primary */
+  --clover-deep: #248355;  /* pressed / deep jade */
+  --leaf:        #6BCB95;  /* bright leaf highlight */
+  --forest:      #143A2A;  /* dark titles / strong text */
+  --sage:        #E7F1E9;  /* soft card surface */
+  --sage-2:      #DCEDE1;  /* soft card surface 2 */
+  --gold:        #D9A441;  /* luck/prize — sparse accent */
+  --gold-deep:   #9C6B1E;  /* gold ink */
+  --ink:         #25342B;  /* body ink (green-black) */
+  --danger:      #C2603F;  /* withdraw / revoke (rare) */
+
+  /* derived */
+  --ink-60: color-mix(in srgb, var(--ink) 62%, transparent);
+  --ink-45: color-mix(in srgb, var(--ink) 45%, transparent);
+  --forest-70: color-mix(in srgb, var(--forest) 70%, transparent);
+  --hairline: color-mix(in srgb, var(--forest) 12%, transparent);
+
+  --shadow-soft: 0 10px 30px rgba(20,58,42,.08);
+  --shadow-lift: 0 18px 44px rgba(20,58,42,.14);
+  --shadow-card: 0 4px 14px rgba(20,58,42,.06);
+  --shadow-gold: 0 14px 40px rgba(217,164,65,.28);
+
+  --r-card: 26px;
+  --r-card-sm: 18px;
+  --r-pill: 999px;
+
+  --font-head: "Fraunces", "Hanken Grotesk", Georgia, serif;
+  --font-body: "Hanken Grotesk", system-ui, sans-serif;
+  --font-mark: "Quicksand", "Hanken Grotesk", sans-serif;
+
+  --app-w: 440px;       /* mobile-first app column width */
+  --ease-soft: cubic-bezier(.22,.61,.36,1);
+  --ease-back: cubic-bezier(.34,1.56,.64,1);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--canvas);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* tabular numerals for any number-bearing element */
+.tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+h1, h2, h3, .head {
+  font-family: var(--font-head);
+  color: var(--forest);
+  font-optical-sizing: auto;
+  letter-spacing: -0.01em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+/* ===================== DESKTOP STAGE ===================== */
+/* The garden canvas fills the viewport; the app floats centered. */
+#stage {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 80% at 12% -8%, color-mix(in srgb,var(--leaf) 26%, transparent), transparent 60%),
+    radial-gradient(120% 80% at 105% 12%, color-mix(in srgb,var(--clover) 18%, transparent), transparent 55%),
+    radial-gradient(100% 90% at 88% 108%, color-mix(in srgb,var(--gold) 10%, transparent), transparent 60%),
+    var(--canvas);
+}
+#stage::after { /* subtle grain */
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+  opacity: .04; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (min-width: 760px) {
+  #stage { padding: 28px; }
+}
+
+/* The phone-ish app surface */
+.app-frame {
+  position: relative;
+  width: 100%;
+  max-width: var(--app-w);
+  height: 100vh;
+  height: 100dvh;
+  background: var(--canvas);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 1;
+}
+@media (min-width: 760px) {
+  .app-frame {
+    height: min(920px, calc(100dvh - 56px));
+    border-radius: 40px;
+    box-shadow: var(--shadow-lift), 0 0 0 1px color-mix(in srgb,var(--forest) 8%, transparent);
+  }
+}
+
+/* scrolling content region inside the frame */
+.screen {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.screen::-webkit-scrollbar { display: none; }
+
+/* ===================== BUTTONS ===================== */
+.btn {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 16px;
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 15px 24px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  transition: transform .18s var(--ease-back), box-shadow .2s var(--ease-soft), background .2s;
+  user-select: none;
+  line-height: 1;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary {
+  background: linear-gradient(180deg, var(--clover), var(--clover-deep));
+  color: #F4FBF6;
+  box-shadow: 0 10px 22px color-mix(in srgb,var(--clover) 38%, transparent);
+}
+.btn-primary:hover { box-shadow: 0 14px 30px color-mix(in srgb,var(--clover) 46%, transparent); transform: translateY(-1px); }
+.btn-secondary {
+  background: transparent;
+  color: var(--clover-deep);
+  box-shadow: inset 0 0 0 1.6px color-mix(in srgb,var(--clover) 55%, transparent);
+}
+.btn-secondary:hover { background: color-mix(in srgb,var(--clover) 8%, transparent); }
+.btn-gold {
+  background: linear-gradient(180deg, #E7B85A, var(--gold));
+  color: #3a2603;
+  box-shadow: var(--shadow-gold);
+}
+.btn-danger {
+  background: linear-gradient(180deg, #cf7152, var(--danger));
+  color: #fff;
+  box-shadow: 0 10px 22px color-mix(in srgb,var(--danger) 32%, transparent);
+}
+.btn-danger-ghost {
+  background: transparent;
+  color: var(--danger);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb,var(--danger) 45%, transparent);
+}
+.btn-ghost { background: transparent; color: var(--forest-70); }
+.btn-block { width: 100%; }
+.btn-lg { padding: 18px 28px; font-size: 17px; }
+.btn-sm { padding: 10px 16px; font-size: 14px; }
+.btn[disabled] { opacity: .5; pointer-events: none; }
+
+/* link-ish small text button */
+.tlink {
+  background: none; border: none; cursor: pointer;
+  font-family: var(--font-body); font-weight: 600;
+  color: var(--clover-deep); padding: 4px 2px; font-size: 14px;
+}
+.tlink:hover { text-decoration: underline; }
+
+/* ===================== CARDS ===================== */
+.card {
+  background: var(--canvas-2);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+  position: relative;
+}
+.card-sage { background: var(--sage); }
+.card-lift { transition: transform .25s var(--ease-soft), box-shadow .25s var(--ease-soft); }
+.card-lift:hover { transform: translateY(-3px); box-shadow: var(--shadow-soft); }
+
+/* ===================== BADGES / CHIPS ===================== */
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-weight: 700; font-size: 12.5px; line-height: 1;
+  padding: 7px 12px; border-radius: var(--r-pill);
+  letter-spacing: .01em; white-space: nowrap;
+}
+.badge-safe  { background: var(--sage-2); color: var(--clover-deep); }
+.badge-active{ background: color-mix(in srgb,var(--leaf) 30%, white); color: var(--clover-deep); }
+.badge-win   { background: color-mix(in srgb,var(--gold) 22%, white); color: var(--gold-deep); }
+.badge-soft  { background: color-mix(in srgb,var(--forest) 7%, transparent); color: var(--forest-70); }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--canvas-2);
+  box-shadow: inset 0 0 0 1.4px var(--hairline);
+  border-radius: var(--r-pill);
+  padding: 9px 14px; font-size: 13.5px; font-weight: 600; color: var(--ink);
+}
+.chip-on { background: var(--clover); color: #F4FBF6; box-shadow: none; }
+
+/* dotted vine divider */
+.vine-divide {
+  height: 0; border: none;
+  border-top: 2.5px dotted color-mix(in srgb,var(--clover) 38%, transparent);
+  margin: 18px 0;
+}
+
+/* ===================== FORM ===================== */
+.amount-input {
+  font-family: var(--font-head);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 52px;
+  color: var(--forest);
+  background: transparent; border: none; outline: none;
+  width: 100%; text-align: center;
+}
+.amount-input::placeholder { color: color-mix(in srgb,var(--forest) 26%, transparent); }
+
+/* ===================== ANIMATIONS ===================== */
+@keyframes fall {
+  0%   { transform: translate3d(0, -14vh, 0) rotate(var(--rot0)); opacity: 0; }
+  8%   { opacity: var(--maxop, .9); }
+  92%  { opacity: var(--maxop, .9); }
+  100% { transform: translate3d(var(--drift,16px), 112vh, 0) rotate(var(--rot1)); opacity: 0; }
+}
+@keyframes breathe {
+  0%,100% { transform: scale(1); }
+  50%     { transform: scale(1.06); }
+}
+@keyframes spinClover {
+  to { transform: rotate(360deg); }
+}
+@keyframes bloomPop {
+  0%   { transform: scale(.4) rotate(-20deg); opacity: 0; }
+  60%  { transform: scale(1.12) rotate(6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes confettiFall {
+  0%   { transform: translate3d(0,0,0) rotate(0); opacity: 1; }
+  100% { transform: translate3d(var(--cx,0), 80vh, 0) rotate(var(--cr,360deg)); opacity: 0; }
+}
+@keyframes shimmer {
+  0% { background-position: -120% 0; }
+  100% { background-position: 220% 0; }
+}
+@keyframes sway {
+  0%,100% { transform: rotate(-3deg); }
+  50%     { transform: rotate(3deg); }
+}
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes growVine {
+  from { stroke-dashoffset: var(--len); }
+  to   { stroke-dashoffset: 0; }
+}
+
+/* staggered reveal helper */
+.reveal { opacity: 0; animation: riseIn .6s var(--ease-soft) forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; animation: none; }
+  .leaf-layer { display: none; }
+}
+/* failsafe: reveals animate normally, but are force-settled shortly after mount
+   so content is never permanently invisible (e.g. when the tab is hidden and the
+   animation timeline is paused at t=0). setTimeout runs even while hidden. */
+.reveal-settled .reveal { opacity: 1 !important; animation: none !important; }
+
+/* ===================== MISC ===================== */
+.muted { color: var(--ink-60); }
+.tiny { font-size: 12.5px; }
+.center { text-align: center; }
+.row { display: flex; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.gap-6 { gap: 6px; } .gap-8 { gap: 8px; } .gap-10 { gap: 10px; }
+.gap-12 { gap: 12px; } .gap-14 { gap: 14px; } .gap-16 { gap: 16px; }
+.grow { flex: 1; }
+.wrap { flex-wrap: wrap; }
+.between { justify-content: space-between; }
+.aic { align-items: center; }

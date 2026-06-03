@@ -1,0 +1,16 @@
+{
+  "name": "clova-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Clova — no-loss prize-linked savings. Botanical fintech UI (mobile + web).",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "16.2.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  }
+}
