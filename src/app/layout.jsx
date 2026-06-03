@@ -1,14 +1,39 @@
 import "../styles/styles.css";
 
+const DESCRIPTION =
+  "Menabung berhadiah tanpa pernah rugi modal. Dikelola agen AI non-custodial yang secara teknis tak bisa menyentuh modalmu.";
+
 export const metadata = {
-  title: "Clova — no-loss prize-linked savings",
-  description:
-    "Menabung berhadiah tanpa pernah rugi modal. Dikelola agen AI non-custodial yang secara teknis tak bisa menyentuh modalmu.",
+  applicationName: "Clova",
+  title: {
+    default: "Clova — no-loss prize-linked savings",
+    template: "%s · Clova",
+  },
+  description: DESCRIPTION,
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/icon.svg" }],
+    shortcut: ["/icon.svg"],
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Clova",
+    title: "Clova — no-loss prize-linked savings",
+    description: DESCRIPTION,
+    locale: "id_ID",
+  },
+  twitter: {
+    card: "summary",
+    title: "Clova — no-loss prize-linked savings",
+    description: DESCRIPTION,
+  },
 };
 
 export const viewport = {
   width: "device-width",
   initialScale: 1,
+  colorScheme: "light",
+  themeColor: "#F4F1E8",
 };
 
 export default function RootLayout({ children }) {

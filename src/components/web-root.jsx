@@ -116,6 +116,7 @@ export default function WebApp() {
   return (
     <div className="web-root">
       <div className="web-bg" />
+      <div className="stage-view" key={stage}>
       {stage === "landing" ? (
         <WebLanding lang={lang} setLang={setLang} t={t} onEnter={() => { setStage("onboarding"); window.scrollTo(0, 0); }} />
       ) : stage === "onboarding" ? (
@@ -132,6 +133,7 @@ export default function WebApp() {
           </Suspense>
         </div>
       )}
+      </div>
 
       {draw && <Suspense fallback={null}><WebDraw lang={lang} t={t} onClose={() => setDraw(false)} /></Suspense>}
       {modal === "tarik" && <Suspense fallback={null}><WebModalTarik lang={lang} onClose={() => setModal(null)} /></Suspense>}
