@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 import { MainHead } from './web-app.jsx';
 
 /* ============================================================
@@ -22,7 +22,7 @@ function StatePillW({ tone = "load", children }) {
 }
 
 /* ===================== KEEPER / PANEL AI ===================== */
-function WebKeeper({ lang, t }) {
+function WebKeeper({ lang, t, go }) {
   const [refreshing, setRefreshing] = useState(false);
   const chips = [
     { i: Icon.coin, l: "APY 4,1%" }, { i: Icon.pool, l: "TVL $1,2B" },
@@ -38,7 +38,7 @@ function WebKeeper({ lang, t }) {
   ];
   return (
     <div className="main">
-      <MainHead lang={lang} title={L(lang, { id: "Pemelihara AI", en: "AI Keeper" })} sub={L(lang, { id: "Setiap keputusan dijelaskan terbuka.", en: "Every decision explained openly." })} />
+      <MainHead lang={lang} go={go} title={L(lang, { id: "Pemelihara AI", en: "AI Keeper" })} sub={L(lang, { id: "Setiap keputusan dijelaskan terbuka.", en: "Every decision explained openly." })} />
       <div className="main-body">
         <Reveal className="row aic gap-16" style={{ marginBottom: 24 }}>
           <Gardener size={62} />
@@ -107,7 +107,7 @@ function WebKeeper({ lang, t }) {
 }
 
 /* ===================== POOL DETAIL ===================== */
-function WebPool({ lang, t, onDraw }) {
+function WebPool({ lang, t, onDraw, go }) {
   const chart = [40, 120, 260, 380, 520, 720, 880, 1010, 1140, 1284];
   const rounds = [
     { r: 11, win: "0x77…b2C1", amt: "1.102", proto: "Aave v3", dec: "stay" },
@@ -117,7 +117,7 @@ function WebPool({ lang, t, onDraw }) {
   ];
   return (
     <div className="main">
-      <MainHead lang={lang} title={L(lang, { id: "Kolam Hadiah · Ronde #12", en: "Prize Pool · Round #12" })} sub={L(lang, { id: "Sedang berjalan", en: "Currently running" })} onDraw={onDraw} />
+      <MainHead lang={lang} go={go} title={L(lang, { id: "Kolam Hadiah · Ronde #12", en: "Prize Pool · Round #12" })} sub={L(lang, { id: "Sedang berjalan", en: "Currently running" })} onDraw={onDraw} />
       <div className="main-body">
         <div className="bento">
           <Reveal className="col-8">
@@ -172,22 +172,22 @@ function WebPool({ lang, t, onDraw }) {
 }
 
 /* ===================== LOG / RIWAYAT ===================== */
-function WebLog({ lang, t }) {
+function WebLog({ lang, t, go }) {
   const [filter, setFilter] = useState("all");
   const filters = [{ k: "all", t: { id: "Semua", en: "All" } }, { k: "deposit", t: { id: "Setoran", en: "Deposits" } }, { k: "yield", t: { id: "Bunga", en: "Yield" } }, { k: "ai", t: { id: "Keputusan AI", en: "AI" } }, { k: "draw", t: { id: "Undian", en: "Draws" } }];
   const events = [
-    { day: { id: "Hari ini", en: "Today" }, icon: "🤖", cat: "ai", title: { id: "AI: TETAP di Aave — likuiditas kuat", en: "AI: STAY on Aave — strong liquidity" }, time: { id: "4 jam lalu", en: "4h ago" }, link: true },
-    { day: { id: "Hari ini", en: "Today" }, icon: "💧", cat: "yield", title: { id: "Bunga +0,82 USDC disapu ke Kolam #12", en: "Yield +0.82 USDC swept to Pool #12" }, time: { id: "6 jam lalu", en: "6h ago" } },
-    { day: { id: "Kemarin", en: "Yesterday" }, icon: "🍀", cat: "draw", title: { id: "Undian ronde #11 — belum hoki, modal utuh", en: "Draw round #11 — no luck, principal whole" }, time: { id: "1 hari lalu", en: "1d ago" } },
-    { day: { id: "Kemarin", en: "Yesterday" }, icon: "🛡️", cat: "ai", title: { id: "Percobaan aksi terlarang ditolak otomatis", en: "Forbidden action auto-rejected" }, time: { id: "1 hari lalu", en: "1d ago" }, safe: true },
-    { day: { id: "Minggu ini", en: "This week" }, icon: "🏆", cat: "draw", title: { id: "Menang ronde #9 — +18,20 USDC", en: "Won round #9 — +18.20 USDC" }, time: { id: "5 hari lalu", en: "5d ago" }, win: true },
-    { day: { id: "Minggu ini", en: "This week" }, icon: "🌱", cat: "deposit", title: { id: "Setor 100 USDC — modal awal dicatat", en: "Deposited 100 USDC — baseline recorded" }, time: { id: "5 hari lalu", en: "5d ago" } },
+    { day: { id: "Hari ini", en: "Today" }, cat: "ai", title: { id: "AI: TETAP di Aave — likuiditas kuat", en: "AI: STAY on Aave — strong liquidity" }, time: { id: "4 jam lalu", en: "4h ago" }, link: true },
+    { day: { id: "Hari ini", en: "Today" }, cat: "yield", title: { id: "Bunga +0,82 USDC disapu ke Kolam #12", en: "Yield +0.82 USDC swept to Pool #12" }, time: { id: "6 jam lalu", en: "6h ago" } },
+    { day: { id: "Kemarin", en: "Yesterday" }, cat: "draw", title: { id: "Undian ronde #11 — belum hoki, modal utuh", en: "Draw round #11 — no luck, principal whole" }, time: { id: "1 hari lalu", en: "1d ago" } },
+    { day: { id: "Kemarin", en: "Yesterday" }, cat: "ai", title: { id: "Percobaan aksi terlarang ditolak otomatis", en: "Forbidden action auto-rejected" }, time: { id: "1 hari lalu", en: "1d ago" }, safe: true },
+    { day: { id: "Minggu ini", en: "This week" }, cat: "draw", title: { id: "Menang ronde #9 — +18,20 USDC", en: "Won round #9 — +18.20 USDC" }, time: { id: "5 hari lalu", en: "5d ago" }, win: true },
+    { day: { id: "Minggu ini", en: "This week" }, cat: "deposit", title: { id: "Setor 100 USDC — modal awal dicatat", en: "Deposited 100 USDC — baseline recorded" }, time: { id: "5 hari lalu", en: "5d ago" } },
   ];
   const shown = events.filter((e) => filter === "all" || e.cat === filter);
   let lastDay = null;
   return (
     <div className="main">
-      <MainHead lang={lang} title={L(lang, { id: "Catatan kebunmu", en: "Your garden log" })} sub={L(lang, { id: "Semua kejadian dalam satu linimasa.", en: "Every event in one timeline." })} />
+      <MainHead lang={lang} go={go} title={L(lang, { id: "Catatan kebunmu", en: "Your garden log" })} sub={L(lang, { id: "Semua kejadian dalam satu linimasa.", en: "Every event in one timeline." })} />
       <div className="main-body" style={{ maxWidth: 760 }}>
         <div className="row gap-8 wrap" style={{ marginBottom: 24 }}>
           {filters.map((f) => <button key={f.k} className={"chip" + (filter === f.k ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setFilter(f.k)}>{L(lang, f.t)}</button>)}
@@ -200,7 +200,7 @@ function WebLog({ lang, t }) {
                 {showDay && <div className="tiny" style={{ fontWeight: 700, color: "var(--ink-45)", margin: i === 0 ? "0 0 14px 48px" : "20px 0 14px 48px", textTransform: "uppercase", letterSpacing: ".06em" }}>{L(lang, e.day)}</div>}
                 <Reveal delay={i * 60} className="row gap-14" style={{ alignItems: "flex-start", paddingBottom: 16 }}>
                   <div className="col aic" style={{ flex: "0 0 auto" }}>
-                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: e.win ? "color-mix(in srgb,var(--gold) 16%, white)" : "var(--sage)", display: "grid", placeItems: "center", fontSize: 17 }}>{e.icon}</div>
+                    <ActivityIcon cat={e.cat} win={e.win} safe={e.safe} size={36} />
                     {i !== shown.length - 1 && <div style={{ width: 2.5, flex: 1, minHeight: 20, margin: "4px 0", borderLeft: "2.5px dotted color-mix(in srgb,var(--clover) 30%, transparent)" }} />}
                   </div>
                   <div className="card" style={{ flex: 1, padding: "14px 18px", border: e.win ? "1.5px solid color-mix(in srgb,var(--gold) 28%, transparent)" : "1.5px solid transparent" }}>
@@ -225,7 +225,7 @@ function WebLog({ lang, t }) {
 function WebSettings({ lang, setLang, openModal, t, go }) {
   return (
     <div className="main">
-      <MainHead lang={lang} title={L(lang, { id: "Pengaturan", en: "Settings" })} sub={L(lang, { id: "Kendali penuh & transparansi.", en: "Full control & transparency." })} />
+      <MainHead lang={lang} go={go} title={L(lang, { id: "Pengaturan", en: "Settings" })} sub={L(lang, { id: "Kendali penuh & transparansi.", en: "Full control & transparency." })} />
       <div className="main-body">
         <div className="bento">
           <Reveal className="col-6">
@@ -248,8 +248,8 @@ function WebSettings({ lang, setLang, openModal, t, go }) {
               <CloverWatermark corner="br" size={130} opacity={0.06} />
               <div className="row aic gap-10" style={{ marginBottom: 14 }}><Icon.shieldLeaf size={24} stroke="var(--clover-deep)" /><div className="head" style={{ fontSize: 17 }}>{L(lang, { id: "Izin pemelihara AI", en: "AI keeper permission" })}</div><span className="badge badge-active" style={{ fontSize: 10.5, padding: "3px 9px", marginLeft: "auto" }}>{L(lang, { id: "Aktif", en: "Active" })}</span></div>
               <div className="row gap-10" style={{ marginBottom: 16 }}>
-                <div style={{ flex: 1, background: "var(--canvas-2)", borderRadius: 12, padding: "12px 14px" }}><div className="tiny" style={{ fontWeight: 700, color: "var(--clover-deep)", marginBottom: 5 }}>✅ {L(lang, { id: "BOLEH", en: "MAY" })}</div><div className="tiny muted" style={{ lineHeight: 1.4 }}>{L(lang, { id: "Pindah antar protokol putih · sapu bunga", en: "Move between whitelisted protocols · sweep yield" })}</div></div>
-                <div style={{ flex: 1, background: "color-mix(in srgb,var(--danger) 7%, var(--canvas-2))", borderRadius: 12, padding: "12px 14px" }}><div className="tiny" style={{ fontWeight: 700, color: "var(--danger)", marginBottom: 5 }}>🚫 {L(lang, { id: "TIDAK", en: "CANNOT" })}</div><div className="tiny muted" style={{ lineHeight: 1.4 }}>{L(lang, { id: "Sentuh modal · kirim ke luar daftar", en: "Touch principal · send off-list" })}</div></div>
+                <div style={{ flex: 1, background: "var(--canvas-2)", borderRadius: 12, padding: "12px 14px" }}><div className="tiny row aic gap-6" style={{ fontWeight: 700, color: "var(--clover-deep)", marginBottom: 5 }}><Icon.check size={14} stroke="var(--clover)" sw={2.6} /> {L(lang, { id: "BOLEH", en: "MAY" })}</div><div className="tiny muted" style={{ lineHeight: 1.4 }}>{L(lang, { id: "Pindah antar protokol putih · sapu bunga", en: "Move between whitelisted protocols · sweep yield" })}</div></div>
+                <div style={{ flex: 1, background: "color-mix(in srgb,var(--danger) 7%, var(--canvas-2))", borderRadius: 12, padding: "12px 14px" }}><div className="tiny row aic gap-6" style={{ fontWeight: 700, color: "var(--danger)", marginBottom: 5 }}><Icon.x size={14} stroke="var(--danger)" sw={2.6} /> {L(lang, { id: "TIDAK", en: "CANNOT" })}</div><div className="tiny muted" style={{ lineHeight: 1.4 }}>{L(lang, { id: "Sentuh modal · kirim ke luar daftar", en: "Touch principal · send off-list" })}</div></div>
               </div>
               <div className="row gap-10"><button className="btn btn-secondary grow btn-sm" onClick={() => go("keeper")}>{L(lang, { id: "Lihat pemelihara", en: "View keeper" })}</button><button className="btn btn-danger-ghost btn-sm" onClick={() => openModal("cabut")}>{L(lang, { id: "Cabut Izin", en: "Revoke" })}</button></div>
               <div className="tiny muted" style={{ marginTop: 10, lineHeight: 1.4 }}>{L(lang, { id: "Pemelihara membayar operasinya sendiri (x402).", en: "The keeper self-pays its operations (x402)." })}</div>

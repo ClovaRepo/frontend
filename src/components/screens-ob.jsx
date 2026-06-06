@@ -57,10 +57,62 @@ function StatePill({ tone = "load", children }) {
   );
 }
 
+/* Wallets offered in the picker. `detected` shows a subtle "installed" hint. */
+const WALLETS = [
+  { id: "metamask", name: "MetaMask", bg: "#E2761B", detected: true },
+  { id: "coinbase", name: "Coinbase Wallet", bg: "#1652F0" },
+  { id: "walletconnect", name: "WalletConnect", bg: "#3B99FC" },
+  { id: "rabby", name: "Rabby", bg: "#7084FF" },
+  { id: "trust", name: "Trust Wallet", bg: "#3375BB" },
+];
+
+/* Clean brand monogram (no emoji) tinted to each wallet's colour. */
+function WalletGlyph({ w, size = 34, radius = 10 }) {
+  return (
+    <span style={{ width: size, height: size, borderRadius: radius, background: `color-mix(in srgb, ${w.bg} 16%, var(--canvas-2))`,
+      color: w.bg, display: "grid", placeItems: "center", fontWeight: 800, fontSize: size * 0.46, lineHeight: 1, flex: "0 0 auto",
+      fontFamily: "var(--font-head)", boxShadow: `inset 0 0 0 1.5px color-mix(in srgb, ${w.bg} 34%, transparent)` }}>{w.name[0]}</span>
+  );
+}
+
+/* Wallet chooser — centered dialog, works inside both the phone frame
+   and the web onboarding column (fixed + flex-centered). */
+function WalletPicker({ lang, onPick, onClose }) {
+  return (
+    <div onClick={onClose} role="dialog" aria-modal="true"
+      style={{ position: "fixed", inset: 0, zIndex: 90, display: "flex", alignItems: "center", justifyContent: "center", padding: 18,
+        background: "color-mix(in srgb,var(--forest) 45%, transparent)", backdropFilter: "blur(3px)", animation: "riseIn .22s var(--ease-soft)" }}>
+      <div onClick={(e) => e.stopPropagation()} className="card"
+        style={{ width: "100%", maxWidth: 380, padding: "20px 20px 18px", boxShadow: "0 24px 60px rgba(20,58,42,.28)", animation: "bloomPop .32s var(--ease-back)" }}>
+        <div className="row between aic" style={{ marginBottom: 4 }}>
+          <h2 className="head" style={{ fontSize: 20 }}>{L(lang, { id: "Pilih dompet", en: "Choose a wallet" })}</h2>
+          <button className="icon-btn" aria-label={L(lang, { id: "Tutup", en: "Close" })} onClick={onClose}
+            style={{ width: 32, height: 32, borderRadius: 10, border: "none", background: "var(--sage)", display: "grid", placeItems: "center", cursor: "pointer" }}>
+            <Icon.x size={16} stroke="var(--clover-deep)" />
+          </button>
+        </div>
+        <p className="muted tiny" style={{ marginBottom: 14 }}>{L(lang, { id: "Hubungkan dompet pilihanmu. Kunci tetap milikmu.", en: "Connect with your wallet of choice. Your keys stay yours." })}</p>
+        <div className="col gap-8">
+          {WALLETS.map((w) => (
+            <button key={w.id} className="wallet-row" onClick={() => onPick(w)}>
+              <WalletGlyph w={w} />
+              <span className="head" style={{ fontSize: 15.5, flex: 1, textAlign: "left" }}>{w.name}</span>
+              {w.detected && <span className="badge badge-active tiny">{L(lang, { id: "Terpasang", en: "Detected" })}</span>}
+              <Icon.arrow size={16} stroke="var(--clover-deep)" />
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* -------- 3. OB1 — Connect wallet -------- */
 function ScreenOB1({ lang, go, t }) {
   const [state, setState, run] = useFlow("idle");
-  const connect = () => run([["loading", 1400], ["connected", 0]]);
+  const [picking, setPicking] = useState(false);
+  const [wallet, setWallet] = useState(null);
+  const pick = (w) => { setWallet(w); setPicking(false); run([["loading", 1400], ["connected", 0]]); };
   return (
     <OBShell lang={lang} step={1} t={t}>
       <div className="card reveal" style={{ padding: "26px 22px", overflow: "hidden" }}>
@@ -70,33 +122,40 @@ function ScreenOB1({ lang, go, t }) {
         </div>
         <h1 style={{ fontSize: 27, marginBottom: 8 }}>{L(lang, { id: "Hubungkan dompetmu", en: "Connect your wallet" })}</h1>
         <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.55, marginBottom: 20 }}>
-          {L(lang, { id: "Mulai dengan menghubungkan MetaMask. Kami tidak pernah menyimpan kunci atau danamu — semuanya tetap milikmu.",
-                     en: "Start by connecting MetaMask. We never hold your keys or your funds — everything stays yours." })}
+          {L(lang, { id: "Pilih dompet untuk mulai. Kami tidak pernah menyimpan kunci atau danamu — semuanya tetap milikmu.",
+                     en: "Pick a wallet to get started. We never hold your keys or your funds — everything stays yours." })}
         </p>
 
         {state === "connected" ? (
           <div className="reveal">
             <div className="row between aic" style={{ background: "var(--sage)", borderRadius: 14, padding: "14px 16px", marginBottom: 14 }}>
               <div className="row aic gap-10">
-                <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--canvas-2)", display: "grid", placeItems: "center" }}>
-                  <Icon.wallet size={19} stroke="var(--clover-deep)" />
+                {wallet ? <WalletGlyph w={wallet} size={36} radius={999} /> : (
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--canvas-2)", display: "grid", placeItems: "center" }}>
+                    <Icon.wallet size={19} stroke="var(--clover-deep)" />
+                  </div>
+                )}
+                <div>
+                  {wallet && <div className="tiny" style={{ fontWeight: 700, color: "var(--clover-deep)" }}>{wallet.name}</div>}
+                  <div className="head tnum" style={{ fontSize: 16 }}>0x12…9aF3</div>
                 </div>
-                <div className="head tnum" style={{ fontSize: 16 }}>0x12…9aF3</div>
               </div>
               <span className="badge badge-active"><span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--clover)" }} /> {L(lang, { id: "Terhubung", en: "Connected" })}</span>
             </div>
             <button className="btn btn-primary btn-block btn-lg" onClick={() => go("ob2")}>{L(lang, { id: "Lanjut", en: "Continue" })} <Icon.arrow size={18} stroke="#F4FBF6" /></button>
           </div>
         ) : state === "loading" ? (
-          <StatePill tone="load">{L(lang, { id: "Menghubungkan…", en: "Connecting…" })}</StatePill>
+          <StatePill tone="load">{L(lang, { id: `Menghubungkan ${wallet?.name || ""}…`.trim(), en: `Connecting ${wallet?.name || ""}…`.trim() })}</StatePill>
         ) : (
-          <button className="btn btn-primary btn-block btn-lg" onClick={connect}>
-            <span style={{ width: 22, height: 22, borderRadius: 6, background: "#F4A23A", display: "grid", placeItems: "center", fontSize: 13 }}>🦊</span>
-            {L(lang, { id: "Hubungkan MetaMask", en: "Connect MetaMask" })}
+          <button className="btn btn-primary btn-block btn-lg" onClick={() => setPicking(true)}>
+            <Icon.wallet size={20} stroke="#F4FBF6" />
+            {L(lang, { id: "Hubungkan dompet", en: "Connect wallet" })}
           </button>
         )}
         <div className="muted tiny center" style={{ marginTop: 14 }}>{L(lang, { id: "Tanpa biaya. Tanpa registrasi. Bisa keluar kapan saja.", en: "No fees. No sign-up. Leave anytime." })}</div>
       </div>
+
+      {picking && <WalletPicker lang={lang} onPick={pick} onClose={() => setPicking(false)} />}
 
       <div className="col gap-10" style={{ marginTop: 16 }}>
         <Collapse q={L(lang, { id: "Apakah aman?", en: "Is it safe?" })}>

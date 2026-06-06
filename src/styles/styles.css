@@ -295,6 +295,28 @@ h1, h2, h3, .head {
 /* gentle screen/stage cross-fade (opacity-only → safe for sticky headers) */
 @keyframes screenIn { from { opacity: 0; } to { opacity: 1; } }
 
+/* pixel-tree breeze — very subtle, anchored at the ground */
+@keyframes pixeltreeSway {
+  0%,100% { transform: rotate(-1.2deg); }
+  50%     { transform: rotate(1.2deg); }
+}
+.pixeltree-sway { animation: pixeltreeSway 6.5s ease-in-out infinite; will-change: transform; }
+
+/* pixel-tree growth: each pixel pops in, bottom rows first (roots → crown) */
+@keyframes pixelGrow {
+  0%   { opacity: 0; transform: scale(.05); }
+  70%  { opacity: 1; transform: scale(1.18); }
+  100% { opacity: 1; transform: scale(1); }
+}
+/* living idle shimmer on leaf pixels once grown */
+@keyframes leafTwinkle {
+  0%,100% { opacity: 1;   transform: scale(1); }
+  50%     { opacity: .82; transform: scale(1.1); }
+}
+.pixeltree .pt-px { transform-box: fill-box; transform-origin: center bottom; opacity: 0; }
+.pixeltree.grown .pt-px { animation: pixelGrow .46s var(--ease-back) both; animation-delay: var(--d, 0s); }
+.pixeltree.idle .pt-px.leaf { animation: leafTwinkle 3.4s ease-in-out infinite; animation-delay: var(--t, 0s); opacity: 1; }
+
 /* staggered reveal helper */
 .reveal { opacity: 0; animation: riseIn .6s var(--ease-soft) forwards; }
 
@@ -302,6 +324,8 @@ h1, h2, h3, .head {
   .reveal { opacity: 1; animation: none; }
   .leaf-layer { display: none; }
   .screen, .main, .stage-view { animation: none !important; }
+  .pixeltree-sway { animation: none !important; }
+  .pixeltree .pt-px { opacity: 1 !important; animation: none !important; transform: none !important; }
   .skeleton::after { animation: none; }
   html { scroll-behavior: auto; }
 }
@@ -309,6 +333,20 @@ h1, h2, h3, .head {
    so content is never permanently invisible (e.g. when the tab is hidden and the
    animation timeline is paused at t=0). setTimeout runs even while hidden. */
 .reveal-settled .reveal { opacity: 1 !important; animation: none !important; }
+
+/* ===================== WALLET PICKER ===================== */
+.wallet-row {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 11px 13px; border-radius: 14px; cursor: pointer;
+  background: var(--canvas-2);
+  border: 1.5px solid color-mix(in srgb, var(--forest) 9%, transparent);
+  transition: border-color .18s var(--ease-soft), background .18s var(--ease-soft), transform .12s var(--ease-soft);
+}
+.wallet-row:hover {
+  border-color: color-mix(in srgb, var(--clover) 45%, transparent);
+  background: color-mix(in srgb, var(--sage) 50%, var(--canvas-2));
+}
+.wallet-row:active { transform: scale(.985); }
 
 /* ===================== SKELETON LOADERS ===================== */
 .skeleton {

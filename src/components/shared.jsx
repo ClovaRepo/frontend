@@ -206,6 +206,24 @@ const Icon = {
   spark:  (p) => <Ic {...p}><path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6Z" /></Ic>,
 };
 
+/* Activity / notification icon — maps a log category to a real SVG icon
+   inside a tinted circular badge (replaces the old emoji glyphs). */
+const ACT_ICON = { ai: "robot", yield: "drop", draw: "trophy", deposit: "sprout" };
+function ActivityIcon({ cat, win = false, safe = false, size = 34 }) {
+  let key = ACT_ICON[cat] || "spark";
+  if (cat === "ai" && safe) key = "shieldLeaf";
+  const I = Icon[key] || Icon.spark;
+  const gold = win || (cat === "draw" && win);
+  const fg = gold ? "var(--gold-deep)" : "var(--clover-deep)";
+  const bg = gold ? "color-mix(in srgb,var(--gold) 18%, var(--canvas-2))" : "var(--sage)";
+  return (
+    <span style={{ width: size, height: size, borderRadius: "50%", background: bg, display: "grid", placeItems: "center", flex: "0 0 auto",
+      boxShadow: gold ? "inset 0 0 0 1.5px color-mix(in srgb,var(--gold) 30%, transparent)" : "inset 0 0 0 1.5px color-mix(in srgb,var(--clover) 16%, transparent)" }}>
+      <I size={size * 0.52} stroke={fg} />
+    </span>
+  );
+}
+
 /* Gardener AI avatar — robot with a leaf sprout */
 function Gardener({ size = 44, ring = true }) {
   return (
@@ -321,6 +339,107 @@ function Plant({ grow = 0.5, size = 120, potColor = "var(--sage-2)" }) {
           <circle cx="60" cy={90 - 56 * h} r="2.4" fill="color-mix(in srgb, var(--forest) 50%, transparent)" />
         </g>
       )}
+    </svg>
+  );
+}
+
+/* ============================================================
+   PIXEL TREE — botanical pixel-art that grows by `stage` (1..4).
+   Same 11×13 grid for every stage so they sit on a shared ground
+   line; the canopy fills more rows as the stage rises, reading as
+   sprout → sapling → young tree → lush fruiting tree.
+   ============================================================ */
+const PIXEL_TREE_STAGES = [
+  // stage 1 — seedling
+  [
+    "...........", "...........", "...........", "...........",
+    "...........", "...........", "...........", "....l.l....",
+    "....lll....", ".....t.....", ".....t.....", "....ggg....",
+    "ggggggggggg",
+  ],
+  // stage 2 — sapling
+  [
+    "...........", "...........", "...........", "...........",
+    ".....l.....", "....lll....", "...lldll...", "....lll....",
+    ".....t.....", ".....t.....", ".....t.....", "....ggg....",
+    "ggggggggggg",
+  ],
+  // stage 3 — young tree
+  [
+    ".....l.....", "....lll....", "...lllll...", "..llldlll..",
+    "..lllllll..", "...lldll...", "....lll....", ".....t.....",
+    ".....t.....", "....ttt....", ".....t.....", "...ggggg...",
+    "ggggggggggg",
+  ],
+  // stage 4 — lush, fruiting tree
+  [
+    "...lllll...", "..lllllll..", ".lllodllll.", "olllldllllo",
+    ".lldllolll.", "..llllldd..", "...lllll...", "....ttt....",
+    "....ttt....", "...ttttt...", "....ttt....", "..ggggggg..",
+    "ggggggggggg",
+  ],
+];
+const PIXEL_TREE_COLORS = {
+  l: "var(--leaf)",
+  d: "var(--clover)",
+  o: "var(--gold)",
+  t: "#9C6B43",
+  g: "color-mix(in srgb, #B79366 70%, var(--sage))",
+};
+function PixelTree({ stage = 1, cell = 7, sway = true, animate = true, rowStep = 0.05, style }) {
+  const grid = PIXEL_TREE_STAGES[Math.max(0, Math.min(3, stage - 1))];
+  const cols = grid[0].length, rows = grid.length;
+  const w = cols * cell, h = rows * cell, gap = Math.max(0.4, cell * 0.08);
+  const ref = useRef(null);
+  const [grown, setGrown] = useState(!animate);
+  const [idle, setIdle] = useState(!animate);
+
+  // grow once the tree scrolls into view (roots-up, see CSS row stagger)
+  useEffect(() => {
+    if (!animate || grown) return;
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") { setGrown(true); return; }
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) { setGrown(true); io.disconnect(); }
+    }, { threshold: 0.35, rootMargin: "0px 0px -8% 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [animate, grown]);
+
+  // after the grow finishes, switch the leaves into a living idle shimmer
+  useEffect(() => {
+    if (!grown || idle) return;
+    const ms = ((rows - 1) * rowStep + 0.6) * 1000;
+    const id = setTimeout(() => setIdle(true), ms);
+    return () => clearTimeout(id);
+  }, [grown, idle, rows, rowStep]);
+
+  const rects = [];
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const ch = grid[y][x];
+      const fill = PIXEL_TREE_COLORS[ch];
+      if (!fill) continue;
+      const isLeaf = ch === "l" || ch === "d" || ch === "o";
+      // bottom rows first (roots → crown), with a touch of per-column jitter
+      const d = (rows - 1 - y) * rowStep + ((x * 7) % 5) * 0.012;
+      const tw = (((x * 7 + y * 5) % 11) / 11) * 2.6;
+      rects.push(
+        <rect key={`${x}-${y}`} className={isLeaf ? "pt-px leaf" : "pt-px"}
+          x={x * cell + gap / 2} y={y * cell + gap / 2}
+          width={cell - gap} height={cell - gap} rx={cell * 0.16} fill={fill}
+          style={{ "--d": d + "s", "--t": tw + "s" }} />
+      );
+    }
+  }
+  return (
+    <svg ref={ref} width={w} height={h} viewBox={`0 0 ${w} ${h}`} fill="none" aria-hidden="true"
+      style={{ display: "block", ...style }}>
+      <g className={sway ? "pixeltree-sway" : undefined} style={{ transformOrigin: `${w / 2}px ${h}px` }}>
+        <g className={"pixeltree" + (grown ? " grown" : "") + (idle ? " idle" : "")}>
+          {rects}
+        </g>
+      </g>
     </svg>
   );
 }
@@ -492,4 +611,4 @@ function Toast({ show, children, tone = "safe" }) {
 
 /* ==================== exports ==================== */
 
-export { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast };
+export { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, PixelTree, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast };

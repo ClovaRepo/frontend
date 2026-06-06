@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 
 /* ============================================================
    CLOVA WEB — App shell (left sidebar) + desktop Dashboard
@@ -50,7 +50,60 @@ function Sidebar({ lang, setLang, screen, go, onExit }) {
   );
 }
 
-function MainHead({ lang, title, sub, onDraw }) {
+/* Recent activity shown in the bell popup (compact mirror of the Log feed) */
+const NOTIFS = [
+  { cat: "ai", title: { id: "AI: TETAP di Aave — likuiditas kuat", en: "AI: STAY on Aave — strong liquidity" }, time: { id: "4 jam lalu", en: "4h ago" } },
+  { cat: "yield", title: { id: "Bunga +0,82 USDC disapu ke Kolam #12", en: "Yield +0.82 USDC swept to Pool #12" }, time: { id: "6 jam lalu", en: "6h ago" } },
+  { cat: "ai", safe: true, title: { id: "Aksi terlarang ditolak otomatis", en: "Forbidden action auto-rejected" }, time: { id: "1 hari lalu", en: "1d ago" } },
+  { cat: "draw", win: true, title: { id: "Menang ronde #9 — +18,20 USDC", en: "Won round #9 — +18.20 USDC" }, time: { id: "5 hari lalu", en: "5d ago" } },
+];
+
+function NotifBell({ lang, go }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+  const seeAll = () => { setOpen(false); go && go("log"); };
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button aria-label={L(lang, { id: "Notifikasi", en: "Notifications" })} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}
+        style={{ width: 40, height: 40, borderRadius: "50%", border: "none", background: open ? "var(--sage)" : "var(--canvas-2)", boxShadow: "var(--shadow-card)", display: "grid", placeItems: "center", cursor: "pointer", position: "relative", transition: "background .18s var(--ease-soft)" }}>
+        <Icon.bell size={19} stroke="var(--forest)" />
+        <span style={{ position: "absolute", top: 9, right: 10, width: 7, height: 7, borderRadius: "50%", background: "var(--gold)", boxShadow: "0 0 0 2px var(--canvas-2)" }} />
+      </button>
+      {open && (
+        <div className="notif-pop card" role="menu">
+          <div className="row between aic" style={{ marginBottom: 10 }}>
+            <div className="head" style={{ fontSize: 16 }}>{L(lang, { id: "Notifikasi", en: "Notifications" })}</div>
+            <span className="badge badge-safe tiny">{NOTIFS.length} {L(lang, { id: "baru", en: "new" })}</span>
+          </div>
+          <div className="col gap-4">
+            {NOTIFS.map((n, i) => (
+              <button key={i} className="notif-item" role="menuitem" onClick={seeAll}>
+                <ActivityIcon cat={n.cat} win={n.win} safe={n.safe} size={32} />
+                <div style={{ minWidth: 0, textAlign: "left" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: n.win ? "var(--gold-deep)" : "var(--forest)", lineHeight: 1.35 }}>{L(lang, n.title)}</div>
+                  <div className="muted tiny" style={{ marginTop: 2 }}>{L(lang, n.time)}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+          <button className="btn btn-secondary btn-sm btn-block" style={{ marginTop: 10 }} onClick={seeAll}>
+            {L(lang, { id: "Lihat semua", en: "See all" })} <Icon.arrow size={15} stroke="var(--clover-deep)" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MainHead({ lang, title, sub, onDraw, go }) {
   return (
     <div className="main-head">
       <div>
@@ -64,10 +117,7 @@ function MainHead({ lang, title, sub, onDraw }) {
           <span className="tiny muted" style={{ marginLeft: 2 }}>· 11j 24m</span>
         </div>
         {onDraw && <button className="btn btn-gold btn-sm" onClick={onDraw}><Icon.spark size={16} stroke="#3a2603" /> {L(lang, { id: "Undian", en: "Draw" })}</button>}
-        <button aria-label="alerts" style={{ width: 40, height: 40, borderRadius: "50%", border: "none", background: "var(--canvas-2)", boxShadow: "var(--shadow-card)", display: "grid", placeItems: "center", cursor: "pointer", position: "relative" }}>
-          <Icon.bell size={19} stroke="var(--forest)" />
-          <span style={{ position: "absolute", top: 9, right: 10, width: 7, height: 7, borderRadius: "50%", background: "var(--gold)", boxShadow: "0 0 0 2px var(--canvas-2)" }} />
-        </button>
+        <NotifBell lang={lang} go={go} />
       </div>
     </div>
   );
@@ -78,7 +128,7 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
   const yieldSeries = [40, 120, 220, 360, 470, 560, 700, 820, 980, 1120, 1284];
   return (
     <div className="main">
-      <MainHead lang={lang} title={L(lang, { id: "Kebunku 🌿", en: "My Garden 🌿" })}
+      <MainHead lang={lang} go={go} title={L(lang, { id: "Kebunku 🌿", en: "My Garden 🌿" })}
         sub={L(lang, { id: "Selamat datang kembali. Ronde #12 sedang berjalan.", en: "Welcome back. Round #12 is running." })} onDraw={onDraw} />
       <div className="main-body">
         <div className="bento">

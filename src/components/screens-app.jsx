@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 import { useFlow, StatePill } from './screens-ob.jsx';
 
 /* ============================================================
@@ -208,12 +208,12 @@ function ScreenRiwayat({ lang, go, t }) {
     { k: "draw", t: { id: "Undian", en: "Draws" } },
   ];
   const events = [
-    { day: { id: "Hari ini", en: "Today" }, icon: "🤖", cat: "ai", title: { id: "AI: TETAP di Aave — likuiditas kuat", en: "AI: STAY on Aave — strong liquidity" }, time: { id: "4 jam lalu", en: "4h ago" }, link: true },
-    { day: { id: "Hari ini", en: "Today" }, icon: "💧", cat: "yield", title: { id: "Bunga +0,82 USDC disapu ke Kolam #12", en: "Yield +0.82 USDC swept to Pool #12" }, time: { id: "6 jam lalu", en: "6h ago" } },
-    { day: { id: "Kemarin", en: "Yesterday" }, icon: "🍀", cat: "draw", title: { id: "Undian ronde #11 — belum hoki, modal utuh", en: "Draw round #11 — no luck, principal whole" }, time: { id: "1 hari lalu", en: "1d ago" } },
-    { day: { id: "Kemarin", en: "Yesterday" }, icon: "🛡️", cat: "ai", title: { id: "Percobaan aksi terlarang ditolak otomatis", en: "Forbidden action auto-rejected" }, time: { id: "1 hari lalu", en: "1d ago" }, safe: true },
-    { day: { id: "Minggu ini", en: "This week" }, icon: "🏆", cat: "draw", title: { id: "Menang ronde #9 — +18,20 USDC", en: "Won round #9 — +18.20 USDC" }, time: { id: "5 hari lalu", en: "5d ago" }, win: true },
-    { day: { id: "Minggu ini", en: "This week" }, icon: "🌱", cat: "deposit", title: { id: "Setor 100 USDC — modal awal dicatat", en: "Deposited 100 USDC — baseline recorded" }, time: { id: "5 hari lalu", en: "5d ago" } },
+    { day: { id: "Hari ini", en: "Today" }, cat: "ai", title: { id: "AI: TETAP di Aave — likuiditas kuat", en: "AI: STAY on Aave — strong liquidity" }, time: { id: "4 jam lalu", en: "4h ago" }, link: true },
+    { day: { id: "Hari ini", en: "Today" }, cat: "yield", title: { id: "Bunga +0,82 USDC disapu ke Kolam #12", en: "Yield +0.82 USDC swept to Pool #12" }, time: { id: "6 jam lalu", en: "6h ago" } },
+    { day: { id: "Kemarin", en: "Yesterday" }, cat: "draw", title: { id: "Undian ronde #11 — belum hoki, modal utuh", en: "Draw round #11 — no luck, principal whole" }, time: { id: "1 hari lalu", en: "1d ago" } },
+    { day: { id: "Kemarin", en: "Yesterday" }, cat: "ai", title: { id: "Percobaan aksi terlarang ditolak otomatis", en: "Forbidden action auto-rejected" }, time: { id: "1 hari lalu", en: "1d ago" }, safe: true },
+    { day: { id: "Minggu ini", en: "This week" }, cat: "draw", title: { id: "Menang ronde #9 — +18,20 USDC", en: "Won round #9 — +18.20 USDC" }, time: { id: "5 hari lalu", en: "5d ago" }, win: true },
+    { day: { id: "Minggu ini", en: "This week" }, cat: "deposit", title: { id: "Setor 100 USDC — modal awal dicatat", en: "Deposited 100 USDC — baseline recorded" }, time: { id: "5 hari lalu", en: "5d ago" } },
   ];
   const shown = events.filter((e) => filter === "all" || e.cat === filter);
   let lastDay = null;
@@ -246,7 +246,7 @@ function ScreenRiwayat({ lang, go, t }) {
                   {showDay && <div className="tiny" style={{ fontWeight: 700, color: "var(--ink-45)", margin: i === 0 ? "4px 0 12px 44px" : "16px 0 12px 44px", textTransform: "uppercase", letterSpacing: ".06em" }}>{L(lang, e.day)}</div>}
                   <Reveal delay={i * 60} className="row gap-12" style={{ alignItems: "flex-start", paddingBottom: 14 }}>
                     <div className="col aic" style={{ flex: "0 0 auto" }}>
-                      <div style={{ width: 34, height: 34, borderRadius: "50%", background: e.win ? "color-mix(in srgb,var(--gold) 18%, white)" : "var(--sage)", display: "grid", placeItems: "center", fontSize: 16 }}>{e.icon}</div>
+                      <ActivityIcon cat={e.cat} win={e.win} safe={e.safe} size={34} />
                       {i !== shown.length - 1 && <div style={{ width: 2.5, flex: 1, minHeight: 18, margin: "4px 0", borderLeft: "2.5px dotted color-mix(in srgb,var(--clover) 32%, transparent)" }} />}
                     </div>
                     <div className="card" style={{ flex: 1, padding: "12px 15px", cursor: "pointer", border: e.win ? "1.5px solid color-mix(in srgb,var(--gold) 30%, transparent)" : "1.5px solid transparent" }}>
@@ -314,11 +314,11 @@ function ScreenPengaturan({ lang, go, t, openModal, setLang }) {
           </div>
           <div className="row gap-8" style={{ marginBottom: 12 }}>
             <div style={{ flex: 1, background: "var(--canvas-2)", borderRadius: 12, padding: "10px 12px" }}>
-              <div className="tiny" style={{ fontWeight: 700, color: "var(--clover-deep)", marginBottom: 4 }}>✅ {L(lang, { id: "BOLEH", en: "MAY" })}</div>
+              <div className="tiny row aic gap-6" style={{ fontWeight: 700, color: "var(--clover-deep)", marginBottom: 4 }}><Icon.check size={13} stroke="var(--clover)" sw={2.6} /> {L(lang, { id: "BOLEH", en: "MAY" })}</div>
               <div className="tiny muted" style={{ lineHeight: 1.35 }}>{L(lang, { id: "Pindah antar protokol putih · sapu bunga", en: "Move between whitelisted protocols · sweep yield" })}</div>
             </div>
             <div style={{ flex: 1, background: "color-mix(in srgb,var(--danger) 7%, var(--canvas-2))", borderRadius: 12, padding: "10px 12px" }}>
-              <div className="tiny" style={{ fontWeight: 700, color: "var(--danger)", marginBottom: 4 }}>🚫 {L(lang, { id: "TIDAK", en: "CANNOT" })}</div>
+              <div className="tiny row aic gap-6" style={{ fontWeight: 700, color: "var(--danger)", marginBottom: 4 }}><Icon.x size={13} stroke="var(--danger)" sw={2.6} /> {L(lang, { id: "TIDAK", en: "CANNOT" })}</div>
               <div className="tiny muted" style={{ lineHeight: 1.35 }}>{L(lang, { id: "Sentuh modal · kirim ke luar daftar", en: "Touch principal · send off-list" })}</div>
             </div>
           </div>

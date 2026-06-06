@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, PixelTree, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { SafetyBonsai } from './web-bonsai.jsx';
 
 /* ============================================================
    CLOVA WEB — Marketing landing page (desktop-first, responsive)
@@ -28,12 +29,13 @@ function WebNav({ lang, setLang, onEnter }) {
   );
 }
 
-function WebHowCard({ n, icon: I, title, body, accent }) {
+function WebHowCard({ n, title, body, accent }) {
+  // trees grow bigger left → right; all bottom-aligned on a shared ground line
+  const cell = [6.4, 7.3, 8.2, 9.1][n - 1];
   return (
     <div style={{ padding: "0 22px", position: "relative", borderLeft: n === 1 ? "none" : "1px dashed color-mix(in srgb,var(--clover) 28%, transparent)" }}>
-      <div style={{ width: 56, height: 56, borderRadius: 18, background: accent ? "color-mix(in srgb,var(--gold) 16%, var(--canvas-2))" : "var(--sage)", display: "grid", placeItems: "center", marginBottom: 16,
-        boxShadow: "inset 0 0 0 1.5px color-mix(in srgb,var(--clover) 18%, transparent)" }}>
-        <I size={27} stroke={accent ? "var(--gold-deep)" : "var(--clover-deep)"} />
+      <div style={{ height: 124, display: "flex", alignItems: "flex-end", marginBottom: 14 }}>
+        <PixelTree stage={n} cell={cell} />
       </div>
       <div className="row aic gap-8" style={{ marginBottom: 8 }}>
         <span className="badge badge-safe" style={{ width: 24, height: 24, padding: 0, justifyContent: "center", borderRadius: "50%" }}>{n}</span>
@@ -124,20 +126,13 @@ function WebLanding({ lang, setLang, t, onEnter }) {
       {/* SAFETY */}
       <div id="safe" className="section" style={{ background: "color-mix(in srgb,var(--sage) 55%, var(--canvas))" }}>
         <div className="maxw">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 50, alignItems: "center" }} className="safe-grid">
-            <Reveal>
-              <div className="section-kicker">{L(lang, { id: "Kenapa Aman", en: "Why it's safe" })}</div>
-              <h2 style={{ fontSize: 40, lineHeight: 1.12, maxWidth: 480 }}>{L(lang, { id: "Aman bukan karena percaya AI \u2014 tapi karena dipaksa kode.", en: "Safe not because you trust the AI \u2014 but because code enforces it." })}</h2>
-            </Reveal>
-            <Reveal delay={120} className="col gap-16">
-              {safety.map((s, i) => (
-                <div key={i} className="card row gap-14" style={{ alignItems: "center", padding: "20px 22px" }}>
-                  <div style={{ flex: "0 0 auto", width: 48, height: 48, borderRadius: 14, background: "var(--sage)", display: "grid", placeItems: "center" }}><Icon.shield size={24} stroke="var(--clover)" /></div>
-                  <div style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.4 }}>{L(lang, s)}</div>
-                </div>
-              ))}
-            </Reveal>
-          </div>
+          <Reveal className="row aic gap-10" style={{ marginBottom: 6 }}>
+            <span className="section-kicker" style={{ margin: 0 }}>{L(lang, { id: "Kenapa Aman", en: "Why it's safe" })}</span>
+            <span className="badge badge-safe"><Icon.lock size={13} stroke="var(--clover-deep)" /> {L(lang, { id: "Dipaksa oleh kode", en: "Enforced by code" })}</span>
+          </Reveal>
+          <Reveal delay={60}><h2 style={{ fontSize: 40, lineHeight: 1.12, maxWidth: 560, marginBottom: 8 }}>{L(lang, { id: "Aman bukan karena percaya AI \u2014 tapi karena dipaksa kode.", en: "Safe not because you trust the AI \u2014 but because code enforces it." })}</h2></Reveal>
+          <Reveal delay={120}><p className="muted" style={{ fontSize: 16, maxWidth: 520, marginBottom: 18 }}>{L(lang, { id: "Setiap cabang dipagari batasan on-chain. Inilah yang tak bisa dilakukan agen \u2014 selamanya.", en: "Every branch is fenced by on-chain limits. Here's what the agent simply cannot do \u2014 ever." })}</p></Reveal>
+          <SafetyBonsai lang={lang} />
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, PixelTree, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 
 /* ============================================================
    CLOVA — Screens: Loading (splash) + Landing
@@ -79,13 +79,13 @@ function ScreenLoading({ lang, go, t }) {
 }
 
 /* ---------------- 2. LANDING ---------------- */
-function HowStep({ n, icon: I, title, body, last }) {
+function HowStep({ n, stage, title, body, last }) {
+  const cell = [3.6, 4.1, 4.6, 5.1][(stage || n) - 1];
   return (
     <div style={{ display: "flex", gap: 14, position: "relative" }}>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: "0 0 auto" }}>
-        <div style={{ width: 46, height: 46, borderRadius: "50%", background: "var(--sage)", display: "grid", placeItems: "center",
-          boxShadow: "inset 0 0 0 1.5px color-mix(in srgb,var(--clover) 22%, transparent)" }}>
-          <I size={23} stroke="var(--clover-deep)" />
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: "0 0 auto", width: 56 }}>
+        <div style={{ height: 68, display: "flex", alignItems: "flex-end" }}>
+          <PixelTree stage={stage || n} cell={cell} />
         </div>
         {!last && <div style={{ flex: 1, width: 2.5, margin: "4px 0", borderLeft: "2.5px dotted color-mix(in srgb,var(--clover) 38%, transparent)", minHeight: 26 }} />}
       </div>
@@ -172,7 +172,7 @@ function ScreenLanding({ lang, go, t }) {
         <Reveal delay={60}><h2 style={{ fontSize: 25, marginBottom: 18 }}>{L(lang, { id: "Empat langkah, kebun bertumbuh", en: "Four steps, a growing garden" })}</h2></Reveal>
         <div className="card" style={{ padding: "22px 20px" }}>
           {steps.map((s, i) => (
-            <HowStep key={i} n={i + 1} icon={s.icon} last={i === 3}
+            <HowStep key={i} n={i + 1} stage={i + 1} last={i === 3}
               title={L(lang, s.title)} body={L(lang, s.body)} />
           ))}
         </div>
