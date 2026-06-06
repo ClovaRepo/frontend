@@ -17,14 +17,14 @@ function Sidebar({ lang, setLang, screen, go, onExit }) {
   return (
     <aside className="sidebar">
       <div className="row between aic" style={{ padding: "0 6px" }}>
-        <button onClick={onExit} title="Home" style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}><Wordmark size={26} /></button>
+        <button onClick={onExit} title="Home" aria-label={L(lang, { id: "Beranda Clova", en: "Clova home" })} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}><Wordmark size={26} /></button>
       </div>
       <nav className="side-nav">
         {WEB_NAV.map((n) => {
           const I = Icon[n.icon];
           const active = screen === n.k;
           return (
-            <button key={n.k} className={"side-item" + (active ? " active" : "")} onClick={() => go(n.k)}>
+            <button key={n.k} className={"side-item" + (active ? " active" : "")} onClick={() => go(n.k)} aria-label={L(lang, n.t)} aria-current={active ? "page" : undefined}>
               <span className="si-ic" style={{ display: "flex", color: active ? "#F4FBF6" : "var(--clover-deep)" }}><I size={20} stroke="currentColor" /></span>
               <span className="si-label">{L(lang, n.t)}</span>
             </button>

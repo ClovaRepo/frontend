@@ -6,11 +6,12 @@
    ============================================================ */
 import React, { useState, useEffect, lazy, Suspense } from "react";
 import "../styles/web.css";
-import { L, Clover } from "./shared.jsx";
+import { L } from "./shared.jsx";
 import { Sidebar, WebDashboard } from "./web-app.jsx";
 import { WebLanding } from "./web-landing.jsx";
 import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakColor, TweakSelect, TweakSlider } from "./tweaks.jsx";
 import { useClovaState } from "./app-state.js";
+import { WebSkeleton, OnboardSkeleton } from "./skeletons.jsx";
 
 const lazyNamed = (loader, name) => lazy(() => loader().then((m) => ({ default: m[name] })));
 const WebPool = lazyNamed(() => import("./web-screens.jsx"), "WebPool");
@@ -54,14 +55,6 @@ function shadeW(hex, amt) {
 
 const WEB_SCREENS = { dashboard: WebDashboard, pool: WebPool, keeper: WebKeeper, log: WebLog, settings: WebSettings };
 
-function WebSplash() {
-  return (
-    <div style={{ minHeight: "60vh", display: "grid", placeItems: "center" }}>
-      <Clover size={48} breathe />
-    </div>
-  );
-}
-
 /* Onboarding flow on web — drives the shared OB steps in a centered column.
    go("dashboard") finishes; go("landing") backs out to the marketing site. */
 function WebOnboarding({ lang, setLang, t, onDone, onExit }) {
@@ -78,7 +71,7 @@ function WebOnboarding({ lang, setLang, t, onDone, onExit }) {
         <button className="tlink" style={{ marginBottom: 6 }} onClick={onExit}>
           ← {L(lang, { id: "Kembali ke beranda", en: "Back to home" })}
         </button>
-        <Suspense fallback={<WebSplash />}>
+        <Suspense fallback={<OnboardSkeleton />}>
           <Step lang={lang} go={go} t={t} setLang={setLang} />
         </Suspense>
       </div>
@@ -91,6 +84,9 @@ export default function WebApp() {
   const { lang, setLang, stage, setStage, screen, setScreen } = useClovaState();
   const [modal, setModal] = useState(null);
   const [draw, setDraw] = useState(false);
+
+  /* keep the document language in sync for a11y / screen readers */
+  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
 
   /* reveal failsafe (paused timeline while hidden) */
   useEffect(() => {
@@ -128,7 +124,7 @@ export default function WebApp() {
       ) : (
         <div className="app-layout">
           <Sidebar lang={lang} setLang={setLang} screen={screen} go={go} onExit={() => { setStage("landing"); window.scrollTo(0, 0); }} />
-          <Suspense fallback={<WebSplash />}>
+          <Suspense fallback={<WebSkeleton />}>
             <Screen lang={lang} setLang={setLang} go={go} t={t} openModal={setModal} onDraw={() => setDraw(true)} />
           </Suspense>
         </div>

@@ -4,9 +4,10 @@
    Screens are code-split with React.lazy so each route loads on demand.
    ============================================================ */
 import React, { useState, useEffect, useCallback, lazy, Suspense } from "react";
-import { Icon, L, Clover } from "./shared.jsx";
+import { Icon, L } from "./shared.jsx";
 import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakColor, TweakSelect, TweakSlider } from "./tweaks.jsx";
 import { useClovaState } from "./app-state.js";
+import { MobileSkeleton } from "./skeletons.jsx";
 
 /* Map between the canonical in-app screen (shared with web) and this app's
    own screen vocabulary, so resizing keeps you on the same logical page. */
@@ -75,14 +76,6 @@ const ALL_SCREENS = [
   { k: "pengaturan", t: { id: "Pengaturan", en: "Settings" } },
 ];
 
-function Splash() {
-  return (
-    <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "var(--canvas)" }}>
-      <Clover size={52} breathe />
-    </div>
-  );
-}
-
 function BottomNav({ lang, current, go }) {
   return (
     <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 50,
@@ -144,6 +137,9 @@ function App() {
   const [modal, setModal] = useState(null);
   const [jumpOpen, setJumpOpen] = useState(false);
 
+  /* keep the document language in sync for a11y / screen readers */
+  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
+
   /* failsafe: let reveals animate, then force-settle so content is never stuck
      invisible (paused animation timeline when the tab is hidden). */
   useEffect(() => {
@@ -182,7 +178,7 @@ function App() {
   return (
     <div className="app-frame">
       <JumpMenu lang={lang} open={jumpOpen} setOpen={setJumpOpen} go={go} current={screen} />
-      <Suspense fallback={<Splash />}>
+      <Suspense fallback={<MobileSkeleton />}>
         <Screen key={screen} lang={lang} go={go} t={t} openModal={openModal} setLang={setLang} />
       </Suspense>
       {showTabs && <BottomNav lang={lang} current={screen} go={go} />}
