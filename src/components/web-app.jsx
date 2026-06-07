@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, nfmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, nfmt, growFromUsdc, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 
 /* ============================================================
    CLOVA WEB, App shell (left sidebar) + desktop Dashboard
@@ -126,6 +126,7 @@ function MainHead({ lang, title, sub, onDraw, go }) {
 /* ===================== DASHBOARD ===================== */
 function WebDashboard({ lang, go, t, openModal, onDraw }) {
   const yieldSeries = [40, 120, 220, 360, 470, 560, 700, 820, 980, 1120, 1284];
+  const principal = 100; // USDC — plant size scales with this
   return (
     <div className="main">
       <MainHead lang={lang} go={go} title={L(lang, { id: "Kebunku 🌿", en: "My Garden 🌿" })}
@@ -141,9 +142,9 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
                 <span className="badge badge-safe"><Icon.shieldLeaf size={13} stroke="var(--clover-deep)" /> {L(lang, { id: "Aman & utuh", en: "Safe & whole" })}</span>
               </div>
               <div className="row aic gap-20" style={{ marginTop: 8 }}>
-                <div style={{ flex: "0 0 auto" }}><Plant grow={0.62} size={150} /></div>
+                <div style={{ flex: "0 0 auto" }}><Plant grow={growFromUsdc(principal)} size={150} /></div>
                 <div style={{ flex: 1 }}>
-                  <div className="num-xl"><CountUp value={100} /></div>
+                  <div className="num-xl"><CountUp value={principal} /></div>
                   <div className="head" style={{ fontSize: 18, color: "var(--ink-45)", marginTop: 2 }}>USDC</div>
                   <div className="row aic gap-10" style={{ marginTop: 16, background: "var(--sage)", borderRadius: 14, padding: "12px 16px" }}>
                     <Icon.drop size={18} stroke="var(--clover)" />

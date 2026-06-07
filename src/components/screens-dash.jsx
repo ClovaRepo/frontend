@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, nfmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, nfmt, growFromUsdc, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 
 /* ============================================================
    CLOVA, Dashboard ("Kebunku") with 3 layout variants + Panel AI
@@ -26,14 +26,15 @@ function DashTopBar({ lang, go }) {
 
 /* ---- Hero plant card ---- */
 function HeroPlant({ lang, openModal, compact }) {
+  const principal = 100; // USDC — plant size scales with this
   return (
     <div className="card reveal card-lift" style={{ padding: compact ? "18px 20px" : "22px 22px", overflow: "hidden", position: "relative" }}>
       <CloverWatermark corner="br" size={150} opacity={0.05} />
       <div className="row" style={{ gap: 14, alignItems: "center" }}>
-        <div style={{ flex: "0 0 auto" }}><Plant grow={0.62} size={compact ? 96 : 116} /></div>
+        <div style={{ flex: "0 0 auto" }}><Plant grow={growFromUsdc(principal)} size={compact ? 96 : 116} /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="muted tiny" style={{ fontWeight: 600, marginBottom: 2 }}>{L(lang, { id: "Modalku", en: "My principal" })}</div>
-          <div className="head tnum" style={{ fontSize: 32, lineHeight: 1 }}><CountUp value={100} /></div>
+          <div className="head tnum" style={{ fontSize: 32, lineHeight: 1 }}><CountUp value={principal} /></div>
           <div className="head" style={{ fontSize: 15, color: "var(--ink-45)", marginTop: 1 }}>USDC</div>
           <span className="badge badge-safe" style={{ marginTop: 8 }}><Icon.shieldLeaf size={13} stroke="var(--clover-deep)" /> {L(lang, { id: "Aman & utuh", en: "Safe & whole" })}</span>
         </div>

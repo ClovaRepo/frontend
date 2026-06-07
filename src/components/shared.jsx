@@ -30,6 +30,15 @@ function nfmt(lang, s) {
   return lang === "en" ? String(s).replace(/[.,]/g, (m) => (m === "." ? "," : ".")) : s;
 }
 
+/* Map a USDC balance to a plant growth level (0..1) on a log curve, so the
+   plant's size reflects the user's principal: ~100 -> 0.6, ~1k -> 0.8,
+   5k+ -> nearly full, while tiny balances stay a small sprout. */
+function growFromUsdc(usdc) {
+  const v = Math.max(0, Number(usdc) || 0);
+  const ratio = Math.log10(1 + v) / Math.log10(1 + 5000);
+  return Math.max(0.12, Math.min(0.96, 0.2 + 0.75 * ratio));
+}
+
 /* ---------- count-up hook ---------- */
 function useCountUp(target, { duration = 1100, dec = 2, start = true } = {}) {
   const [val, setVal] = useState(0);
@@ -641,4 +650,4 @@ function Toast({ show, children, tone = "safe" }) {
 
 /* ==================== exports ==================== */
 
-export { L, fmt, nfmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, PixelTree, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast };
+export { L, fmt, nfmt, growFromUsdc, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, PixelTree, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast };
