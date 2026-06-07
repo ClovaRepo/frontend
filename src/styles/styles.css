@@ -302,6 +302,13 @@ h1, h2, h3, .head {
 }
 .pixeltree-sway { animation: pixeltreeSway 6.5s ease-in-out infinite; will-change: transform; }
 
+/* potted plant gentle breeze (anchored at the soil) */
+@keyframes plantSway {
+  0%,100% { transform: rotate(-1.6deg); }
+  50%     { transform: rotate(1.6deg); }
+}
+.plant-sway { animation: plantSway 5.5s ease-in-out infinite; }
+
 /* pixel-tree growth: each pixel pops in, bottom rows first (roots → crown) */
 @keyframes pixelGrow {
   0%   { opacity: 0; transform: scale(.05); }
@@ -325,6 +332,7 @@ h1, h2, h3, .head {
   .leaf-layer { display: none; }
   .screen, .main, .stage-view { animation: none !important; }
   .pixeltree-sway { animation: none !important; }
+  .plant-sway { animation: none !important; }
   .pixeltree .pt-px { opacity: 1 !important; animation: none !important; transform: none !important; }
   .skeleton::after { animation: none; }
   html { scroll-behavior: auto; }

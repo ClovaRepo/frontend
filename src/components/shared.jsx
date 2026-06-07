@@ -326,34 +326,49 @@ function CountdownArc({ pct = 0.62, label, sub, size = 150, gold = false }) {
 }
 
 /* ============================================================
-   GROWING PLANT, height scales with amount (0..1)
+   GROWING PLANT, height scales with amount (0..1).
+   On mount it animates from a sprout up to `grow` (the existing
+   CSS transitions tween the stem + leaves), then sways gently so
+   it feels alive. It settles at a height that reflects the value,
+   it doesn't grow forever, but re-grows whenever `grow` increases.
    ============================================================ */
-function Plant({ grow = 0.5, size = 120, potColor = "var(--sage-2)" }) {
-  const h = 0.25 + grow * 0.75; // stem growth fraction
+function Plant({ grow = 0.5, size = 120, potColor = "var(--sage-2)", animate = true }) {
+  const [g, setG] = useState(animate ? 0.1 : grow);
+  useEffect(() => {
+    if (!animate) { setG(grow); return; }
+    const reduce = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) { setG(grow); return; }
+    const id = setTimeout(() => setG(grow), 140); // mount as a sprout, then grow up
+    return () => clearTimeout(id);
+  }, [grow, animate]);
+  const h = 0.25 + g * 0.75; // stem growth fraction
   return (
     <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
-      {/* pot */}
+      {/* pot (stays planted) */}
       <path d="M38 96 L82 96 L77 116 L43 116 Z" fill={potColor} />
       <rect x="34" y="88" width="52" height="11" rx="5" fill="color-mix(in srgb,var(--forest) 12%, var(--sage-2))" />
-      {/* stem */}
-      <path d={`M60 90 C60 ${90 - 40 * h} 60 ${90 - 50 * h} 60 ${90 - 56 * h}`}
-            stroke="var(--clover)" strokeWidth="4" strokeLinecap="round"
-            style={{ transition: "all .8s var(--ease-soft)" }} />
-      {/* leaves */}
-      <g style={{ transition: "all .8s var(--ease-soft)", transformOrigin: "60px 90px" }}>
-        <path d={`M60 ${88 - 30 * h} C44 ${84 - 30 * h} 40 ${72 - 30 * h} 50 ${70 - 30 * h} C58 ${69 - 30 * h} 60 ${80 - 30 * h} 60 ${88 - 30 * h}Z`} fill="var(--leaf)" />
-        <path d={`M60 ${82 - 38 * h} C76 ${78 - 38 * h} 80 ${66 - 38 * h} 70 ${64 - 38 * h} C62 ${63 - 38 * h} 60 ${74 - 38 * h} 60 ${82 - 38 * h}Z`} fill="var(--clover)" />
-      </g>
-      {/* crown clover when grown, pure SVG, four petals around the stem tip */}
-      {grow > 0.55 && (
-        <g style={{ transformOrigin: `60px ${90 - 56 * h}px`, animation: "bloomPop .6s var(--ease-back)" }}>
-          {[0, 90, 180, 270].map((a) => (
-            <ellipse key={a} cx="60" cy={90 - 56 * h - 7} rx="5" ry="7" fill="var(--clover)"
-                     transform={`rotate(${a} 60 ${90 - 56 * h})`} opacity={a % 180 === 0 ? 1 : 0.85} />
-          ))}
-          <circle cx="60" cy={90 - 56 * h} r="2.4" fill="color-mix(in srgb, var(--forest) 50%, transparent)" />
+      {/* everything above the soil sways gently as one */}
+      <g className="plant-sway" style={{ transformOrigin: "60px 92px" }}>
+        {/* stem */}
+        <path d={`M60 90 C60 ${90 - 40 * h} 60 ${90 - 50 * h} 60 ${90 - 56 * h}`}
+              stroke="var(--clover)" strokeWidth="4" strokeLinecap="round"
+              style={{ transition: "all .9s var(--ease-soft)" }} />
+        {/* leaves */}
+        <g style={{ transition: "all .9s var(--ease-soft)", transformOrigin: "60px 90px" }}>
+          <path d={`M60 ${88 - 30 * h} C44 ${84 - 30 * h} 40 ${72 - 30 * h} 50 ${70 - 30 * h} C58 ${69 - 30 * h} 60 ${80 - 30 * h} 60 ${88 - 30 * h}Z`} fill="var(--leaf)" />
+          <path d={`M60 ${82 - 38 * h} C76 ${78 - 38 * h} 80 ${66 - 38 * h} 70 ${64 - 38 * h} C62 ${63 - 38 * h} 60 ${74 - 38 * h} 60 ${82 - 38 * h}Z`} fill="var(--clover)" />
         </g>
-      )}
+        {/* crown clover once grown, pure SVG, four petals around the stem tip */}
+        {g > 0.55 && (
+          <g style={{ transformOrigin: `60px ${90 - 56 * h}px`, animation: "bloomPop .6s var(--ease-back)" }}>
+            {[0, 90, 180, 270].map((a) => (
+              <ellipse key={a} cx="60" cy={90 - 56 * h - 7} rx="5" ry="7" fill="var(--clover)"
+                       transform={`rotate(${a} 60 ${90 - 56 * h})`} opacity={a % 180 === 0 ? 1 : 0.85} />
+            ))}
+            <circle cx="60" cy={90 - 56 * h} r="2.4" fill="color-mix(in srgb, var(--forest) 50%, transparent)" />
+          </g>
+        )}
+      </g>
     </svg>
   );
 }
