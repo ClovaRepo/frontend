@@ -509,7 +509,8 @@ function Confetti({ go = true, count = 42, gold = true }) {
     size: 8 + Math.random() * 12,
     gold: gold && i % 3 === 0,
   })), [count, gold]);
-  if (!go) return null;
+  const reduce = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!go || reduce) return null;
   return (
     <div aria-hidden="true" style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 40 }}>
       {pieces.map((p) => (

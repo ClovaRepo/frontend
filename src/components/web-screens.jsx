@@ -251,6 +251,13 @@ function WebLog({ lang, t, go }) {
           {filters.map((f) => <button key={f.k} className={"chip" + (filter === f.k ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setFilter(f.k)}>{L(lang, f.t)}</button>)}
         </div>
         <div>
+          {shown.length === 0 && (
+            <div className="card card-pad-lg" style={{ textAlign: "center", padding: "44px 24px" }}>
+              <div style={{ display: "grid", placeItems: "center", marginBottom: 12 }}><Plant grow={0.08} size={96} /></div>
+              <div className="head" style={{ fontSize: 17, marginBottom: 6 }}>{L(lang, { id: "Belum ada aktivitas", en: "No activity yet" })}</div>
+              <div className="muted tiny">{L(lang, { id: "Tak ada kejadian di kategori ini.", en: "No events in this category." })}</div>
+            </div>
+          )}
           {shown.map((e, i) => {
             const showDay = L(lang, e.day) !== lastDay; lastDay = L(lang, e.day);
             return (
