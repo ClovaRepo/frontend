@@ -25,7 +25,7 @@ const read = (key, fallback) => {
 };
 
 export function useClovaState() {
-  const [lang, setLang] = useState(() => read(K_LANG, "id"));
+  const [lang, setLang] = useState(() => read(K_LANG, "en"));
   const [stage, setStage] = useState(() => read(K_STAGE, "landing"));
   const [screen, setScreen] = useState(() => read(K_SCREEN, "dashboard"));
 

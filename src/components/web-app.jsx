@@ -113,8 +113,8 @@ function MainHead({ lang, title, sub, onDraw, go }) {
       <div className="row aic gap-12">
         <div className="row aic gap-8" style={{ background: "linear-gradient(160deg, color-mix(in srgb,var(--gold) 14%, var(--canvas-2)), var(--canvas-2))", borderRadius: 14, padding: "9px 14px" }}>
           <Icon.trophy size={16} stroke="var(--gold-deep)" />
-          <span className="tnum" style={{ fontWeight: 700, fontSize: 14, color: "var(--gold-deep)" }}>1.284 USDC</span>
-          <span className="tiny muted" style={{ marginLeft: 2 }}>· 11j 24m</span>
+          <span className="tnum" style={{ fontWeight: 700, fontSize: 14, color: "var(--gold-deep)" }}>{L(lang, { id: "1.284 USDC", en: "1,284 USDC" })}</span>
+          <span className="tiny muted" style={{ marginLeft: 2 }}>· {L(lang, { id: "11j 24m", en: "11h 24m" })}</span>
         </div>
         {onDraw && <button className="btn btn-gold btn-sm" onClick={onDraw}><Icon.spark size={16} stroke="#3a2603" /> {L(lang, { id: "Undian", en: "Draw" })}</button>}
         <NotifBell lang={lang} go={go} />

@@ -33,7 +33,7 @@ function WebHowCard({ n, title, body, accent }) {
   // trees grow bigger left → right; all bottom-aligned on a shared ground line
   const cell = [6.4, 7.3, 8.2, 9.1][n - 1];
   return (
-    <div style={{ padding: "0 22px", position: "relative", borderLeft: n === 1 ? "none" : "1px dashed color-mix(in srgb,var(--clover) 28%, transparent)" }}>
+    <div className="how-card">
       <div style={{ height: 124, display: "flex", alignItems: "flex-end", marginBottom: 14 }}>
         <PixelTree stage={n} cell={cell} />
       </div>
@@ -52,11 +52,6 @@ function WebLanding({ lang, setLang, t, onEnter }) {
     { icon: Icon.robot, title: { id: "AI Memelihara", en: "AI Tends It" }, body: { id: "Agen Venice memantau kesehatan protokol dalam izin ketat. Tiap keputusan dijelaskan.", en: "The Venice agent watches protocol health under strict permissions. Every decision explained." } },
     { icon: Icon.drop, title: { id: "Panen Bunga", en: "Harvest Yield" }, body: { id: "Tiap ronde, hanya bunga (bukan modal) disapu jadi Kolam Hadiah bersama.", en: "Each round, only yield (never principal) is swept into a shared Prize Pool." } },
     { icon: Icon.trophy, title: { id: "Undian Adil", en: "Fair Draw" }, body: { id: "Pemenang dipilih acak (VRF). Sisanya modal utuh, bisa ditarik kapan saja.", en: "A winner is drawn at random (VRF). Otherwise principal stays whole, withdrawable anytime." }, accent: true },
-  ];
-  const safety = [
-    { id: "AI tak bisa menyentuh modal pokok.", en: "The AI cannot touch your principal." },
-    { id: "AI tak bisa kirim ke alamat di luar daftar putih.", en: "The AI cannot send funds outside the whitelist." },
-    { id: "Kamu bisa cabut izin kapan saja, langsung.", en: "You can revoke permission anytime, instantly." },
   ];
   return (
     <div style={{ position: "relative", zIndex: 1 }}>

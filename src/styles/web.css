@@ -4,6 +4,8 @@
    ============================================================ */
 
 html, body { height: auto; }
+/* offset in-page anchor jumps so the sticky top nav doesn't cover headings */
+html { scroll-padding-top: 88px; }
 body { background: var(--canvas); overflow-x: hidden; }
 
 .web-root { min-height: 100vh; position: relative; }
@@ -36,6 +38,11 @@ body { background: var(--canvas); overflow-x: hidden; }
   color: var(--forest-70); padding: 6px 2px;
 }
 .lnav-link:hover { color: var(--clover-deep); }
+/* keep the nav uncluttered on smaller widths — anchors collapse, CTA stays */
+@media (max-width: 720px) {
+  .lnav-links { gap: 12px; }
+  .lnav-link { display: none; }
+}
 
 .hero {
   display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 30px; align-items: center;
@@ -55,8 +62,18 @@ body { background: var(--canvas); overflow-x: hidden; }
   color: var(--clover-deep); margin-bottom: 12px;
 }
 .how-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; position: relative; }
-@media (max-width: 920px) { .how-grid { grid-template-columns: 1fr 1fr; gap: 24px 18px; } }
+@media (max-width: 920px) { .how-grid { grid-template-columns: 1fr 1fr; gap: 28px 20px; } }
 @media (max-width: 560px) { .how-grid { grid-template-columns: 1fr; } }
+.how-card { padding: 0 22px; position: relative; }
+/* dashed divider between columns — only while the row is intact (4-up) */
+.how-grid > *:not(:first-child) .how-card::before {
+  content: ""; position: absolute; left: 0; top: 6px; bottom: 6px;
+  border-left: 1px dashed color-mix(in srgb, var(--clover) 28%, transparent);
+}
+@media (max-width: 920px) {
+  .how-card { padding: 0; }
+  .how-grid > * .how-card::before { display: none; }
+}
 
 .bigfoot { background: var(--forest); color: color-mix(in srgb,#F4FBF6 85%, transparent); padding: 56px 0 40px; position: relative; z-index: 1; }
 

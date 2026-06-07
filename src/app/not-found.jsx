@@ -23,11 +23,11 @@ export default function NotFound() {
     <main style={{ minHeight: "100dvh", display: "grid", placeItems: "center", padding: 24, textAlign: "center" }}>
       <div style={{ maxWidth: 420 }}>
         <CloverMark />
-        <h1 className="head" style={{ fontSize: 30, margin: "18px 0 8px" }}>Halaman tak ditemukan</h1>
+        <h1 className="head" style={{ fontSize: 30, margin: "18px 0 8px" }}>Page not found</h1>
         <p style={{ color: "var(--ink-60)", fontSize: 15, lineHeight: 1.55, marginBottom: 24 }}>
-          Halaman ini belum tumbuh di kebun kami. Yuk kembali ke beranda.
+          This page hasn't grown in our garden yet. Let's head back home.
         </p>
-        <Link href="/" className="btn btn-primary btn-lg">Kembali ke beranda</Link>
+        <Link href="/" className="btn btn-primary btn-lg">Back to home</Link>
       </div>
     </main>
   );

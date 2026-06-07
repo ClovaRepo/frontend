@@ -24,13 +24,13 @@ export default function Error({ error, reset }) {
     <main style={{ minHeight: "100dvh", display: "grid", placeItems: "center", padding: 24, textAlign: "center" }}>
       <div style={{ maxWidth: 440 }}>
         <CloverMark />
-        <h1 className="head" style={{ fontSize: 28, margin: "18px 0 8px" }}>Ada yang tak beres</h1>
+        <h1 className="head" style={{ fontSize: 28, margin: "18px 0 8px" }}>Something went wrong</h1>
         <p style={{ color: "var(--ink-60)", fontSize: 15, lineHeight: 1.55, marginBottom: 24 }}>
-          Maaf, terjadi kesalahan tak terduga. Modalmu tetap aman — coba muat ulang.
+          Sorry, an unexpected error occurred. Your principal is safe — try reloading.
         </p>
         <div className="row gap-12" style={{ justifyContent: "center" }}>
-          <button className="btn btn-primary btn-lg" onClick={() => reset()}>Coba lagi</button>
-          <Link href="/" className="btn btn-secondary btn-lg">Beranda</Link>
+          <button className="btn btn-primary btn-lg" onClick={() => reset()}>Try again</button>
+          <Link href="/" className="btn btn-secondary btn-lg">Home</Link>
         </div>
       </div>
     </main>

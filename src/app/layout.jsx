@@ -1,7 +1,7 @@
 import "../styles/styles.css";
 
 const DESCRIPTION =
-  "Menabung berhadiah tanpa pernah rugi modal. Dikelola agen AI non-custodial yang secara teknis tak bisa menyentuh modalmu.";
+  "No-loss prize-linked savings. Managed by a non-custodial AI agent that is technically incapable of touching your principal.";
 
 export const metadata = {
   applicationName: "Clova",
@@ -20,7 +20,7 @@ export const metadata = {
     siteName: "Clova",
     title: "Clova — no-loss prize-linked savings",
     description: DESCRIPTION,
-    locale: "id_ID",
+    locale: "en_US",
   },
   twitter: {
     card: "summary",
@@ -32,13 +32,14 @@ export const metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
   colorScheme: "light",
   themeColor: "#F4F1E8",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id">
+    <html lang="en">
       <body>
         {/* React 19 hoists these to <head>. Fonts match the design system tokens. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />

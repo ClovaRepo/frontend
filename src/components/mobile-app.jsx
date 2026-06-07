@@ -78,14 +78,17 @@ const ALL_SCREENS = [
 
 function BottomNav({ lang, current, go }) {
   return (
-    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 50,
+    <nav aria-label={L(lang, { id: "Navigasi utama", en: "Primary navigation" })}
+      style={{ position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 50,
       background: "color-mix(in srgb,var(--canvas-2) 92%, transparent)", backdropFilter: "blur(14px)",
-      borderTop: "1px solid var(--hairline)", display: "flex", padding: "8px 10px 14px" }}>
+      borderTop: "1px solid var(--hairline)", display: "flex",
+      padding: "8px 10px max(14px, env(safe-area-inset-bottom))" }}>
       {TABS.map((tab) => {
         const active = current === tab.k;
         const I = Icon[tab.icon];
         return (
-          <button key={tab.k} onClick={() => go(tab.k)} style={{ flex: 1, background: "none", border: "none", cursor: "pointer",
+          <button key={tab.k} onClick={() => go(tab.k)} aria-label={L(lang, tab.t)} aria-current={active ? "page" : undefined}
+            style={{ flex: 1, background: "none", border: "none", cursor: "pointer",
             display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "5px 0", color: active ? "var(--clover)" : "var(--ink-45)" }}>
             <div style={{ position: "relative", transition: "transform .25s var(--ease-back)", transform: active ? "translateY(-1px)" : "none" }}>
               <I size={23} stroke={active ? "var(--clover)" : "var(--ink-45)"} sw={active ? 2.1 : 1.8} />
@@ -95,7 +98,7 @@ function BottomNav({ lang, current, go }) {
           </button>
         );
       })}
-    </div>
+    </nav>
   );
 }
 
