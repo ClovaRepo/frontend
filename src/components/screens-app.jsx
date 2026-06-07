@@ -249,7 +249,7 @@ function ScreenRiwayat({ lang, go, t }) {
                       <ActivityIcon cat={e.cat} win={e.win} safe={e.safe} size={34} />
                       {i !== shown.length - 1 && <div style={{ width: 2.5, flex: 1, minHeight: 18, margin: "4px 0", borderLeft: "2.5px dotted color-mix(in srgb,var(--clover) 32%, transparent)" }} />}
                     </div>
-                    <div className="card" style={{ flex: 1, padding: "12px 15px", cursor: "pointer", border: e.win ? "1.5px solid color-mix(in srgb,var(--gold) 30%, transparent)" : "1.5px solid transparent" }}>
+                    <div className="card" style={{ flex: 1, padding: "12px 15px", border: e.win ? "1.5px solid color-mix(in srgb,var(--gold) 30%, transparent)" : "1.5px solid transparent" }}>
                       <div style={{ fontSize: 13.8, fontWeight: 600, lineHeight: 1.4, color: e.win ? "var(--gold-deep)" : "var(--forest)" }}>{L(lang, e.title)}</div>
                       <div className="row aic gap-8" style={{ marginTop: 5 }}>
                         <span className="muted tiny">{L(lang, e.time)}</span>

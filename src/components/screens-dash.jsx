@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, nfmt, growFromUsdc, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, nfmt, clickable, growFromUsdc, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 
 /* ============================================================
    CLOVA, Dashboard ("Kebunku") with 3 layout variants + Panel AI
@@ -60,7 +60,7 @@ function HeroPlant({ lang, openModal, compact }) {
 /* ---- Prize pool panel ---- */
 function PrizePool({ lang, go, big }) {
   return (
-    <div className="card reveal card-lift" onClick={() => go("detailRonde")} style={{ cursor: "pointer",
+    <div className="card reveal card-lift" {...clickable(() => go("detailRonde"))} aria-label={L(lang, { id: "Buka Kolam Hadiah", en: "Open Prize Pool" })} style={{ cursor: "pointer",
       background: "linear-gradient(160deg, color-mix(in srgb,var(--gold) 13%, var(--canvas-2)), var(--canvas-2))", overflow: "hidden", position: "relative" }}>
       <div className="row between aic" style={{ marginBottom: 6 }}>
         <span className="badge badge-win"><Icon.trophy size={13} stroke="var(--gold-deep)" /> {L(lang, { id: "Kolam Hadiah · Ronde #12", en: "Prize Pool · Round #12" })}</span>
@@ -78,7 +78,7 @@ function PrizePool({ lang, go, big }) {
 /* ---- AI keeper shortcut ---- */
 function KeeperCard({ lang, go }) {
   return (
-    <div className="card reveal card-lift" onClick={() => go("panelAI")} style={{ cursor: "pointer", padding: "16px 18px" }}>
+    <div className="card reveal card-lift" {...clickable(() => go("panelAI"))} aria-label={L(lang, { id: "Buka Pemelihara AI", en: "Open AI Keeper" })} style={{ cursor: "pointer", padding: "16px 18px" }}>
       <div className="row gap-12" style={{ alignItems: "flex-start" }}>
         <Gardener size={46} />
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -195,7 +195,7 @@ function ScreenDashboard({ lang, go, t, openModal }) {
             {/* bento: hero spanning, then 2-up tiles */}
             <div style={stagger(0)}><HeroPlant lang={lang} openModal={openModal} compact /></div>
             <div className="row gap-12" style={{ alignItems: "stretch" }}>
-              <div className="reveal card card-lift" style={{ ...stagger(1), flex: 1, cursor: "pointer", background: "linear-gradient(160deg, color-mix(in srgb,var(--gold) 13%, var(--canvas-2)), var(--canvas-2))" }} onClick={() => go("detailRonde")}>
+              <div className="reveal card card-lift" {...clickable(() => go("detailRonde"))} aria-label={L(lang, { id: "Buka Kolam Hadiah", en: "Open Prize Pool" })} style={{ ...stagger(1), flex: 1, cursor: "pointer", background: "linear-gradient(160deg, color-mix(in srgb,var(--gold) 13%, var(--canvas-2)), var(--canvas-2))" }}>
                 <span className="badge badge-win" style={{ marginBottom: 8 }}><Icon.trophy size={12} stroke="var(--gold-deep)" /> {L(lang, { id: "Kolam #12", en: "Pool #12" })}</span>
                 <div className="head tnum" style={{ fontSize: 26, color: "var(--gold-deep)" }}><CountUp value={1284} dec={0} /></div>
                 <div className="muted tiny">USDC · 248 {L(lang, { id: "penanam", en: "planters" })}</div>

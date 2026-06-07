@@ -30,6 +30,19 @@ function nfmt(lang, s) {
   return lang === "en" ? String(s).replace(/[.,]/g, (m) => (m === "." ? "," : ".")) : s;
 }
 
+/* Make a non-button element (e.g. a clickable card) keyboard-operable:
+   spreads role/tabIndex + Enter/Space handling alongside the click. */
+function clickable(onActivate) {
+  return {
+    role: "button",
+    tabIndex: 0,
+    onClick: onActivate,
+    onKeyDown: (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onActivate(e); }
+    },
+  };
+}
+
 /* Map a USDC balance to a plant growth level (0..1) on a log curve, so the
    plant's size reflects the user's principal: ~100 -> 0.6, ~1k -> 0.8,
    5k+ -> nearly full, while tiny balances stay a small sprout. */
@@ -650,4 +663,4 @@ function Toast({ show, children, tone = "safe" }) {
 
 /* ==================== exports ==================== */
 
-export { L, fmt, nfmt, growFromUsdc, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, PixelTree, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast };
+export { L, fmt, nfmt, clickable, growFromUsdc, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, PixelTree, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast };

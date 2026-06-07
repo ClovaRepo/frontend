@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, nfmt, growFromUsdc, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, nfmt, clickable, growFromUsdc, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 
 /* ============================================================
    CLOVA WEB, App shell (left sidebar) + desktop Dashboard
@@ -184,7 +184,7 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
 
           {/* AI keeper */}
           <Reveal delay={140} className="col-4">
-            <div className="card card-pad-lg card-lift" onClick={() => go("keeper")} style={{ cursor: "pointer", height: "100%", display: "flex", flexDirection: "column" }}>
+            <div className="card card-pad-lg card-lift" {...clickable(() => go("keeper"))} aria-label={L(lang, { id: "Buka Pemelihara AI", en: "Open AI Keeper" })} style={{ cursor: "pointer", height: "100%", display: "flex", flexDirection: "column" }}>
               <div className="row aic gap-12" style={{ marginBottom: 12 }}>
                 <Gardener size={48} />
                 <div>

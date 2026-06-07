@@ -208,6 +208,7 @@ h1, h2, h3, .head {
 .card-sage { background: var(--sage); }
 .card-lift { transition: transform .25s var(--ease-soft), box-shadow .25s var(--ease-soft); }
 .card-lift:hover { transform: translateY(-3px); box-shadow: var(--shadow-soft); }
+.card-lift:focus-visible { transform: translateY(-3px); box-shadow: var(--shadow-soft); }
 
 /* ===================== BADGES / CHIPS ===================== */
 .badge {
