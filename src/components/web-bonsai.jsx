@@ -37,7 +37,9 @@ const PADS = [
 
 // trunk + branches as thick tapering segments [x0,y0,x1,y1,w0,w1]
 const SEGS = [
-  [432, 545, 446, 488, 17, 15],
+  // trunk now runs all the way to the very bottom of the canvas
+  [430, 560, 434, 528, 19, 17],
+  [434, 528, 446, 488, 17, 15],
   [446, 488, 420, 442, 15, 14],
   [420, 442, 452, 402, 14, 12],
   [452, 402, 472, 362, 12, 11],
@@ -52,6 +54,12 @@ const SEGS = [
   // branch → lower-right pad
   [480, 402, 542, 372, 7, 5],
   [542, 372, 575, 338, 5, 4],
+  // roots: splay out and bend along the ground, then dip toward the bottom edge
+  [430, 540, 374, 552, 9, 5],
+  [374, 552, 322, 558, 5, 3],
+  [438, 540, 500, 552, 9, 5],
+  [500, 552, 556, 558, 5, 3],
+  [433, 548, 436, 560, 7, 4],
 ];
 
 function segDist(px, py, s) {

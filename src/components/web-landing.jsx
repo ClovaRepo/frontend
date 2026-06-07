@@ -30,11 +30,11 @@ function WebNav({ lang, setLang, onEnter }) {
 }
 
 function WebHowCard({ n, title, body, accent }) {
-  // trees grow bigger left → right; all bottom-aligned on a shared ground line
-  const cell = [6.4, 7.3, 8.2, 9.1][n - 1];
+  // trees grow bigger left → right; centered + bottom-aligned on a shared ground line
+  const cell = [7.6, 8.6, 9.6, 10.6][n - 1];
   return (
     <div className="how-card">
-      <div style={{ height: 124, display: "flex", alignItems: "flex-end", marginBottom: 14 }}>
+      <div style={{ height: 140, display: "flex", alignItems: "flex-end", justifyContent: "center", marginBottom: 14 }}>
         <PixelTree stage={n} cell={cell} />
       </div>
       <div className="row aic gap-8" style={{ marginBottom: 8 }}>
