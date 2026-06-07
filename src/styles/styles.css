@@ -20,8 +20,9 @@
   --danger:      #C2603F;  /* withdraw / revoke (rare) */
 
   /* derived */
-  --ink-60: color-mix(in srgb, var(--ink) 62%, transparent);
-  --ink-45: color-mix(in srgb, var(--ink) 45%, transparent);
+  /* muted body text — nudged up for WCAG AA legibility on small text */
+  --ink-60: color-mix(in srgb, var(--ink) 70%, transparent);
+  --ink-45: color-mix(in srgb, var(--ink) 52%, transparent);
   --forest-70: color-mix(in srgb, var(--forest) 70%, transparent);
   --hairline: color-mix(in srgb, var(--forest) 12%, transparent);
 

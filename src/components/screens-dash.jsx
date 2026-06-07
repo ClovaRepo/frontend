@@ -15,7 +15,7 @@ function DashTopBar({ lang, go }) {
           <span className="tnum">0x12…9aF3</span>
           <Clover size={13} color="var(--clover)" stem={false} />
         </span>
-        <button onClick={() => go("riwayat")} aria-label="notifications" style={{ width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--canvas-2)", boxShadow: "var(--shadow-card)", display: "grid", placeItems: "center", cursor: "pointer", position: "relative" }}>
+        <button onClick={() => go("riwayat")} aria-label={L(lang, { id: "Notifikasi", en: "Notifications" })} style={{ width: 42, height: 42, borderRadius: "50%", border: "none", background: "var(--canvas-2)", boxShadow: "var(--shadow-card)", display: "grid", placeItems: "center", cursor: "pointer", position: "relative" }}>
           <Icon.bell size={19} stroke="var(--forest)" />
           <span style={{ position: "absolute", top: 8, right: 9, width: 8, height: 8, borderRadius: "50%", background: "var(--gold)", boxShadow: "0 0 0 2px var(--canvas-2)" }} />
         </button>

@@ -99,7 +99,7 @@ function WalletPicker({ lang, onPick, onClose }) {
         <div className="row between aic" style={{ marginBottom: 4 }}>
           <h2 className="head" style={{ fontSize: 20 }}>{L(lang, { id: "Pilih dompet", en: "Choose a wallet" })}</h2>
           <button className="icon-btn" aria-label={L(lang, { id: "Tutup", en: "Close" })} onClick={onClose}
-            style={{ width: 32, height: 32, borderRadius: 10, border: "none", background: "var(--sage)", display: "grid", placeItems: "center", cursor: "pointer" }}>
+            style={{ width: 40, height: 40, borderRadius: 12, border: "none", background: "var(--sage)", display: "grid", placeItems: "center", cursor: "pointer" }}>
             <Icon.x size={16} stroke="var(--clover-deep)" />
           </button>
         </div>
