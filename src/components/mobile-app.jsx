@@ -64,7 +64,7 @@ const ALL_SCREENS = [
   { k: "loading", t: { id: "Loading", en: "Loading" } },
   { k: "landing", t: { id: "Landing", en: "Landing" } },
   { k: "ob1", t: { id: "Onboarding 1 · Dompet", en: "Onboarding 1 · Wallet" } },
-  { k: "ob2", t: { id: "Onboarding 2 · World ID", en: "Onboarding 2 · World ID" } },
+  { k: "ob2", t: { id: "Onboarding 2 · Tiket", en: "Onboarding 2 · Tickets" } },
   { k: "ob3", t: { id: "Onboarding 3 · Smart Account", en: "Onboarding 3 · Smart Account" } },
   { k: "ob4", t: { id: "Onboarding 4 · Izin Aman ★", en: "Onboarding 4 · Permission ★" } },
   { k: "ob5", t: { id: "Onboarding 5 · Setor", en: "Onboarding 5 · Deposit" } },

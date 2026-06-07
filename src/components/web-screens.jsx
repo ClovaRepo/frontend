@@ -2,6 +2,23 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 import { MainHead } from './web-app.jsx';
 
+const BACKEND_URL = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_BACKEND_URL) || "http://localhost:3001";
+
+function useDecisionsW() {
+  const [decisions, setDecisions] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const fetch_ = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/decisions`);
+      if (res.ok) setDecisions(await res.json());
+    } catch (_) {}
+    setLoading(false);
+  }, []);
+  useEffect(() => { fetch_(); }, [fetch_]);
+  return { decisions, loading, refresh: fetch_ };
+}
+
 /* ============================================================
    CLOVA WEB — Keeper, Pool, Log, Settings, Draw overlay, modals
    ============================================================ */
@@ -21,21 +38,37 @@ function StatePillW({ tone = "load", children }) {
   );
 }
 
+const STATIC_TIMELINE_W = [
+  { r: 11, type: "stay", reason: { id: "Selisih bunga dengan Compound terlalu kecil untuk menutup gas.", en: "Yield gap vs Compound too small to cover gas." } },
+  { r: 10, type: "move", to: "Moonwell", reason: { id: "Bunga naik signifikan & audit baru lulus.", en: "Yield jumped and a fresh audit passed." } },
+  { r: 8, type: "stay", reason: { id: "Ada kabar eksploit di protokol lain — hindari risiko.", en: "Exploit news elsewhere — avoid the risk." } },
+  { r: 7, type: "stay", reason: { id: "Kondisi stabil, tak ada alasan memindahkan dana.", en: "Stable conditions, no reason to move funds." } },
+];
+
 /* ===================== KEEPER / PANEL AI ===================== */
 function WebKeeper({ lang, t, go }) {
+  const { decisions, loading: apiLoading, refresh } = useDecisionsW();
   const [refreshing, setRefreshing] = useState(false);
-  const chips = [
+  const latest = decisions?.[0];
+
+  const defaultChips = [
     { i: Icon.coin, l: "APY 4,1%" }, { i: Icon.pool, l: "TVL $1,2B" },
     { i: Icon.shield, l: L(lang, { id: "Audit: bersih", en: "Audit: clean" }) },
     { i: Icon.spark, l: L(lang, { id: "Sentimen: stabil", en: "Sentiment: stable" }) },
     { i: Icon.drop, l: L(lang, { id: "Likuiditas: tinggi", en: "Liquidity: high" }) },
   ];
-  const timeline = [
-    { r: 11, type: "stay", reason: { id: "Selisih bunga dengan Compound terlalu kecil untuk menutup gas.", en: "Yield gap vs Compound too small to cover gas." } },
-    { r: 10, type: "move", to: "Moonwell", reason: { id: "Bunga naik signifikan & audit baru lulus.", en: "Yield jumped and a fresh audit passed." } },
-    { r: 8, type: "stay", reason: { id: "Ada kabar eksploit di protokol lain — hindari risiko.", en: "Exploit news elsewhere — avoid the risk." } },
-    { r: 7, type: "stay", reason: { id: "Kondisi stabil, tak ada alasan memindahkan dana.", en: "Stable conditions, no reason to move funds." } },
-  ];
+  const chips = latest?.protocolSignals?.length > 0
+    ? latest.protocolSignals.slice(0, 5).map((s) => ({ i: Icon.coin, l: `${s.name} APY ${s.apy?.toFixed(1)}%` }))
+    : defaultChips;
+
+  const timeline = decisions
+    ? decisions.slice(0, 8).map((d) => ({
+        r: d.round,
+        type: d.recommendation === "TETAP" || d.recommendation === "STAY" ? "stay" : "move",
+        to: d.recommendation !== "TETAP" && d.recommendation !== "STAY" ? d.recommendation : undefined,
+        reason: { id: d.reasoning, en: d.reasoning },
+      }))
+    : STATIC_TIMELINE_W;
   return (
     <div className="main">
       <MainHead lang={lang} go={go} title={L(lang, { id: "Pemelihara AI", en: "AI Keeper" })} sub={L(lang, { id: "Setiap keputusan dijelaskan terbuka.", en: "Every decision explained openly." })} />
@@ -51,22 +84,32 @@ function WebKeeper({ lang, t, go }) {
         <div className="bento">
           {/* latest decision */}
           <Reveal delay={60} className="col-7">
-            <div className="card card-pad-lg" style={{ overflow: "hidden", position: "relative", opacity: refreshing ? .5 : 1, transition: "opacity .4s" }}>
+            <div className="card card-pad-lg" style={{ overflow: "hidden", position: "relative", opacity: refreshing || apiLoading ? .5 : 1, transition: "opacity .4s" }}>
               <CloverWatermark corner="br" size={170} opacity={0.05} />
               <div className="row between aic" style={{ marginBottom: 14 }}>
-                <span className="badge" style={{ background: "var(--clover)", color: "#F4FBF6", fontSize: 15, padding: "10px 18px" }}><Icon.check size={16} stroke="#F4FBF6" sw={2.4} /> {L(lang, { id: "TETAP DI AAVE", en: "STAY ON AAVE" })}</span>
-                {refreshing && <span style={{ width: 20, height: 20, borderRadius: "50%", border: "2.5px solid color-mix(in srgb,var(--clover) 30%, transparent)", borderTopColor: "var(--clover)", animation: "spinClover .8s linear infinite" }} />}
+                <span className="badge" style={{ background: latest?.recommendation === "TETAP" || latest?.recommendation === "STAY" || !latest ? "var(--clover)" : "var(--gold)", color: "#F4FBF6", fontSize: 15, padding: "10px 18px" }}>
+                  {latest?.recommendation === "TETAP" || latest?.recommendation === "STAY" || !latest
+                    ? <><Icon.check size={16} stroke="#F4FBF6" sw={2.4} /> {L(lang, { id: "TETAP DI AAVE", en: "STAY ON AAVE" })}</>
+                    : <><Icon.arrow size={16} stroke="#F4FBF6" /> {L(lang, { id: "PINDAH KE", en: "MOVE TO" })} {latest.recommendation}</>}
+                </span>
+                {(refreshing || apiLoading) && <span style={{ width: 20, height: 20, borderRadius: "50%", border: "2.5px solid color-mix(in srgb,var(--clover) 30%, transparent)", borderTopColor: "var(--clover)", animation: "spinClover .8s linear infinite" }} />}
               </div>
               <p style={{ fontSize: 16, lineHeight: 1.6, color: "var(--ink)", marginBottom: 18 }}>
-                {L(lang, { id: "Aave punya likuiditas dalam dan tak ada kabar audit negatif minggu ini. Selisih bunga dengan Compound terlalu kecil untuk menutup biaya gas pindah. Maka aku tetap di sini demi keamanan & efisiensi.",
-                           en: "Aave has deep liquidity and no negative audit news this week. The yield gap with Compound is too small to cover the gas of moving. So I'm staying here for safety and efficiency." })}
+                {latest?.reasoning
+                  ? latest.reasoning
+                  : L(lang, { id: "Aave punya likuiditas dalam dan tak ada kabar audit negatif minggu ini. Selisih bunga dengan Compound terlalu kecil untuk menutup biaya gas pindah. Maka aku tetap di sini demi keamanan & efisiensi.",
+                             en: "Aave has deep liquidity and no negative audit news this week. The yield gap with Compound is too small to cover the gas of moving. So I'm staying here for safety and efficiency." })}
               </p>
               <div className="row gap-8 wrap" style={{ marginBottom: 16 }}>
                 {chips.map((c, i) => <span key={i} className="chip"><c.i size={14} stroke="var(--clover-deep)" /> {c.l}</span>)}
               </div>
               <div className="row between aic">
-                <span className="row aic gap-8 tiny" style={{ color: "var(--ink-45)", fontWeight: 600 }}><Icon.history size={14} stroke="var(--ink-45)" /> {L(lang, { id: "Dievaluasi 2 jam lalu · Dibayar mandiri (x402)", en: "Evaluated 2h ago · Self-paid (x402)" })}</span>
-                <button className="btn btn-secondary btn-sm" onClick={() => { setRefreshing(true); setTimeout(() => setRefreshing(false), 1600); }}><Icon.spark size={15} stroke="var(--clover-deep)" /> {L(lang, { id: "Segarkan", en: "Refresh" })}</button>
+                <span className="row aic gap-8 tiny" style={{ color: "var(--ink-45)", fontWeight: 600 }}><Icon.history size={14} stroke="var(--ink-45)" />
+                  {latest
+                    ? `${L(lang, { id: "Dievaluasi", en: "Evaluated" })} ${new Date(latest.timestamp).toLocaleTimeString()} · ${L(lang, { id: "Dibayar mandiri (x402)", en: "Self-paid (x402)" })}`
+                    : L(lang, { id: "Dievaluasi 2 jam lalu · Dibayar mandiri (x402)", en: "Evaluated 2h ago · Self-paid (x402)" })}
+                </span>
+                <button className="btn btn-secondary btn-sm" onClick={() => { setRefreshing(true); refresh().finally(() => setRefreshing(false)); }}><Icon.spark size={15} stroke="var(--clover-deep)" /> {L(lang, { id: "Segarkan", en: "Refresh" })}</button>
               </div>
             </div>
           </Reveal>
@@ -233,7 +276,7 @@ function WebSettings({ lang, setLang, openModal, t, go }) {
               <div className="head" style={{ fontSize: 17, marginBottom: 8 }}>{L(lang, { id: "Akun", en: "Account" })}</div>
               {[{ i: Icon.wallet, l: { id: "Alamat dompet", en: "Wallet" }, v: "0x12…9aF3", b: <Icon.copy size={16} stroke="var(--clover)" /> },
                 { i: Icon.spark, l: { id: "Akun Pintar", en: "Smart Account" }, b: <span className="badge badge-active" style={{ fontSize: 10.5, padding: "3px 9px" }}>{L(lang, { id: "Aktif", en: "Active" })}</span> },
-                { i: Icon.globe, l: { id: "World ID" , en: "World ID"}, b: <span className="badge badge-safe" style={{ fontSize: 10.5, padding: "3px 9px" }}>{L(lang, { id: "Terverifikasi", en: "Verified" })}</span> },
+                { i: Icon.leaf, l: { id: "Peluang Menang", en: "Win Chance" }, b: <span className="badge badge-active" style={{ fontSize: 10.5, padding: "3px 9px" }}>12,5%</span> },
                 { i: Icon.pool, l: { id: "Jaringan", en: "Network" }, b: <span className="badge badge-soft">Base</span> }].map((row, i) => (
                 <div key={i} className="row between aic" style={{ padding: "14px 0", borderBottom: i < 3 ? "1px solid var(--hairline)" : "none" }}>
                   <div className="row aic gap-10"><row.i size={18} stroke="var(--forest-70)" /><span style={{ fontSize: 14.5, fontWeight: 500 }}>{L(lang, row.l)}</span></div>

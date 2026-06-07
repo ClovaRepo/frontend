@@ -84,7 +84,7 @@ function WebLanding({ lang, setLang, t, onEnter }) {
             </Reveal>
             <Reveal delay={300} className="row gap-10 wrap" style={{ marginTop: 26 }}>
               {[{ i: Icon.shieldLeaf, t: { id: "Modal tak tersentuh", en: "Principal untouched" } },
-                { i: Icon.leaf, t: { id: "1 manusia, 1 tiket", en: "1 human, 1 ticket" } },
+                { i: Icon.leaf, t: { id: "Peluang proporsional deposit", en: "Proportional deposit chance" } },
                 { i: Icon.robot, t: { id: "Keputusan AI dijelaskan", en: "AI decisions explained" } }].map((c, i) => (
                 <span key={i} className="chip"><c.i size={16} stroke="var(--clover-deep)" /> {L(lang, c.t)}</span>
               ))}

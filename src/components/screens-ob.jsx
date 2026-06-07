@@ -22,7 +22,7 @@ function useFlow(initial = "idle") {
 
 const OB_LABELS = (lang) => [
   L(lang, { id: "Hubungkan", en: "Connect" }),
-  L(lang, { id: "Verifikasi", en: "Verify" }),
+  L(lang, { id: "Tiketmu", en: "Tickets" }),
   L(lang, { id: "Aktifkan", en: "Activate" }),
   L(lang, { id: "Izin Aman", en: "Permit" }),
   L(lang, { id: "Setor", en: "Deposit" }),
@@ -170,62 +170,50 @@ function ScreenOB1({ lang, go, t }) {
   );
 }
 
-/* -------- 4. OB2 — World ID human verify -------- */
+/* -------- 4. OB2 — Proportional Ticket Explanation -------- */
 function ScreenOB2({ lang, go, t }) {
-  const [state, setState, run] = useFlow("idle"); // idle, qr, loading, ok
+  const users = [
+    { label: { id: "Kamu · $500", en: "You · $500" }, weight: 0.5, highlight: true },
+    { label: { id: "Penanam A · $300", en: "Planter A · $300" }, weight: 0.3, highlight: false },
+    { label: { id: "Penanam B · $200", en: "Planter B · $200" }, weight: 0.2, highlight: false },
+  ];
   return (
     <OBShell lang={lang} step={2} t={t}>
-      <div className="card reveal" style={{ padding: "26px 22px", textAlign: "center", overflow: "hidden" }}>
+      <div className="card reveal" style={{ padding: "26px 22px", overflow: "hidden" }}>
         <CloverWatermark corner="bl" size={130} opacity={0.05} />
-        {state === "ok" ? (
-          <div className="reveal">
-            <div style={{ display: "grid", placeItems: "center", marginBottom: 12, animation: "bloomPop .7s var(--ease-back)" }}>
-              <Clover size={64} color="var(--clover)" stem={false} />
-            </div>
-            <h1 style={{ fontSize: 25, marginBottom: 8 }}>{L(lang, { id: "Terverifikasi sebagai manusia", en: "Verified as human" })}</h1>
-            <span className="badge badge-active" style={{ marginBottom: 20 }}><Icon.check size={14} stroke="var(--clover-deep)" sw={2.4} /> {L(lang, { id: "Satu manusia, satu tiket", en: "One human, one ticket" })}</span>
-            <button className="btn btn-primary btn-block btn-lg" onClick={() => go("ob3")}>{L(lang, { id: "Lanjut", en: "Continue" })} <Icon.arrow size={18} stroke="#F4FBF6" /></button>
-          </div>
-        ) : (
-          <>
-            <div style={{ display: "grid", placeItems: "center", marginBottom: 16 }}>
-              <div style={{ width: 80, height: 80, borderRadius: "50%", background: "var(--sage)", display: "grid", placeItems: "center", position: "relative" }}>
-                <Icon.shieldLeaf size={38} stroke="var(--clover-deep)" />
+        <h1 style={{ fontSize: 25, marginBottom: 8 }}>{L(lang, { id: "Tiketmu = depositmu 🍀", en: "Your ticket = your deposit 🍀" })}</h1>
+        <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.55, marginBottom: 20 }}>
+          {L(lang, { id: "Peluang menangmu proporsional dengan seberapa besar kontribusimu ke kolam. Deposit lebih besar berarti peluang lebih besar.",
+                     en: "Your winning chance is proportional to how much you contribute to the pool. A bigger deposit means a bigger chance." })}
+        </p>
+
+        {/* Proportion bars */}
+        <div className="col gap-10" style={{ marginBottom: 20 }}>
+          {users.map((u, i) => (
+            <div key={i}>
+              <div className="row between aic" style={{ marginBottom: 4 }}>
+                <span className="tiny" style={{ fontWeight: 700, color: u.highlight ? "var(--clover-deep)" : "var(--ink-45)" }}>{L(lang, u.label)}</span>
+                <span className="tnum tiny" style={{ fontWeight: 700, color: u.highlight ? "var(--clover)" : "var(--ink-45)" }}>{Math.round(u.weight * 100)}%</span>
+              </div>
+              <div style={{ height: 10, borderRadius: 6, background: "var(--sage)" }}>
+                <div style={{ height: "100%", borderRadius: 6, width: `${u.weight * 100}%`,
+                  background: u.highlight ? "var(--clover)" : "color-mix(in srgb,var(--clover) 40%, transparent)",
+                  transition: "width .6s var(--ease-back)" }} />
               </div>
             </div>
-            <h1 style={{ fontSize: 25, marginBottom: 8 }}>{L(lang, { id: "Satu manusia, satu tiket 🍀", en: "One human, one ticket 🍀" })}</h1>
-            <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.55, marginBottom: 18 }}>
-              {L(lang, { id: "Supaya undian benar-benar adil dan tahan kecurangan, tiap orang hanya boleh punya satu tiket. Verifikasi sebagai manusia unik lewat World ID — tanpa membuka identitasmu.",
-                         en: "So the draw is truly fair and cheat-proof, each person may hold only one ticket. Verify as a unique human via World ID — without revealing your identity." })}
-            </p>
+          ))}
+        </div>
 
-            {state === "qr" && (
-              <div className="reveal" style={{ marginBottom: 18 }}>
-                <div style={{ width: 168, height: 168, margin: "0 auto", borderRadius: 20, background: "var(--canvas-2)", display: "grid", placeItems: "center",
-                  boxShadow: "inset 0 0 0 2px var(--clover), 0 0 0 8px color-mix(in srgb,var(--clover) 8%, transparent)", position: "relative" }}>
-                  <div style={{ width: 124, height: 124, borderRadius: 10, background: "conic-gradient(from 0deg, var(--forest) 0 25%, transparent 0 50%, var(--forest) 0 75%, transparent 0)", backgroundSize: "18px 18px", maskImage: "radial-gradient(circle, #000 70%, transparent 72%)" }} />
-                  <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}><Clover size={34} color="var(--clover)" stem={false} /></div>
-                </div>
-                <div className="muted tiny" style={{ marginTop: 12 }}>{L(lang, { id: "Pindai dengan World App", en: "Scan with World App" })}</div>
-              </div>
-            )}
-            {state === "loading" && <div style={{ marginBottom: 18 }}><StatePill tone="load">{L(lang, { id: "Memverifikasi…", en: "Verifying…" })}</StatePill></div>}
+        <div className="card card-sage row aic gap-10" style={{ padding: "13px 15px", marginBottom: 18 }}>
+          <Icon.shieldLeaf size={22} stroke="var(--clover-deep)" />
+          <span className="tiny" style={{ lineHeight: 1.4, fontWeight: 600, color: "var(--forest)" }}>
+            {L(lang, { id: "Anti-kecurangan: memecah $1.000 ke 10 dompet × $100 tidak menguntungkan — bobot total tetap sama.", en: "Cheat-proof: splitting $1,000 into 10 wallets × $100 is no advantage — total weight stays identical." })}
+          </span>
+        </div>
 
-            {state === "idle" && (
-              <div className="row gap-8 center wrap" style={{ justifyContent: "center", marginBottom: 18 }}>
-                {[{ id: "Privat", en: "Private" }, { id: "Sekali saja", en: "Once only" }, { id: "Anti-bot", en: "Anti-bot" }].map((c, i) => (
-                  <span key={i} className="chip tiny">{L(lang, c)}</span>
-                ))}
-              </div>
-            )}
-
-            <button className="btn btn-primary btn-block btn-lg" disabled={state === "loading"}
-              onClick={() => { if (state === "idle") run([["qr", 1800], ["loading", 1300], ["ok", 0]]); }}>
-              <Icon.globe size={19} stroke="#F4FBF6" /> {L(lang, { id: "Verifikasi dengan World ID", en: "Verify with World ID" })}
-            </button>
-            <button className="tlink" style={{ marginTop: 12 }} onClick={() => go("ob3")}>{L(lang, { id: "Lewati untuk demo", en: "Skip for demo" })}</button>
-          </>
-        )}
+        <button className="btn btn-primary btn-block btn-lg" onClick={() => go("ob3")}>
+          {L(lang, { id: "Lanjut", en: "Continue" })} <Icon.arrow size={18} stroke="#F4FBF6" />
+        </button>
       </div>
     </OBShell>
   );
@@ -381,12 +369,23 @@ function ScreenOB4({ lang, go, t }) {
 }
 
 /* -------- 7. OB5 — Deposit & start planting -------- */
+const CROSS_CHAINS = [
+  { id: "base", label: "Base", icon: "🔵", native: true },
+  { id: "eth", label: "Ethereum", icon: "⟠" },
+  { id: "arb", label: "Arbitrum", icon: "🔷" },
+  { id: "op", label: "Optimism", icon: "🔴" },
+  { id: "polygon", label: "Polygon", icon: "🟣" },
+];
+
 function ScreenOB5({ lang, go, t }) {
   const [amt, setAmt] = useState(100);
   const [state, setState, run] = useFlow("idle"); // idle, approve, deposit, ok
+  const [srcChain, setSrcChain] = useState("base");
+  const [showChains, setShowChains] = useState(false);
   const balance = 540;
   const grow = Math.min(1, amt / 300);
   const quick = [50, 100, 250];
+  const selectedChain = CROSS_CHAINS.find((c) => c.id === srcChain);
 
   if (state === "ok") {
     return (
@@ -439,13 +438,49 @@ function ScreenOB5({ lang, go, t }) {
         <div className="tiny muted" style={{ lineHeight: 1.5 }}>{L(lang, { id: "Selalu bisa kamu tarik. Perkiraan bunga jadi tiket hadiah tiap ronde.", en: "Always withdrawable. Estimated yield becomes your prize ticket each round." })}</div>
       </div>
 
-      <div style={{ marginTop: 18 }}>
+      {/* Cross-chain deposit via LI.FI */}
+      <div className="reveal" style={{ marginTop: 14 }}>
+        <button className="row between aic" style={{ width: "100%", background: "var(--canvas-2)", border: "1.5px solid var(--hairline)", borderRadius: 14, padding: "12px 16px", cursor: "pointer" }}
+          onClick={() => setShowChains(!showChains)}>
+          <span className="row aic gap-8 tiny" style={{ fontWeight: 600, color: "var(--ink)" }}>
+            <Icon.globe size={16} stroke="var(--forest-70)" />
+            {L(lang, { id: "Dari chain lain?", en: "From another chain?" })}
+            <span style={{ fontWeight: 400, color: "var(--ink-45)" }}>{L(lang, { id: "— LI.FI akan jembatani otomatis", en: "— LI.FI bridges automatically" })}</span>
+          </span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--clover)", marginLeft: 8 }}>
+            {selectedChain?.icon} {selectedChain?.label}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink-45)" strokeWidth="2.5" strokeLinecap="round" style={{ marginLeft: 4, transform: showChains ? "rotate(180deg)" : "none", transition: "transform .2s" }}><path d="M6 9l6 6 6-6" /></svg>
+          </span>
+        </button>
+        {showChains && (
+          <div className="reveal" style={{ background: "var(--canvas-2)", border: "1.5px solid var(--hairline)", borderRadius: 14, padding: "10px 8px", marginTop: 4 }}>
+            <div className="row gap-6 wrap" style={{ padding: "4px 6px" }}>
+              {CROSS_CHAINS.map((c) => (
+                <button key={c.id} onClick={() => { setSrcChain(c.id); setShowChains(false); }}
+                  className={"chip" + (srcChain === c.id ? " chip-on" : "")} style={{ cursor: "pointer", fontSize: 13 }}>
+                  {c.icon} {c.label}
+                </button>
+              ))}
+            </div>
+            {srcChain !== "base" && (
+              <div className="tiny muted" style={{ padding: "8px 8px 4px", lineHeight: 1.4 }}>
+                {L(lang, { id: "LI.FI otomatis jembatani USDC dari", en: "LI.FI will automatically bridge USDC from" })} {selectedChain?.label} → Base. {L(lang, { id: "Biaya jembatan ditampilkan sebelum konfirmasi.", en: "Bridge fee shown before you confirm." })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginTop: 16 }}>
         {state === "approve" ? <StatePill tone="load">{L(lang, { id: "Mengizinkan USDC…", en: "Approving USDC…" })}</StatePill>
-          : state === "deposit" ? <StatePill tone="load">{L(lang, { id: "Menanam…", en: "Planting…" })}</StatePill>
+          : state === "deposit" ? <StatePill tone="load">{srcChain !== "base" ? L(lang, { id: "Menjembatani & menanam…", en: "Bridging & planting…" }) : L(lang, { id: "Menanam…", en: "Planting…" })}</StatePill>
           : (
             <>
               <button className="btn btn-primary btn-block btn-lg" disabled={amt <= 0} onClick={() => run([["approve", 1300], ["deposit", 1500], ["ok", 0]])}>
-                <Icon.sprout size={19} stroke="#F4FBF6" /> {L(lang, { id: "Setor & Mulai", en: "Deposit & Start" })}
+                <Icon.sprout size={19} stroke="#F4FBF6" />
+                {srcChain !== "base"
+                  ? L(lang, { id: "Jembatani & Setor", en: "Bridge & Deposit" })
+                  : L(lang, { id: "Setor & Mulai", en: "Deposit & Start" })}
               </button>
               <div className="muted tiny center" style={{ marginTop: 12 }}>{L(lang, { id: "Modalmu tetap milikmu. Hanya bunga yang ikut diundi.", en: "Your principal stays yours. Only the yield enters the draw." })}</div>
             </>

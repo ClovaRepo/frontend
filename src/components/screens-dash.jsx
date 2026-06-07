@@ -213,6 +213,25 @@ function ScreenDashboard({ lang, go, t, openModal }) {
   );
 }
 
+const BACKEND_URL = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_BACKEND_URL) || "http://localhost:3001";
+
+function useDecisions() {
+  const [decisions, setDecisions] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetch_ = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/decisions`);
+      if (res.ok) setDecisions(await res.json());
+    } catch (_) {}
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetch_(); }, [fetch_]);
+  return { decisions, loading, refresh: fetch_ };
+}
+
 /* ====================== PANEL TRANSPARANSI AI ====================== */
 function SignalChip({ icon: I, label, delay }) {
   return (
@@ -222,13 +241,27 @@ function SignalChip({ icon: I, label, delay }) {
   );
 }
 
+const STATIC_TIMELINE = [
+  { r: 11, type: "stay", reason: { id: "Selisih bunga dengan Compound terlalu kecil untuk menutup gas.", en: "Yield gap vs Compound too small to cover gas." }, ok: true },
+  { r: 10, type: "move", to: "Moonwell", reason: { id: "Bunga naik signifikan & audit baru lulus.", en: "Yield jumped and a fresh audit passed." }, ok: true },
+  { r: 8, type: "stay", reason: { id: "Ada kabar eksploit di protokol lain — hindari risiko.", en: "Exploit news elsewhere — avoid the risk." }, ok: true },
+];
+
 function ScreenPanelAI({ lang, go, t }) {
+  const { decisions, loading: apiLoading, refresh } = useDecisions();
   const [refreshing, setRefreshing] = useState(false);
-  const timeline = [
-    { r: 11, type: "stay", reason: { id: "Selisih bunga dengan Compound terlalu kecil untuk menutup gas.", en: "Yield gap vs Compound too small to cover gas." }, ok: true },
-    { r: 10, type: "move", to: "Moonwell", reason: { id: "Bunga naik signifikan & audit baru lulus.", en: "Yield jumped and a fresh audit passed." }, ok: true },
-    { r: 8, type: "stay", reason: { id: "Ada kabar eksploit di protokol lain — hindari risiko.", en: "Exploit news elsewhere — avoid the risk." }, ok: true },
-  ];
+
+  const timeline = decisions
+    ? decisions.slice(0, 8).map((d) => ({
+        r: d.round,
+        type: d.recommendation === "TETAP" || d.recommendation === "STAY" ? "stay" : "move",
+        to: d.recommendation !== "TETAP" && d.recommendation !== "STAY" ? d.recommendation : undefined,
+        reason: { id: d.reasoning, en: d.reasoning },
+        ok: true,
+      }))
+    : STATIC_TIMELINE;
+
+  const latest = decisions?.[0];
 
   return (
     <div className="screen" style={{ paddingBottom: 90 }}>
@@ -249,33 +282,46 @@ function ScreenPanelAI({ lang, go, t }) {
 
         {/* latest decision card */}
         <div className="card reveal" style={{ animationDelay: "120ms", padding: "20px 20px", overflow: "hidden", position: "relative",
-          opacity: refreshing ? 0.5 : 1, transition: "opacity .4s" }}>
+          opacity: refreshing || apiLoading ? 0.5 : 1, transition: "opacity .4s" }}>
           <CloverWatermark corner="br" size={130} opacity={0.05} />
           <div className="row between aic" style={{ marginBottom: 12 }}>
-            <span className="badge" style={{ background: "var(--clover)", color: "#F4FBF6", fontSize: 14, padding: "9px 16px" }}>
-              <Icon.check size={15} stroke="#F4FBF6" sw={2.4} /> {L(lang, { id: "TETAP DI AAVE", en: "STAY ON AAVE" })}
+            <span className="badge" style={{ background: latest?.recommendation === "TETAP" || latest?.recommendation === "STAY" || !latest ? "var(--clover)" : "var(--gold)", color: "#F4FBF6", fontSize: 14, padding: "9px 16px" }}>
+              {latest?.recommendation === "TETAP" || latest?.recommendation === "STAY" || !latest
+                ? <><Icon.check size={15} stroke="#F4FBF6" sw={2.4} /> {L(lang, { id: "TETAP DI AAVE", en: "STAY ON AAVE" })}</>
+                : <><Icon.arrow size={15} stroke="#F4FBF6" /> {L(lang, { id: "PINDAH KE", en: "MOVE TO" })} {latest.recommendation}</>}
             </span>
-            {refreshing && <span style={{ width: 18, height: 18, borderRadius: "50%", border: "2.5px solid color-mix(in srgb,var(--clover) 30%, transparent)", borderTopColor: "var(--clover)", animation: "spinClover .8s linear infinite" }} />}
+            {(refreshing || apiLoading) && <span style={{ width: 18, height: 18, borderRadius: "50%", border: "2.5px solid color-mix(in srgb,var(--clover) 30%, transparent)", borderTopColor: "var(--clover)", animation: "spinClover .8s linear infinite" }} />}
           </div>
           <p style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink)", marginBottom: 14 }}>
-            {L(lang, { id: "Aave punya likuiditas dalam dan tak ada kabar audit negatif minggu ini. Selisih bunga dengan Compound terlalu kecil untuk menutup biaya gas pindah. Maka aku tetap di sini demi keamanan & efisiensi.",
-                       en: "Aave has deep liquidity and no negative audit news this week. The yield gap with Compound is too small to cover the gas of moving. So I'm staying here for safety and efficiency." })}
+            {latest?.reasoning
+              ? latest.reasoning
+              : L(lang, { id: "Aave punya likuiditas dalam dan tak ada kabar audit negatif minggu ini. Selisih bunga dengan Compound terlalu kecil untuk menutup biaya gas pindah. Maka aku tetap di sini demi keamanan & efisiensi.",
+                         en: "Aave has deep liquidity and no negative audit news this week. The yield gap with Compound is too small to cover the gas of moving. So I'm staying here for safety and efficiency." })}
           </p>
-          <div className="row gap-8 wrap" style={{ marginBottom: 14 }}>
-            <SignalChip icon={Icon.coin} label="APY 4,1%" delay={140} />
-            <SignalChip icon={Icon.pool} label="TVL $1,2B" delay={200} />
-            <SignalChip icon={Icon.shield} label={L(lang, { id: "Audit: bersih", en: "Audit: clean" })} delay={260} />
-            <SignalChip icon={Icon.spark} label={L(lang, { id: "Sentimen: stabil", en: "Sentiment: stable" })} delay={320} />
-            <SignalChip icon={Icon.drop} label={L(lang, { id: "Likuiditas: tinggi", en: "Liquidity: high" })} delay={380} />
-          </div>
+          {latest?.protocolSignals?.length > 0 ? (
+            <div className="row gap-8 wrap" style={{ marginBottom: 14 }}>
+              {latest.protocolSignals.slice(0, 4).map((s, i) => (
+                <SignalChip key={i} icon={Icon.coin} label={`${s.name} APY ${s.apy?.toFixed(1)}%`} delay={140 + i * 60} />
+              ))}
+            </div>
+          ) : (
+            <div className="row gap-8 wrap" style={{ marginBottom: 14 }}>
+              <SignalChip icon={Icon.coin} label="APY 4,1%" delay={140} />
+              <SignalChip icon={Icon.pool} label="TVL $1,2B" delay={200} />
+              <SignalChip icon={Icon.shield} label={L(lang, { id: "Audit: bersih", en: "Audit: clean" })} delay={260} />
+              <SignalChip icon={Icon.spark} label={L(lang, { id: "Sentimen: stabil", en: "Sentiment: stable" })} delay={320} />
+            </div>
+          )}
           <div className="row aic gap-8 tiny" style={{ color: "var(--ink-45)", fontWeight: 600 }}>
             <Icon.history size={14} stroke="var(--ink-45)" />
-            {L(lang, { id: "Dievaluasi 2 jam lalu · Dibayar mandiri oleh agen (x402)", en: "Evaluated 2h ago · Self-paid by the agent (x402)" })}
+            {latest
+              ? `${L(lang, { id: "Dievaluasi", en: "Evaluated" })} ${new Date(latest.timestamp).toLocaleTimeString()} · ${L(lang, { id: "Dibayar mandiri (x402)", en: "Self-paid (x402)" })}`
+              : L(lang, { id: "Dievaluasi 2 jam lalu · Dibayar mandiri oleh agen (x402)", en: "Evaluated 2h ago · Self-paid by the agent (x402)" })}
           </div>
         </div>
 
         <button className="btn btn-secondary btn-block" style={{ marginTop: 14 }}
-          onClick={() => { setRefreshing(true); setTimeout(() => setRefreshing(false), 1600); }}>
+          onClick={() => { setRefreshing(true); refresh().finally(() => setRefreshing(false)); }}>
           <Icon.spark size={17} stroke="var(--clover-deep)" /> {L(lang, { id: "Segarkan pemikiran", en: "Refresh thinking" })}
         </button>
 

@@ -162,14 +162,14 @@ function ScreenDetailRonde({ lang, go, t }) {
             <Clover size={20} color="var(--clover)" stem={false} /><div className="head" style={{ fontSize: 15 }}>{L(lang, { id: "Caramu ikut", en: "Your stake" })}</div>
           </div>
           <div className="row between" style={{ gap: 10 }}>
-            {[{ l: { id: "Modalmu", en: "Principal" }, v: "100" }, { l: { id: "Bunga tersumbang", en: "Yield given" }, v: "+3,42" }, { l: { id: "Tiketmu", en: "Your tickets" }, v: "1" }].map((x, i) => (
+            {[{ l: { id: "Modalmu", en: "Principal" }, v: "100", c: "var(--forest)" }, { l: { id: "Bunga tersumbang", en: "Yield given" }, v: "+3,42", c: "var(--clover)" }, { l: { id: "Peluang Menang", en: "Win Chance" }, v: "12,5%", c: "var(--gold-deep)" }].map((x, i) => (
               <div key={i} style={{ flex: 1 }}>
-                <div className="head tnum" style={{ fontSize: 19, color: i === 1 ? "var(--clover)" : "var(--forest)" }}>{x.v}</div>
+                <div className="head tnum" style={{ fontSize: 19, color: x.c }}>{x.v}</div>
                 <div className="muted tiny">{L(lang, x.l)}</div>
               </div>
             ))}
           </div>
-          <div className="tiny muted" style={{ marginTop: 8 }}>{L(lang, { id: "1 manusia, 1 tiket.", en: "1 human, 1 ticket." })}</div>
+          <div className="tiny muted" style={{ marginTop: 8 }}>{L(lang, { id: "Deposit lebih besar = peluang lebih besar.", en: "Bigger deposit = bigger chance." })}</div>
         </div>
 
         {/* round history */}
@@ -297,7 +297,7 @@ function ScreenPengaturan({ lang, go, t, openModal, setLang }) {
           <div className="head" style={{ fontSize: 15, marginBottom: 4 }}>{L(lang, { id: "Akun", en: "Account" })}</div>
           <SettingRow icon={Icon.wallet} label={L(lang, { id: "Alamat dompet", en: "Wallet" })} value="0x12…9aF3" badge={<Icon.copy size={16} stroke="var(--clover)" />} />
           <SettingRow icon={Icon.spark} label={L(lang, { id: "Akun Pintar", en: "Smart Account" })} badge={<span className="badge badge-active" style={{ fontSize: 10.5, padding: "3px 9px" }}>{L(lang, { id: "Aktif", en: "Active" })}</span>} />
-          <SettingRow icon={Icon.globe} label="World ID" badge={<span className="badge badge-safe" style={{ fontSize: 10.5, padding: "3px 9px" }}><Clover size={11} color="var(--clover-deep)" stem={false} /> {L(lang, { id: "Terverifikasi", en: "Verified" })}</span>} />
+          <SettingRow icon={Icon.leaf} label={L(lang, { id: "Peluang Menang", en: "Win Chance" })} badge={<span className="badge badge-active" style={{ fontSize: 10.5, padding: "3px 9px" }}><Icon.leaf size={11} stroke="var(--clover-deep)" /> 12,5%</span>} />
           <div className="row between aic" style={{ padding: "13px 2px 4px" }}>
             <div className="row aic gap-10"><Icon.pool size={18} stroke="var(--forest-70)" /><span style={{ fontSize: 14, fontWeight: 500 }}>{L(lang, { id: "Jaringan", en: "Network" })}</span></div>
             <span className="badge badge-soft">Base</span>

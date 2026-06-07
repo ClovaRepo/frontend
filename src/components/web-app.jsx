@@ -202,12 +202,12 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
               <CloverWatermark corner="br" size={120} opacity={0.06} />
               <div className="head" style={{ fontSize: 16, marginBottom: 16 }}>{L(lang, { id: "Caramu ikut", en: "Your stake" })}</div>
               <div className="row between" style={{ gap: 10 }}>
-                {[{ l: { id: "Modalmu", en: "Principal" }, v: "100" }, { l: { id: "Bunga", en: "Yield" }, v: "+3,42", c: "var(--clover)" }, { l: { id: "Tiketmu", en: "Tickets" }, v: "1" }].map((x, i) => (
+                {[{ l: { id: "Modalmu", en: "Principal" }, v: "100" }, { l: { id: "Bunga", en: "Yield" }, v: "+3,42", c: "var(--clover)" }, { l: { id: "Peluang Menang", en: "Win Chance" }, v: "12,5%", c: "var(--gold-deep)" }].map((x, i) => (
                   <div key={i} style={{ flex: 1 }}><div className="head tnum" style={{ fontSize: 24, color: x.c || "var(--forest)" }}>{x.v}</div><div className="muted tiny">{L(lang, x.l)}</div></div>
                 ))}
               </div>
               <div className="vine-divide" />
-              <div className="row aic gap-8 tiny muted"><Clover size={14} color="var(--clover)" stem={false} /> {L(lang, { id: "1 manusia, 1 tiket — undian adil via VRF.", en: "1 human, 1 ticket — fair draw via VRF." })}</div>
+              <div className="row aic gap-8 tiny muted"><Icon.leaf size={14} stroke="var(--clover)" /> {L(lang, { id: "Deposit lebih besar = peluang menang lebih besar — undian adil via VRF.", en: "Bigger deposit = bigger win chance — fair draw via VRF." })}</div>
             </div>
           </Reveal>
 
