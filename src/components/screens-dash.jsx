@@ -5,16 +5,66 @@ import { L, fmt, nfmt, clickable, growFromUsdc, useCountUp, CountUp, Clover, Wor
    CLOVA, Dashboard ("Kebunku") with 3 layout variants + Panel AI
    ============================================================ */
 
+const WALLET_ADDR = "0x12…9aF3";
+const WALLET_ADDR_FULL = "0x1234567890aBcDeF1234567890AbCdEf129aF3";
+
+/* Tappable wallet chip → popup with copy address + disconnect. */
+function WalletMenu({ lang, go }) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(WALLET_ADDR_FULL); } catch {}
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+  };
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button className="chip tiny" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}
+        style={{ padding: "7px 11px", cursor: "pointer" }}>
+        <span className="tnum">{WALLET_ADDR}</span>
+        <Clover size={13} color="var(--clover)" stem={false} />
+      </button>
+      {open && (
+        <div role="menu" className="card" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 80,
+          width: 232, padding: 8, boxShadow: "var(--shadow-lift)", animation: "riseIn .18s var(--ease-soft)" }}>
+          <div className="row aic gap-8" style={{ padding: "8px 10px 10px" }}>
+            <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--sage)", display: "grid", placeItems: "center", flex: "0 0 auto" }}><Icon.wallet size={16} stroke="var(--clover-deep)" /></div>
+            <div style={{ minWidth: 0 }}>
+              <div className="tnum" style={{ fontWeight: 700, fontSize: 13.5, color: "var(--forest)" }}>{WALLET_ADDR}</div>
+              <div className="tiny" style={{ color: "var(--clover-deep)", fontWeight: 600 }}>{L(lang, { id: "Terverifikasi", en: "Verified" })}</div>
+            </div>
+          </div>
+          <button role="menuitem" className="wallet-menu-item" onClick={copy}>
+            <Icon.copy size={17} stroke={copied ? "var(--clover)" : "var(--forest-70)"} />
+            <span>{copied ? L(lang, { id: "Tersalin!", en: "Copied!" }) : L(lang, { id: "Salin alamat", en: "Copy address" })}</span>
+            {copied && <Icon.check size={15} stroke="var(--clover)" sw={2.4} style={{ marginLeft: "auto" }} />}
+          </button>
+          <button role="menuitem" className="wallet-menu-item danger" onClick={() => { setOpen(false); go("landing"); }}>
+            <Icon.lock size={17} stroke="var(--danger)" />
+            <span>{L(lang, { id: "Putuskan dompet", en: "Disconnect wallet" })}</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DashTopBar({ lang, go }) {
   return (
     <div className="row between aic" style={{ padding: "16px 18px 10px", position: "sticky", top: 0, zIndex: 20,
       background: "linear-gradient(var(--canvas), color-mix(in srgb,var(--canvas) 80%, transparent))", backdropFilter: "blur(8px)" }}>
       <Wordmark size={24} />
       <div className="row aic gap-8">
-        <span className="chip tiny" style={{ padding: "7px 11px" }}>
-          <span className="tnum">0x12…9aF3</span>
-          <Clover size={13} color="var(--clover)" stem={false} />
-        </span>
+        <WalletMenu lang={lang} go={go} />
         <button onClick={() => go("riwayat")} aria-label={L(lang, { id: "Notifikasi", en: "Notifications" })} style={{ width: 42, height: 42, borderRadius: "50%", border: "none", background: "var(--canvas-2)", boxShadow: "var(--shadow-card)", display: "grid", placeItems: "center", cursor: "pointer", position: "relative" }}>
           <Icon.bell size={19} stroke="var(--forest)" />
           <span style={{ position: "absolute", top: 8, right: 9, width: 8, height: 8, borderRadius: "50%", background: "var(--gold)", boxShadow: "0 0 0 2px var(--canvas-2)" }} />

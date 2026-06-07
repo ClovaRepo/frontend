@@ -237,6 +237,18 @@ button.chip:hover { background: color-mix(in srgb, var(--sage) 60%, var(--canvas
 button.chip.chip-on:hover { background: var(--clover-deep); box-shadow: none; }
 button.chip:active { transform: scale(.96); }
 
+/* wallet popup menu items */
+.wallet-menu-item {
+  display: flex; align-items: center; gap: 11px; width: 100%;
+  padding: 11px 12px; border-radius: 12px; border: none; background: transparent;
+  cursor: pointer; text-align: left; font-family: var(--font-body);
+  font-weight: 600; font-size: 14px; color: var(--ink);
+  transition: background .15s var(--ease-soft);
+}
+.wallet-menu-item:hover { background: var(--sage); }
+.wallet-menu-item.danger { color: var(--danger); }
+.wallet-menu-item.danger:hover { background: color-mix(in srgb, var(--danger) 9%, transparent); }
+
 /* dotted vine divider */
 .vine-divide {
   height: 0; border: none;
