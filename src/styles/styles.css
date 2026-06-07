@@ -1,5 +1,5 @@
 /* ============================================================
-   CLOVA — botanical / "growing garden" fintech design system
+   CLOVA, botanical / "growing garden" fintech design system
    Light theme. Jade green + warm cream. Gold ONLY for prizes/wins.
    ============================================================ */
 
@@ -8,13 +8,13 @@
   /* Brand palette (overridable by Tweaks via --clover etc.) */
   --canvas:      #F4F1E8;  /* warm paper cream */
   --canvas-2:    #F8F6EF;  /* lighter cream */
-  --clover:      #2FA56B;  /* jade — primary */
+  --clover:      #2FA56B;  /* jade, primary */
   --clover-deep: #248355;  /* pressed / deep jade */
   --leaf:        #6BCB95;  /* bright leaf highlight */
   --forest:      #143A2A;  /* dark titles / strong text */
   --sage:        #E7F1E9;  /* soft card surface */
   --sage-2:      #DCEDE1;  /* soft card surface 2 */
-  --gold:        #D9A441;  /* luck/prize — sparse accent */
+  --gold:        #D9A441;  /* luck/prize, sparse accent */
   --gold-deep:   #9C6B1E;  /* gold ink */
   --ink:         #25342B;  /* body ink (green-black) */
   --danger:      #C2603F;  /* withdraw / revoke (rare) */
@@ -48,7 +48,7 @@ html, body { margin: 0; padding: 0; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 :root { color-scheme: light; accent-color: var(--clover); }
 
-/* keyboard focus only — no ring on mouse/touch */
+/* keyboard focus only, no ring on mouse/touch */
 :focus:not(:focus-visible) { outline: none; }
 :focus-visible {
   outline: 2.5px solid color-mix(in srgb, var(--clover) 60%, transparent);
@@ -295,7 +295,7 @@ h1, h2, h3, .head {
 /* gentle screen/stage cross-fade (opacity-only → safe for sticky headers) */
 @keyframes screenIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* pixel-tree breeze — very subtle, anchored at the ground */
+/* pixel-tree breeze, very subtle, anchored at the ground */
 @keyframes pixeltreeSway {
   0%,100% { transform: rotate(-1.2deg); }
   50%     { transform: rotate(1.2deg); }

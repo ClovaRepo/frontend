@@ -6,7 +6,7 @@ const DESCRIPTION =
 export const metadata = {
   applicationName: "Clova",
   title: {
-    default: "Clova — no-loss prize-linked savings",
+    default: "Clova, no-loss prize-linked savings",
     template: "%s · Clova",
   },
   description: DESCRIPTION,
@@ -18,13 +18,13 @@ export const metadata = {
   openGraph: {
     type: "website",
     siteName: "Clova",
-    title: "Clova — no-loss prize-linked savings",
+    title: "Clova, no-loss prize-linked savings",
     description: DESCRIPTION,
     locale: "en_US",
   },
   twitter: {
     card: "summary",
-    title: "Clova — no-loss prize-linked savings",
+    title: "Clova, no-loss prize-linked savings",
     description: DESCRIPTION,
   },
 };

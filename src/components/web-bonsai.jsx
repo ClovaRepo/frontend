@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useMemo } from "react";
 import { L, Icon } from "./shared.jsx";
 
 /* ============================================================
-   SAFETY BONSAI — an annotated pixel-art bonsai. Each safety
+   SAFETY BONSAI, an annotated pixel-art bonsai. Each safety
    guarantee is a callout wired by a thin connector to a branch
    of the tree. The whole scene grows from the roots up on
    scroll, lines draw themselves in, then the foliage breathes.
@@ -27,7 +27,7 @@ const hash = (x, y) => {
 };
 const pick = (arr, h) => arr[Math.floor(h * arr.length) % arr.length];
 
-// foliage pads (ellipses) — top-left heavy, cascading down-right
+// foliage pads (ellipses), top-left heavy, cascading down-right
 const PADS = [
   { cx: 250, cy: 165, rx: 185, ry: 82 },
   { cx: 375, cy: 120, rx: 95, ry: 52 },
@@ -83,7 +83,7 @@ function useBonsaiPixels() {
           px.push({ x: gx * CELL, y: gy * CELL, fill, row: gy });
           continue;
         }
-        // foliage — ragged ellipse edges via noise
+        // foliage, ragged ellipse edges via noise
         let inside = false;
         for (const p of PADS) {
           const e = ((x - p.cx) ** 2) / (p.rx * p.rx) + ((y - p.cy) ** 2) / (p.ry * p.ry);

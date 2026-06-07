@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, PixelTree, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 
 /* ============================================================
-   CLOVA — Screens: Loading (splash) + Landing
+   CLOVA, Screens: Loading (splash) + Landing
    ============================================================ */
 
 /* ---------------- 1. LOADING / SPLASH ---------------- */
@@ -105,7 +105,7 @@ function ScreenLanding({ lang, go, t }) {
     { icon: Icon.sprout, title: { id: "Setor & Tanam", en: "Deposit & Plant" },
       body: { id: "Danamu di-stake ke Aave dari dompetmu. Modal awal dicatat sebagai baseline.", en: "Your funds are staked to Aave from your own wallet. The principal is recorded as a baseline." } },
     { icon: Icon.robot, title: { id: "AI Memelihara", en: "AI Tends It" },
-      body: { id: "Agen Venice memantau kesehatan protokol — bukan cuma APY — dalam izin ketat. Tiap keputusan dijelaskan.", en: "The Venice agent watches protocol health — not just APY — under strict permissions. Every decision is explained." } },
+      body: { id: "Agen Venice memantau kesehatan protokol, bukan cuma APY, dalam izin ketat. Tiap keputusan dijelaskan.", en: "The Venice agent watches protocol health, not just APY, under strict permissions. Every decision is explained." } },
     { icon: Icon.drop, title: { id: "Panen Bunga", en: "Harvest the Yield" },
       body: { id: "Tiap ronde, hanya BUNGA (bukan modal) disapu jadi Kolam Hadiah bersama.", en: "Each round, only the YIELD (never principal) is swept into a shared Prize Pool." } },
     { icon: Icon.trophy, title: { id: "Undian Adil", en: "Fair Draw" },
@@ -187,7 +187,7 @@ function ScreenLanding({ lang, go, t }) {
             <span className="badge badge-safe">{L(lang, { id: "Paling penting", en: "Most important" })}</span>
           </div>
           <h2 style={{ fontSize: 23, lineHeight: 1.12, marginBottom: 16 }}>
-            {L(lang, { id: "Aman bukan karena percaya AI — tapi karena dipaksa kode.", en: "Safe not because you trust the AI — but because code enforces it." })}
+            {L(lang, { id: "Aman bukan karena percaya AI, tapi karena dipaksa kode.", en: "Safe not because you trust the AI, but because code enforces it." })}
           </h2>
           <div className="col gap-12">
             {safety.map((s, i) => (

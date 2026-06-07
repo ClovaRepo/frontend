@@ -1,6 +1,6 @@
 export default function manifest() {
   return {
-    name: "Clova — no-loss prize-linked savings",
+    name: "Clova, no-loss prize-linked savings",
     short_name: "Clova",
     description: "Menabung berhadiah tanpa pernah rugi modal, dikelola agen AI non-custodial.",
     start_url: "/",

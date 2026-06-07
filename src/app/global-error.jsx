@@ -1,7 +1,7 @@
 "use client";
 
 // Replaces the root layout when the layout itself throws, so it must render
-// <html>/<body> and can't rely on the global stylesheet — inline styles only.
+// <html>/<body> and can't rely on the global stylesheet, inline styles only.
 export default function GlobalError({ error, reset }) {
   return (
     <html lang="en">

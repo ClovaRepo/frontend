@@ -26,7 +26,7 @@ export default function Error({ error, reset }) {
         <CloverMark />
         <h1 className="head" style={{ fontSize: 28, margin: "18px 0 8px" }}>Something went wrong</h1>
         <p style={{ color: "var(--ink-60)", fontSize: 15, lineHeight: 1.55, marginBottom: 24 }}>
-          Sorry, an unexpected error occurred. Your principal is safe — try reloading.
+          Sorry, an unexpected error occurred. Your principal is safe, try reloading.
         </p>
         <div className="row gap-12" style={{ justifyContent: "center" }}>
           <button className="btn btn-primary btn-lg" onClick={() => reset()}>Try again</button>

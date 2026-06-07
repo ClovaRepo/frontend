@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 
 /* ============================================================
-   CLOVA — Onboarding steps 1..5
+   CLOVA, Onboarding steps 1..5
    ============================================================ */
 
 function useFlow(initial = "idle") {
@@ -57,25 +57,37 @@ function StatePill({ tone = "load", children }) {
   );
 }
 
-/* Wallets offered in the picker. `detected` shows a subtle "installed" hint. */
+/* Wallets offered in the picker. `domain` resolves each wallet's real logo;
+   `detected` shows a subtle "installed" hint. */
 const WALLETS = [
-  { id: "metamask", name: "MetaMask", bg: "#E2761B", detected: true },
-  { id: "coinbase", name: "Coinbase Wallet", bg: "#1652F0" },
-  { id: "walletconnect", name: "WalletConnect", bg: "#3B99FC" },
-  { id: "rabby", name: "Rabby", bg: "#7084FF" },
-  { id: "trust", name: "Trust Wallet", bg: "#3375BB" },
+  { id: "metamask", name: "MetaMask", bg: "#E2761B", domain: "metamask.io", detected: true },
+  { id: "coinbase", name: "Coinbase Wallet", bg: "#1652F0", domain: "coinbase.com" },
+  { id: "walletconnect", name: "WalletConnect", bg: "#3B99FC", domain: "walletconnect.com" },
+  { id: "rabby", name: "Rabby", bg: "#7084FF", domain: "rabby.io" },
+  { id: "trust", name: "Trust Wallet", bg: "#3375BB", domain: "trustwallet.com" },
 ];
 
-/* Clean brand monogram (no emoji) tinted to each wallet's colour. */
+/* Each wallet's real logo (its official site icon), with a tinted monogram
+   fallback if the logo can't load (e.g. offline). */
 function WalletGlyph({ w, size = 34, radius = 10 }) {
+  const [err, setErr] = useState(false);
+  const showLogo = w.domain && !err;
   return (
-    <span style={{ width: size, height: size, borderRadius: radius, background: `color-mix(in srgb, ${w.bg} 16%, var(--canvas-2))`,
-      color: w.bg, display: "grid", placeItems: "center", fontWeight: 800, fontSize: size * 0.46, lineHeight: 1, flex: "0 0 auto",
-      fontFamily: "var(--font-head)", boxShadow: `inset 0 0 0 1.5px color-mix(in srgb, ${w.bg} 34%, transparent)` }}>{w.name[0]}</span>
+    <span style={{ width: size, height: size, borderRadius: radius, background: "var(--canvas-2)",
+      display: "grid", placeItems: "center", flex: "0 0 auto", overflow: "hidden",
+      boxShadow: `inset 0 0 0 1.5px color-mix(in srgb, ${w.bg} 26%, transparent)` }}>
+      {showLogo ? (
+        <img src={`https://www.google.com/s2/favicons?domain=${w.domain}&sz=128`} alt={`${w.name} logo`}
+          width={Math.round(size * 0.6)} height={Math.round(size * 0.6)} loading="lazy"
+          style={{ display: "block", borderRadius: 6 }} onError={() => setErr(true)} />
+      ) : (
+        <span style={{ color: w.bg, fontWeight: 800, fontSize: size * 0.46, lineHeight: 1, fontFamily: "var(--font-head)" }}>{w.name[0]}</span>
+      )}
+    </span>
   );
 }
 
-/* Wallet chooser — centered dialog, works inside both the phone frame
+/* Wallet chooser, centered dialog, works inside both the phone frame
    and the web onboarding column (fixed + flex-centered). */
 function WalletPicker({ lang, onPick, onClose }) {
   return (
@@ -107,7 +119,7 @@ function WalletPicker({ lang, onPick, onClose }) {
   );
 }
 
-/* -------- 3. OB1 — Connect wallet -------- */
+/* -------- 3. OB1, Connect wallet -------- */
 function ScreenOB1({ lang, go, t }) {
   const [state, setState, run] = useFlow("idle");
   const [picking, setPicking] = useState(false);
@@ -122,8 +134,8 @@ function ScreenOB1({ lang, go, t }) {
         </div>
         <h1 style={{ fontSize: 27, marginBottom: 8 }}>{L(lang, { id: "Hubungkan dompetmu", en: "Connect your wallet" })}</h1>
         <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.55, marginBottom: 20 }}>
-          {L(lang, { id: "Pilih dompet untuk mulai. Kami tidak pernah menyimpan kunci atau danamu — semuanya tetap milikmu.",
-                     en: "Pick a wallet to get started. We never hold your keys or your funds — everything stays yours." })}
+          {L(lang, { id: "Pilih dompet untuk mulai. Kami tidak pernah menyimpan kunci atau danamu, semuanya tetap milikmu.",
+                     en: "Pick a wallet to get started. We never hold your keys or your funds, everything stays yours." })}
         </p>
 
         {state === "connected" ? (
@@ -163,14 +175,14 @@ function ScreenOB1({ lang, go, t }) {
                      en: "Yes. Clova never holds your private key. Your wallet stays under your control; you only sign a fenced permission that you can revoke anytime." })}
         </Collapse>
         <Collapse q={L(lang, { id: "Jaringan apa?", en: "Which network?" })}>
-          {L(lang, { id: "Clova berjalan di jaringan Base — cepat dan biaya rendah.", en: "Clova runs on the Base network — fast and low-cost." })}
+          {L(lang, { id: "Clova berjalan di jaringan Base, cepat dan biaya rendah.", en: "Clova runs on the Base network, fast and low-cost." })}
         </Collapse>
       </div>
     </OBShell>
   );
 }
 
-/* -------- 4. OB2 — Proportional Ticket Explanation -------- */
+/* -------- 4. OB2, Proportional Ticket Explanation -------- */
 function ScreenOB2({ lang, go, t }) {
   const users = [
     { label: { id: "Kamu · $500", en: "You · $500" }, weight: 0.5, highlight: true },
@@ -207,7 +219,7 @@ function ScreenOB2({ lang, go, t }) {
         <div className="card card-sage row aic gap-10" style={{ padding: "13px 15px", marginBottom: 18 }}>
           <Icon.shieldLeaf size={22} stroke="var(--clover-deep)" />
           <span className="tiny" style={{ lineHeight: 1.4, fontWeight: 600, color: "var(--forest)" }}>
-            {L(lang, { id: "Anti-kecurangan: memecah $1.000 ke 10 dompet × $100 tidak menguntungkan — bobot total tetap sama.", en: "Cheat-proof: splitting $1,000 into 10 wallets × $100 is no advantage — total weight stays identical." })}
+            {L(lang, { id: "Anti-kecurangan: memecah $1.000 ke 10 dompet × $100 tidak menguntungkan, bobot total tetap sama.", en: "Cheat-proof: splitting $1,000 into 10 wallets × $100 is no advantage, total weight stays identical." })}
           </span>
         </div>
 
@@ -219,7 +231,7 @@ function ScreenOB2({ lang, go, t }) {
   );
 }
 
-/* -------- 5. OB3 — Activate Smart Account -------- */
+/* -------- 5. OB3, Activate Smart Account -------- */
 function ScreenOB3({ lang, go, t }) {
   const [state, setState, run] = useFlow("idle");
   const benefits = [
@@ -233,8 +245,8 @@ function ScreenOB3({ lang, go, t }) {
         <CloverWatermark corner="br" size={120} opacity={0.05} />
         <h1 style={{ fontSize: 25, marginBottom: 8 }}>{L(lang, { id: "Tingkatkan dompetmu jadi Akun Pintar", en: "Upgrade your wallet to a Smart Account" })}</h1>
         <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.55, marginBottom: 20 }}>
-          {L(lang, { id: "Sekali tanda tangan, dompetmu jadi 'pintar' — bisa memberi izin terbatas ke pemelihara AI tanpa pernah menyerahkan kendali. Modalmu tetap 100% milikmu.",
-                     en: "One signature makes your wallet 'smart' — able to grant the AI tender limited permission without ever handing over control. Your principal stays 100% yours." })}
+          {L(lang, { id: "Sekali tanda tangan, dompetmu jadi 'pintar', bisa memberi izin terbatas ke pemelihara AI tanpa pernah menyerahkan kendali. Modalmu tetap 100% milikmu.",
+                     en: "One signature makes your wallet 'smart', able to grant the AI tender limited permission without ever handing over control. Your principal stays 100% yours." })}
         </p>
 
         {/* morph visual */}
@@ -279,7 +291,7 @@ function ScreenOB3({ lang, go, t }) {
   );
 }
 
-/* -------- 6. OB4 — Safe Permission (caveats) — the HEART -------- */
+/* -------- 6. OB4, Safe Permission (caveats), the HEART -------- */
 function PermitCol({ tone, title, items }) {
   const ok = tone === "ok";
   return (
@@ -310,8 +322,8 @@ function ScreenOB4({ lang, go, t }) {
       <Reveal>
         <h1 style={{ fontSize: 26, marginBottom: 8 }}>{L(lang, { id: "Beri izin terbatas ke pemelihara AI", en: "Grant the AI tender limited permission" })}</h1>
         <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.55, marginBottom: 20 }}>
-          {L(lang, { id: "Kamu menandatangani SATU izin berpagar. Pagar ini dipaksakan oleh kode di blockchain — bukan janji. Pelanggaran otomatis DITOLAK.",
-                     en: "You sign ONE fenced permission. The fence is enforced by on-chain code — not a promise. Any violation is automatically REJECTED." })}
+          {L(lang, { id: "Kamu menandatangani SATU izin berpagar. Pagar ini dipaksakan oleh kode di blockchain, bukan janji. Pelanggaran otomatis DITOLAK.",
+                     en: "You sign ONE fenced permission. The fence is enforced by on-chain code, not a promise. Any violation is automatically REJECTED." })}
         </p>
       </Reveal>
 
@@ -368,7 +380,7 @@ function ScreenOB4({ lang, go, t }) {
   );
 }
 
-/* -------- 7. OB5 — Deposit & start planting -------- */
+/* -------- 7. OB5, Deposit & start planting -------- */
 const CROSS_CHAINS = [
   { id: "base", label: "Base", icon: "🔵", native: true },
   { id: "eth", label: "Ethereum", icon: "⟠" },
@@ -445,7 +457,7 @@ function ScreenOB5({ lang, go, t }) {
           <span className="row aic gap-8 tiny" style={{ fontWeight: 600, color: "var(--ink)" }}>
             <Icon.globe size={16} stroke="var(--forest-70)" />
             {L(lang, { id: "Dari chain lain?", en: "From another chain?" })}
-            <span style={{ fontWeight: 400, color: "var(--ink-45)" }}>{L(lang, { id: "— LI.FI akan jembatani otomatis", en: "— LI.FI bridges automatically" })}</span>
+            <span style={{ fontWeight: 400, color: "var(--ink-45)" }}>{L(lang, { id: ", LI.FI akan jembatani otomatis", en: ", LI.FI bridges automatically" })}</span>
           </span>
           <span style={{ fontSize: 14, fontWeight: 700, color: "var(--clover)", marginLeft: 8 }}>
             {selectedChain?.icon} {selectedChain?.label}

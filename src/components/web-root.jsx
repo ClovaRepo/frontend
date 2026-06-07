@@ -1,6 +1,6 @@
 "use client";
 /* ============================================================
-   CLOVA WEB — top-level router (landing ↔ sidebar app) + tweaks.
+   CLOVA WEB, top-level router (landing ↔ sidebar app) + tweaks.
    Landing, sidebar and dashboard load eagerly (first paint); the
    remaining screens, the draw overlay and modals are code-split.
    ============================================================ */
@@ -55,7 +55,7 @@ function shadeW(hex, amt) {
 
 const WEB_SCREENS = { dashboard: WebDashboard, pool: WebPool, keeper: WebKeeper, log: WebLog, settings: WebSettings };
 
-/* Onboarding flow on web — drives the shared OB steps in a centered column.
+/* Onboarding flow on web, drives the shared OB steps in a centered column.
    go("dashboard") finishes; go("landing") backs out to the marketing site. */
 function WebOnboarding({ lang, setLang, t, onDone, onExit }) {
   const [step, setStep] = useState("ob1");

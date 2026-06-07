@@ -1,6 +1,6 @@
 "use client";
 /* ============================================================
-   CLOVA — shared app state across the mobile & web experiences.
+   CLOVA, shared app state across the mobile & web experiences.
    One source of truth so resizing across the breakpoint keeps you
    on the same logical place (and the same language).
 

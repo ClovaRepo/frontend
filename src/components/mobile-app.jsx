@@ -1,6 +1,6 @@
 "use client";
 /* ============================================================
-   CLOVA — Mobile app shell: router, bottom nav, screen-jump, tweaks.
+   CLOVA, Mobile app shell: router, bottom nav, screen-jump, tweaks.
    Screens are code-split with React.lazy so each route loads on demand.
    ============================================================ */
 import React, { useState, useEffect, useCallback, lazy, Suspense } from "react";
@@ -166,7 +166,7 @@ function App() {
     setModal(null);
     setScreen(s);
     /* sync the shared stage/screen so the web view stays in lockstep.
-       Onboarding (ob*) leaves the stage untouched — it can be entered from
+       Onboarding (ob*) leaves the stage untouched, it can be entered from
        the landing OR from inside the app (settings → view permission). */
     if (s === "landing" || s === "loading") setStage("landing");
     else if (s.startsWith("ob")) setStage((cur) => (cur === "app" ? "app" : "onboarding"));

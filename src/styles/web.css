@@ -1,5 +1,5 @@
 /* ============================================================
-   CLOVA WEB — desktop layout system (sidebar app + landing site)
+   CLOVA WEB, desktop layout system (sidebar app + landing site)
    Builds on styles.css tokens. Loaded only by "Clova Web.html".
    ============================================================ */
 
@@ -38,7 +38,7 @@ body { background: var(--canvas); overflow-x: hidden; }
   color: var(--forest-70); padding: 6px 2px;
 }
 .lnav-link:hover { color: var(--clover-deep); }
-/* keep the nav uncluttered on smaller widths — anchors collapse, CTA stays */
+/* keep the nav uncluttered on smaller widths, anchors collapse, CTA stays */
 @media (max-width: 720px) {
   .lnav-links { gap: 12px; }
   .lnav-link { display: none; }
@@ -65,7 +65,7 @@ body { background: var(--canvas); overflow-x: hidden; }
 @media (max-width: 920px) { .how-grid { grid-template-columns: 1fr 1fr; gap: 28px 20px; } }
 @media (max-width: 560px) { .how-grid { grid-template-columns: 1fr; } }
 .how-card { padding: 0 22px; position: relative; }
-/* dashed divider between columns — only while the row is intact (4-up) */
+/* dashed divider between columns, only while the row is intact (4-up) */
 .how-grid > *:not(:first-child) .how-card::before {
   content: ""; position: absolute; left: 0; top: 6px; bottom: 6px;
   border-left: 1px dashed color-mix(in srgb, var(--clover) 28%, transparent);
@@ -185,7 +185,7 @@ body { background: var(--canvas); overflow-x: hidden; }
 .notif-item:hover { background: color-mix(in srgb,var(--sage) 55%, var(--canvas-2)); }
 @media (prefers-reduced-motion: reduce) { .notif-pop { animation: none; } }
 
-.main-body { padding: 32px 40px 60px; max-width: 1160px; }
+.main-body { padding: 32px 40px 60px; max-width: 1760px; }
 @media (max-width: 720px) { .main-body { padding: 24px 22px 48px; } }
 
 /* bento grid */

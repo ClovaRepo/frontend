@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 
 /* ============================================================
-   CLOVA — Dashboard ("Kebunku") with 3 layout variants + Panel AI
+   CLOVA, Dashboard ("Kebunku") with 3 layout variants + Panel AI
    ============================================================ */
 
 function DashTopBar({ lang, go }) {
@@ -86,7 +86,7 @@ function KeeperCard({ lang, go }) {
             <span className="badge badge-active" style={{ padding: "3px 8px", fontSize: 10.5 }}>{L(lang, { id: "Aktif", en: "Active" })}</span>
           </div>
           <p className="muted" style={{ fontSize: 13, lineHeight: 1.45, margin: "5px 0 8px" }}>
-            "{L(lang, { id: "Tetap di Aave — likuiditas kuat, tak ada kabar audit negatif.", en: "Staying on Aave — deep liquidity, no negative audit news." })}"
+            "{L(lang, { id: "Tetap di Aave, likuiditas kuat, tak ada kabar audit negatif.", en: "Staying on Aave, deep liquidity, no negative audit news." })}"
           </p>
           <span className="tlink" style={{ fontSize: 13 }}>{L(lang, { id: "Lihat alasan lengkap", en: "See full reasoning" })} →</span>
         </div>
@@ -99,7 +99,7 @@ function KeeperCard({ lang, go }) {
 function WinStrip({ lang }) {
   const items = [
     { r: 9, win: true, amt: "+18,20", label: { id: "Menang!", en: "Won!" } },
-    { r: 11, win: false, label: { id: "Belum hoki — modal utuh", en: "No luck — principal whole" } },
+    { r: 11, win: false, label: { id: "Belum hoki, modal utuh", en: "No luck, principal whole" } },
     { r: 8, win: false, label: { id: "Modal utuh", en: "Principal whole" } },
     { r: 6, win: true, amt: "+9,80", label: { id: "Menang!", en: "Won!" } },
   ];
@@ -169,7 +169,7 @@ function ScreenDashboard({ lang, go, t, openModal }) {
             {/* big calm numbers, minimal illustration */}
             <div className="reveal card" style={{ ...stagger(0), padding: "24px 22px", textAlign: "center", overflow: "hidden" }}>
               <CloverWatermark corner="tr" size={130} opacity={0.05} />
-              <div className="muted tiny" style={{ fontWeight: 600, marginBottom: 4 }}>{L(lang, { id: "Modalku — aman & utuh", en: "My principal — safe & whole" })}</div>
+              <div className="muted tiny" style={{ fontWeight: 600, marginBottom: 4 }}>{L(lang, { id: "Modalku, aman & utuh", en: "My principal, safe & whole" })}</div>
               <div className="head tnum" style={{ fontSize: 52, lineHeight: 1 }}><CountUp value={100} /></div>
               <div className="head" style={{ fontSize: 16, color: "var(--ink-45)", marginTop: 2 }}>USDC</div>
               <div className="vine-divide" />
@@ -244,7 +244,7 @@ function SignalChip({ icon: I, label, delay }) {
 const STATIC_TIMELINE = [
   { r: 11, type: "stay", reason: { id: "Selisih bunga dengan Compound terlalu kecil untuk menutup gas.", en: "Yield gap vs Compound too small to cover gas." }, ok: true },
   { r: 10, type: "move", to: "Moonwell", reason: { id: "Bunga naik signifikan & audit baru lulus.", en: "Yield jumped and a fresh audit passed." }, ok: true },
-  { r: 8, type: "stay", reason: { id: "Ada kabar eksploit di protokol lain — hindari risiko.", en: "Exploit news elsewhere — avoid the risk." }, ok: true },
+  { r: 8, type: "stay", reason: { id: "Ada kabar eksploit di protokol lain, hindari risiko.", en: "Exploit news elsewhere, avoid the risk." }, ok: true },
 ];
 
 function ScreenPanelAI({ lang, go, t }) {
@@ -357,8 +357,8 @@ function ScreenPanelAI({ lang, go, t }) {
             <div className="head" style={{ fontSize: 16 }}>{L(lang, { id: "Pagar pengaman", en: "Guardrails" })}</div>
           </div>
           <p style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink)", marginBottom: 10 }}>
-            {L(lang, { id: "AI hanya boleh memilih dari daftar putih. Pemilihan pemenang TIDAK dilakukan AI — memakai undian acak (VRF).",
-                       en: "The AI may only choose from the whitelist. Winner selection is NOT done by the AI — it uses random VRF." })}
+            {L(lang, { id: "AI hanya boleh memilih dari daftar putih. Pemilihan pemenang TIDAK dilakukan AI, memakai undian acak (VRF).",
+                       en: "The AI may only choose from the whitelist. Winner selection is NOT done by the AI, it uses random VRF." })}
           </p>
           <div className="row aic gap-8" style={{ background: "var(--canvas-2)", borderRadius: 12, padding: "10px 13px" }}>
             <Icon.check size={16} stroke="var(--clover)" sw={2.4} />

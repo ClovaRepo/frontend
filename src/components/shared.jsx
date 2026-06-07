@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, useId, createContext, useContext } from 'react';
 
 /* ============================================================
-   CLOVA — shared primitives, motifs, icons, hooks
+   CLOVA, shared primitives, motifs, icons, hooks
    Exposes everything on window for the screen files.
    ============================================================ */
 
@@ -164,7 +164,7 @@ function CloverWatermark({ corner = "br", size = 180, opacity = 0.05 }) {
 }
 
 /* ============================================================
-   ICONS — rounded outline, consistent 24 grid
+   ICONS, rounded outline, consistent 24 grid
    ============================================================ */
 function Ic({ d, size = 22, stroke = "currentColor", sw = 1.9, fill = "none", children, vb = 24, ...rest }) {
   return (
@@ -206,7 +206,7 @@ const Icon = {
   spark:  (p) => <Ic {...p}><path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6Z" /></Ic>,
 };
 
-/* Activity / notification icon — maps a log category to a real SVG icon
+/* Activity / notification icon, maps a log category to a real SVG icon
    inside a tinted circular badge (replaces the old emoji glyphs). */
 const ACT_ICON = { ai: "robot", yield: "drop", draw: "trophy", deposit: "sprout" };
 function ActivityIcon({ cat, win = false, safe = false, size = 34 }) {
@@ -224,7 +224,7 @@ function ActivityIcon({ cat, win = false, safe = false, size = 34 }) {
   );
 }
 
-/* Gardener AI avatar — robot with a leaf sprout */
+/* Gardener AI avatar, robot with a leaf sprout */
 function Gardener({ size = 44, ring = true }) {
   return (
     <div style={{ width: size, height: size, borderRadius: "50%",
@@ -244,7 +244,7 @@ function Gardener({ size = 44, ring = true }) {
 }
 
 /* ============================================================
-   VINE STEPPER — onboarding progress (5 leaf nodes on a vine)
+   VINE STEPPER, onboarding progress (5 leaf nodes on a vine)
    ============================================================ */
 function VineStepper({ step = 1, total = 5, labels = [] }) {
   return (
@@ -284,11 +284,15 @@ function VineStepper({ step = 1, total = 5, labels = [] }) {
 }
 
 /* ============================================================
-   COUNTDOWN — organic sun-arc
+   COUNTDOWN, organic sun-arc
    ============================================================ */
 function CountdownArc({ pct = 0.62, label, sub, size = 150, gold = false }) {
   const r = 62, c = Math.PI * r; // half circle
   const col = gold ? "var(--gold)" : "var(--clover)";
+  // place a handle exactly at the tip of the filled arc (no stray dot on the line)
+  const ang = Math.PI * (1 - pct);
+  const dotX = 75 + 62 * Math.cos(ang);
+  const dotY = 88 - 62 * Math.sin(ang);
   return (
     <div style={{ position: "relative", width: size, height: size * 0.62, margin: "0 auto" }}>
       <svg width={size} height={size * 0.62} viewBox="0 0 150 95">
@@ -297,10 +301,9 @@ function CountdownArc({ pct = 0.62, label, sub, size = 150, gold = false }) {
         <path d="M13 88 A 62 62 0 0 1 137 88" fill="none" stroke={col} strokeWidth="10" strokeLinecap="round"
               strokeDasharray={c} strokeDashoffset={c * (1 - pct)}
               style={{ transition: "stroke-dashoffset 1s var(--ease-soft)" }} />
-        {/* sun */}
-        <g transform={`rotate(${180 * (1 - pct)} 75 88)`}>
-          <circle cx="13" cy="88" r="7" fill={gold ? "var(--gold)" : "var(--leaf)"} />
-        </g>
+        {/* progress handle sitting on the tip */}
+        <circle cx={dotX} cy={dotY} r="7.5" fill="var(--canvas-2)" stroke={col} strokeWidth="3.5"
+                style={{ transition: "all 1s var(--ease-soft)" }} />
       </svg>
       <div style={{ position: "absolute", inset: 0, top: "42%", display: "flex", flexDirection: "column", alignItems: "center" }}>
         <div className="head tnum" style={{ fontSize: 24, color: gold ? "var(--gold-deep)" : "var(--forest)" }}>{label}</div>
@@ -311,7 +314,7 @@ function CountdownArc({ pct = 0.62, label, sub, size = 150, gold = false }) {
 }
 
 /* ============================================================
-   GROWING PLANT — height scales with amount (0..1)
+   GROWING PLANT, height scales with amount (0..1)
    ============================================================ */
 function Plant({ grow = 0.5, size = 120, potColor = "var(--sage-2)" }) {
   const h = 0.25 + grow * 0.75; // stem growth fraction
@@ -329,7 +332,7 @@ function Plant({ grow = 0.5, size = 120, potColor = "var(--sage-2)" }) {
         <path d={`M60 ${88 - 30 * h} C44 ${84 - 30 * h} 40 ${72 - 30 * h} 50 ${70 - 30 * h} C58 ${69 - 30 * h} 60 ${80 - 30 * h} 60 ${88 - 30 * h}Z`} fill="var(--leaf)" />
         <path d={`M60 ${82 - 38 * h} C76 ${78 - 38 * h} 80 ${66 - 38 * h} 70 ${64 - 38 * h} C62 ${63 - 38 * h} 60 ${74 - 38 * h} 60 ${82 - 38 * h}Z`} fill="var(--clover)" />
       </g>
-      {/* crown clover when grown — pure SVG, four petals around the stem tip */}
+      {/* crown clover when grown, pure SVG, four petals around the stem tip */}
       {grow > 0.55 && (
         <g style={{ transformOrigin: `60px ${90 - 56 * h}px`, animation: "bloomPop .6s var(--ease-back)" }}>
           {[0, 90, 180, 270].map((a) => (
@@ -344,34 +347,34 @@ function Plant({ grow = 0.5, size = 120, potColor = "var(--sage-2)" }) {
 }
 
 /* ============================================================
-   PIXEL TREE — botanical pixel-art that grows by `stage` (1..4).
+   PIXEL TREE, botanical pixel-art that grows by `stage` (1..4).
    Same 11×13 grid for every stage so they sit on a shared ground
    line; the canopy fills more rows as the stage rises, reading as
    sprout → sapling → young tree → lush fruiting tree.
    ============================================================ */
 const PIXEL_TREE_STAGES = [
-  // stage 1 — seedling
+  // stage 1, seedling
   [
     "...........", "...........", "...........", "...........",
     "...........", "...........", "...........", "....l.l....",
     "....lll....", ".....t.....", ".....t.....", "....ggg....",
     "ggggggggggg",
   ],
-  // stage 2 — sapling
+  // stage 2, sapling
   [
     "...........", "...........", "...........", "...........",
     ".....l.....", "....lll....", "...lldll...", "....lll....",
     ".....t.....", ".....t.....", ".....t.....", "....ggg....",
     "ggggggggggg",
   ],
-  // stage 3 — young tree
+  // stage 3, young tree
   [
     ".....l.....", "....lll....", "...lllll...", "..llldlll..",
     "..lllllll..", "...lldll...", "....lll....", ".....t.....",
     ".....t.....", "....ttt....", ".....t.....", "...ggggg...",
     "ggggggggggg",
   ],
-  // stage 4 — lush, fruiting tree
+  // stage 4, lush, fruiting tree
   [
     "...lllll...", "..lllllll..", ".lllodllll.", "olllldllllo",
     ".lldllolll.", "..llllldd..", "...lllll...", "....ttt....",
@@ -445,7 +448,7 @@ function PixelTree({ stage = 1, cell = 7, sway = true, animate = true, rowStep =
 }
 
 /* ============================================================
-   CONFETTI — leaf + gold burst (fires once)
+   CONFETTI, leaf + gold burst (fires once)
    ============================================================ */
 function Confetti({ go = true, count = 42, gold = true }) {
   const pieces = React.useMemo(() => Array.from({ length: count }, (_, i) => ({

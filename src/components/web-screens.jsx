@@ -20,7 +20,7 @@ function useDecisionsW() {
 }
 
 /* ============================================================
-   CLOVA WEB — Keeper, Pool, Log, Settings, Draw overlay, modals
+   CLOVA WEB, Keeper, Pool, Log, Settings, Draw overlay, modals
    ============================================================ */
 
 function useFlowW(initial = "idle") {
@@ -41,7 +41,7 @@ function StatePillW({ tone = "load", children }) {
 const STATIC_TIMELINE_W = [
   { r: 11, type: "stay", reason: { id: "Selisih bunga dengan Compound terlalu kecil untuk menutup gas.", en: "Yield gap vs Compound too small to cover gas." } },
   { r: 10, type: "move", to: "Moonwell", reason: { id: "Bunga naik signifikan & audit baru lulus.", en: "Yield jumped and a fresh audit passed." } },
-  { r: 8, type: "stay", reason: { id: "Ada kabar eksploit di protokol lain — hindari risiko.", en: "Exploit news elsewhere — avoid the risk." } },
+  { r: 8, type: "stay", reason: { id: "Ada kabar eksploit di protokol lain, hindari risiko.", en: "Exploit news elsewhere, avoid the risk." } },
   { r: 7, type: "stay", reason: { id: "Kondisi stabil, tak ada alasan memindahkan dana.", en: "Stable conditions, no reason to move funds." } },
 ];
 
@@ -116,12 +116,25 @@ function WebKeeper({ lang, t, go }) {
 
           {/* guardrails */}
           <Reveal delay={120} className="col-5">
-            <div className="card card-pad-lg card-sage" style={{ height: "100%", overflow: "hidden", position: "relative" }}>
+            <div className="card card-pad-lg card-sage" style={{ height: "100%", overflow: "hidden", position: "relative", display: "flex", flexDirection: "column" }}>
               <CloverWatermark corner="br" size={150} opacity={0.06} />
               <div className="row aic gap-10" style={{ marginBottom: 12 }}><Icon.shieldLeaf size={26} stroke="var(--clover-deep)" /><div className="head" style={{ fontSize: 18 }}>{L(lang, { id: "Pagar pengaman", en: "Guardrails" })}</div></div>
-              <p style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink)", marginBottom: 14 }}>{L(lang, { id: "AI hanya boleh memilih dari daftar putih. Pemilihan pemenang TIDAK dilakukan AI — memakai undian acak (VRF).", en: "The AI may only choose from the whitelist. Winner selection is NOT done by the AI — it uses random VRF." })}</p>
-              <div className="row aic gap-8" style={{ background: "var(--canvas-2)", borderRadius: 12, padding: "11px 14px" }}>
-                <Icon.check size={16} stroke="var(--clover)" sw={2.4} /><span className="tiny" style={{ fontWeight: 600, color: "var(--forest-70)" }}>{L(lang, { id: "Percobaan aksi terlarang terakhir: ditolak otomatis ✔", en: "Last forbidden attempt: auto-rejected ✔" })}</span>
+              <p style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink)", marginBottom: 16 }}>{L(lang, { id: "Bukan sekadar janji, tiap aksi dipaksa oleh kode on-chain.", en: "Not just a promise, every action is enforced by on-chain code." })}</p>
+              <div className="col gap-10" style={{ marginBottom: 16 }}>
+                {[
+                  { id: "Hanya memindah dana antar protokol daftar putih", en: "Only moves funds between whitelisted protocols" },
+                  { id: "Hanya menyapu bunga, modal pokok tak tersentuh", en: "Sweeps yield only, principal is untouchable" },
+                  { id: "Pemenang via VRF acak, bukan dipilih AI", en: "Winners via random VRF, never chosen by the AI" },
+                  { id: "Izin bisa dicabut kapan saja, langsung", en: "Permission is revocable anytime, instantly" },
+                ].map((g, i) => (
+                  <div key={i} className="row gap-10" style={{ alignItems: "flex-start" }}>
+                    <span style={{ flex: "0 0 auto", width: 22, height: 22, borderRadius: "50%", background: "var(--canvas-2)", display: "grid", placeItems: "center", marginTop: 1 }}><Icon.check size={13} stroke="var(--clover)" sw={2.6} /></span>
+                    <span style={{ fontSize: 14, lineHeight: 1.45, color: "var(--ink)" }}>{L(lang, g)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="row aic gap-8" style={{ marginTop: "auto", background: "var(--canvas-2)", borderRadius: 12, padding: "11px 14px" }}>
+                <Icon.check size={16} stroke="var(--clover)" sw={2.4} /><span className="tiny" style={{ fontWeight: 600, color: "var(--forest-70)" }}>{L(lang, { id: "Percobaan aksi terlarang terakhir: ditolak otomatis", en: "Last forbidden attempt: auto-rejected" })}</span>
               </div>
             </div>
           </Reveal>
@@ -219,19 +232,21 @@ function WebLog({ lang, t, go }) {
   const [filter, setFilter] = useState("all");
   const filters = [{ k: "all", t: { id: "Semua", en: "All" } }, { k: "deposit", t: { id: "Setoran", en: "Deposits" } }, { k: "yield", t: { id: "Bunga", en: "Yield" } }, { k: "ai", t: { id: "Keputusan AI", en: "AI" } }, { k: "draw", t: { id: "Undian", en: "Draws" } }];
   const events = [
-    { day: { id: "Hari ini", en: "Today" }, cat: "ai", title: { id: "AI: TETAP di Aave — likuiditas kuat", en: "AI: STAY on Aave — strong liquidity" }, time: { id: "4 jam lalu", en: "4h ago" }, link: true },
+    { day: { id: "Hari ini", en: "Today" }, cat: "ai", title: { id: "AI: TETAP di Aave, likuiditas kuat", en: "AI: STAY on Aave, strong liquidity" }, time: { id: "4 jam lalu", en: "4h ago" }, link: true },
     { day: { id: "Hari ini", en: "Today" }, cat: "yield", title: { id: "Bunga +0,82 USDC disapu ke Kolam #12", en: "Yield +0.82 USDC swept to Pool #12" }, time: { id: "6 jam lalu", en: "6h ago" } },
-    { day: { id: "Kemarin", en: "Yesterday" }, cat: "draw", title: { id: "Undian ronde #11 — belum hoki, modal utuh", en: "Draw round #11 — no luck, principal whole" }, time: { id: "1 hari lalu", en: "1d ago" } },
+    { day: { id: "Kemarin", en: "Yesterday" }, cat: "draw", title: { id: "Undian ronde #11, belum hoki, modal utuh", en: "Draw round #11, no luck, principal whole" }, time: { id: "1 hari lalu", en: "1d ago" } },
     { day: { id: "Kemarin", en: "Yesterday" }, cat: "ai", title: { id: "Percobaan aksi terlarang ditolak otomatis", en: "Forbidden action auto-rejected" }, time: { id: "1 hari lalu", en: "1d ago" }, safe: true },
-    { day: { id: "Minggu ini", en: "This week" }, cat: "draw", title: { id: "Menang ronde #9 — +18,20 USDC", en: "Won round #9 — +18.20 USDC" }, time: { id: "5 hari lalu", en: "5d ago" }, win: true },
-    { day: { id: "Minggu ini", en: "This week" }, cat: "deposit", title: { id: "Setor 100 USDC — modal awal dicatat", en: "Deposited 100 USDC — baseline recorded" }, time: { id: "5 hari lalu", en: "5d ago" } },
+    { day: { id: "Minggu ini", en: "This week" }, cat: "draw", title: { id: "Menang ronde #9, +18,20 USDC", en: "Won round #9, +18.20 USDC" }, time: { id: "5 hari lalu", en: "5d ago" }, win: true },
+    { day: { id: "Minggu ini", en: "This week" }, cat: "deposit", title: { id: "Setor 100 USDC, modal awal dicatat", en: "Deposited 100 USDC, baseline recorded" }, time: { id: "5 hari lalu", en: "5d ago" } },
   ];
   const shown = events.filter((e) => filter === "all" || e.cat === filter);
   let lastDay = null;
   return (
     <div className="main">
       <MainHead lang={lang} go={go} title={L(lang, { id: "Catatan kebunmu", en: "Your garden log" })} sub={L(lang, { id: "Semua kejadian dalam satu linimasa.", en: "Every event in one timeline." })} />
-      <div className="main-body" style={{ maxWidth: 760 }}>
+      <div className="main-body">
+       <div className="bento">
+        <div className="col-8">
         <div className="row gap-8 wrap" style={{ marginBottom: 24 }}>
           {filters.map((f) => <button key={f.k} className={"chip" + (filter === f.k ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setFilter(f.k)}>{L(lang, f.t)}</button>)}
         </div>
@@ -259,6 +274,31 @@ function WebLog({ lang, t, go }) {
             );
           })}
         </div>
+        </div>
+
+        <Reveal delay={120} className="col-4">
+          <div className="card card-pad-lg" style={{ position: "sticky", top: 96 }}>
+            <div className="head" style={{ fontSize: 17, marginBottom: 4 }}>{L(lang, { id: "Ronde ini", en: "This round" })}</div>
+            <div className="muted tiny" style={{ marginBottom: 16 }}>{L(lang, { id: "Ronde #12 · sedang berjalan", en: "Round #12 · running" })}</div>
+            <div className="col gap-2">
+              {[
+                { l: { id: "Bunga disumbang", en: "Yield contributed" }, v: "+3,42 USDC", accent: true },
+                { l: { id: "Peluang menang", en: "Win chance" }, v: "12,5%" },
+                { l: { id: "Kolam hadiah", en: "Prize pool" }, v: L(lang, { id: "1.284 USDC", en: "1,284 USDC" }) },
+                { l: { id: "Undian berikutnya", en: "Next draw" }, v: L(lang, { id: "11j 24m", en: "11h 24m" }) },
+              ].map((row, i) => (
+                <div key={i} className="row between aic" style={{ padding: "11px 0", borderBottom: i < 3 ? "1px solid var(--hairline)" : "none" }}>
+                  <span className="muted" style={{ fontSize: 13.5, fontWeight: 500 }}>{L(lang, row.l)}</span>
+                  <span className="head tnum" style={{ fontSize: 15, color: row.accent ? "var(--clover)" : "var(--forest)" }}>{row.v}</span>
+                </div>
+              ))}
+            </div>
+            <button className="btn btn-secondary btn-sm btn-block" style={{ marginTop: 16 }} onClick={() => go && go("pool")}>
+              {L(lang, { id: "Lihat Kolam Hadiah", en: "View Prize Pool" })} <Icon.arrow size={15} stroke="var(--clover-deep)" />
+            </button>
+          </div>
+        </Reveal>
+       </div>
       </div>
     </div>
   );
@@ -302,7 +342,7 @@ function WebSettings({ lang, setLang, openModal, t, go }) {
           <Reveal delay={140} className="col-6">
             <div className="card card-pad-lg" style={{ height: "100%" }}>
               <div className="head" style={{ fontSize: 17, marginBottom: 6 }}>{L(lang, { id: "Tentang & keamanan", en: "About & security" })}</div>
-              <p style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink)", marginBottom: 12 }}>{L(lang, { id: "Aman bukan karena percaya AI — tapi karena dipaksa kode.", en: "Safe not because you trust the AI — but because code enforces it." })}</p>
+              <p style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink)", marginBottom: 12 }}>{L(lang, { id: "Aman bukan karena percaya AI, tapi karena dipaksa kode.", en: "Safe not because you trust the AI, but because code enforces it." })}</p>
               <div className="row gap-10 wrap" style={{ marginBottom: 12 }}><span className="tlink tiny">{L(lang, { id: "Lihat kontrak", en: "View contracts" })} ↗</span><span className="tlink tiny">{L(lang, { id: "Audit", en: "Audits" })} ↗</span></div>
               <div className="tiny muted" style={{ lineHeight: 1.45 }}>{L(lang, { id: "No-loss ≠ no-risk. Dana di protokol teruji: Aave, Compound, Morpho, Moonwell.", en: "No-loss ≠ no-risk. Funds in audited protocols: Aave, Compound, Morpho, Moonwell." })}</div>
             </div>

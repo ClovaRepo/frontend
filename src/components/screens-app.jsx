@@ -3,7 +3,7 @@ import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, Clo
 import { useFlow, StatePill } from './screens-ob.jsx';
 
 /* ============================================================
-   CLOVA — Undian, Detail Ronde, Riwayat, Pengaturan, Modals
+   CLOVA, Undian, Detail Ronde, Riwayat, Pengaturan, Modals
    ============================================================ */
 
 /* ====================== 10. UNDIAN / WIN ====================== */
@@ -101,7 +101,7 @@ function ScreenUndian({ lang, go, t }) {
             </div>
             <div className="tiny muted center" style={{ marginTop: 12, lineHeight: 1.5 }}>
               {L(lang, { id: "Total dibagikan: 1.155 USDC · Biaya platform 10%: 129 USDC", en: "Total paid: 1,155 USDC · Platform fee 10%: 129 USDC" })}<br />
-              {L(lang, { id: "Modal tidak diundi — hanya bunga.", en: "Principal isn't drawn — only yield." })}
+              {L(lang, { id: "Modal tidak diundi, hanya bunga.", en: "Principal isn't drawn, only yield." })}
             </div>
           </div>
         )}
@@ -208,12 +208,12 @@ function ScreenRiwayat({ lang, go, t }) {
     { k: "draw", t: { id: "Undian", en: "Draws" } },
   ];
   const events = [
-    { day: { id: "Hari ini", en: "Today" }, cat: "ai", title: { id: "AI: TETAP di Aave — likuiditas kuat", en: "AI: STAY on Aave — strong liquidity" }, time: { id: "4 jam lalu", en: "4h ago" }, link: true },
+    { day: { id: "Hari ini", en: "Today" }, cat: "ai", title: { id: "AI: TETAP di Aave, likuiditas kuat", en: "AI: STAY on Aave, strong liquidity" }, time: { id: "4 jam lalu", en: "4h ago" }, link: true },
     { day: { id: "Hari ini", en: "Today" }, cat: "yield", title: { id: "Bunga +0,82 USDC disapu ke Kolam #12", en: "Yield +0.82 USDC swept to Pool #12" }, time: { id: "6 jam lalu", en: "6h ago" } },
-    { day: { id: "Kemarin", en: "Yesterday" }, cat: "draw", title: { id: "Undian ronde #11 — belum hoki, modal utuh", en: "Draw round #11 — no luck, principal whole" }, time: { id: "1 hari lalu", en: "1d ago" } },
+    { day: { id: "Kemarin", en: "Yesterday" }, cat: "draw", title: { id: "Undian ronde #11, belum hoki, modal utuh", en: "Draw round #11, no luck, principal whole" }, time: { id: "1 hari lalu", en: "1d ago" } },
     { day: { id: "Kemarin", en: "Yesterday" }, cat: "ai", title: { id: "Percobaan aksi terlarang ditolak otomatis", en: "Forbidden action auto-rejected" }, time: { id: "1 hari lalu", en: "1d ago" }, safe: true },
-    { day: { id: "Minggu ini", en: "This week" }, cat: "draw", title: { id: "Menang ronde #9 — +18,20 USDC", en: "Won round #9 — +18.20 USDC" }, time: { id: "5 hari lalu", en: "5d ago" }, win: true },
-    { day: { id: "Minggu ini", en: "This week" }, cat: "deposit", title: { id: "Setor 100 USDC — modal awal dicatat", en: "Deposited 100 USDC — baseline recorded" }, time: { id: "5 hari lalu", en: "5d ago" } },
+    { day: { id: "Minggu ini", en: "This week" }, cat: "draw", title: { id: "Menang ronde #9, +18,20 USDC", en: "Won round #9, +18.20 USDC" }, time: { id: "5 hari lalu", en: "5d ago" }, win: true },
+    { day: { id: "Minggu ini", en: "This week" }, cat: "deposit", title: { id: "Setor 100 USDC, modal awal dicatat", en: "Deposited 100 USDC, baseline recorded" }, time: { id: "5 hari lalu", en: "5d ago" } },
   ];
   const shown = events.filter((e) => filter === "all" || e.cat === filter);
   let lastDay = null;
@@ -334,10 +334,19 @@ function ScreenPengaturan({ lang, go, t, openModal, setLang }) {
           <div className="head" style={{ fontSize: 15, marginBottom: 14 }}>{L(lang, { id: "Transparansi biaya", en: "Fee transparency" })}</div>
           <div className="row aic gap-16">
             <div style={{ flex: "0 0 auto", position: "relative", width: 96, height: 96 }}>
-              <svg width="96" height="96" viewBox="0 0 96 96">
-                <circle cx="48" cy="48" r="38" fill="none" stroke="var(--clover)" strokeWidth="16" strokeDasharray={`${0.9 * 238.7} 238.7`} transform="rotate(-90 48 48)" strokeLinecap="round" />
-                <circle cx="48" cy="48" r="38" fill="none" stroke="var(--gold)" strokeWidth="16" strokeDasharray={`${0.1 * 238.7} 238.7`} strokeDashoffset={`${-0.9 * 238.7}`} transform="rotate(-90 48 48)" strokeLinecap="round" />
-              </svg>
+              {(() => {
+                const C = 2 * Math.PI * 38, gap = 9;
+                const winLen = 0.9 * C - gap, treaLen = 0.1 * C - gap;
+                return (
+                  <svg width="96" height="96" viewBox="0 0 96 96">
+                    <circle cx="48" cy="48" r="38" fill="none" stroke="color-mix(in srgb,var(--forest) 8%, transparent)" strokeWidth="14" />
+                    <circle cx="48" cy="48" r="38" fill="none" stroke="var(--clover)" strokeWidth="14" strokeLinecap="round"
+                      strokeDasharray={`${winLen} ${C - winLen}`} strokeDashoffset={-(gap / 2)} transform="rotate(-90 48 48)" />
+                    <circle cx="48" cy="48" r="38" fill="none" stroke="var(--gold)" strokeWidth="14" strokeLinecap="round"
+                      strokeDasharray={`${treaLen} ${C - treaLen}`} strokeDashoffset={-(gap / 2 + winLen + gap)} transform="rotate(-90 48 48)" />
+                  </svg>
+                );
+              })()}
               <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}><Icon.coin size={24} stroke="var(--forest-70)" /></div>
             </div>
             <div className="col gap-8 grow">
@@ -351,7 +360,7 @@ function ScreenPengaturan({ lang, go, t, openModal, setLang }) {
         {/* About & security */}
         <div className="card card-sage reveal">
           <div className="head" style={{ fontSize: 15, marginBottom: 6 }}>{L(lang, { id: "Tentang & keamanan", en: "About & security" })}</div>
-          <p style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink)", marginBottom: 10 }}>{L(lang, { id: "Aman bukan karena percaya AI — tapi karena dipaksa kode.", en: "Safe not because you trust the AI — but because code enforces it." })}</p>
+          <p style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink)", marginBottom: 10 }}>{L(lang, { id: "Aman bukan karena percaya AI, tapi karena dipaksa kode.", en: "Safe not because you trust the AI, but because code enforces it." })}</p>
           <div className="row gap-8 wrap">
             <span className="tlink tiny">{L(lang, { id: "Lihat kontrak", en: "View contracts" })} ↗</span>
             <span className="tlink tiny">{L(lang, { id: "Audit", en: "Audits" })} ↗</span>
@@ -468,8 +477,8 @@ function ModalCabut({ lang, onClose }) {
           </div>
           <h1 style={{ fontSize: 24, marginBottom: 8, textAlign: "center" }}>{L(lang, { id: "Cabut izin pemelihara AI", en: "Revoke AI keeper permission" })}</h1>
           <p className="muted" style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 18, textAlign: "center" }}>
-            {L(lang, { id: "Begitu dicabut, agen AI langsung lumpuh — tak bisa lagi memindahkan atau menyapu apa pun. Modalmu tidak terpengaruh dan tetap di dompetmu. Kamu bisa beri izin lagi nanti.",
-                       en: "Once revoked, the AI agent is instantly disabled — it can no longer move or sweep anything. Your principal is unaffected and stays in your wallet. You can grant permission again later." })}
+            {L(lang, { id: "Begitu dicabut, agen AI langsung lumpuh, tak bisa lagi memindahkan atau menyapu apa pun. Modalmu tidak terpengaruh dan tetap di dompetmu. Kamu bisa beri izin lagi nanti.",
+                       en: "Once revoked, the AI agent is instantly disabled, it can no longer move or sweep anything. Your principal is unaffected and stays in your wallet. You can grant permission again later." })}
           </p>
           <div className="card" style={{ padding: "14px 16px", marginBottom: 18 }}>
             {impacts.map((im, i) => (

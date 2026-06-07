@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 
 /* ============================================================
-   CLOVA WEB — App shell (left sidebar) + desktop Dashboard
+   CLOVA WEB, App shell (left sidebar) + desktop Dashboard
    ============================================================ */
 
 const WEB_NAV = [
@@ -52,10 +52,10 @@ function Sidebar({ lang, setLang, screen, go, onExit }) {
 
 /* Recent activity shown in the bell popup (compact mirror of the Log feed) */
 const NOTIFS = [
-  { cat: "ai", title: { id: "AI: TETAP di Aave — likuiditas kuat", en: "AI: STAY on Aave — strong liquidity" }, time: { id: "4 jam lalu", en: "4h ago" } },
+  { cat: "ai", title: { id: "AI: TETAP di Aave, likuiditas kuat", en: "AI: STAY on Aave, strong liquidity" }, time: { id: "4 jam lalu", en: "4h ago" } },
   { cat: "yield", title: { id: "Bunga +0,82 USDC disapu ke Kolam #12", en: "Yield +0.82 USDC swept to Pool #12" }, time: { id: "6 jam lalu", en: "6h ago" } },
   { cat: "ai", safe: true, title: { id: "Aksi terlarang ditolak otomatis", en: "Forbidden action auto-rejected" }, time: { id: "1 hari lalu", en: "1d ago" } },
-  { cat: "draw", win: true, title: { id: "Menang ronde #9 — +18,20 USDC", en: "Won round #9 — +18.20 USDC" }, time: { id: "5 hari lalu", en: "5d ago" } },
+  { cat: "draw", win: true, title: { id: "Menang ronde #9, +18,20 USDC", en: "Won round #9, +18.20 USDC" }, time: { id: "5 hari lalu", en: "5d ago" } },
 ];
 
 function NotifBell({ lang, go }) {
@@ -183,7 +183,7 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
 
           {/* AI keeper */}
           <Reveal delay={140} className="col-4">
-            <div className="card card-pad-lg card-lift" onClick={() => go("keeper")} style={{ cursor: "pointer", height: "100%" }}>
+            <div className="card card-pad-lg card-lift" onClick={() => go("keeper")} style={{ cursor: "pointer", height: "100%", display: "flex", flexDirection: "column" }}>
               <div className="row aic gap-12" style={{ marginBottom: 12 }}>
                 <Gardener size={48} />
                 <div>
@@ -191,40 +191,60 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
                   <span className="badge badge-active" style={{ fontSize: 10.5, padding: "3px 8px" }}>{L(lang, { id: "Aktif", en: "Active" })}</span>
                 </div>
               </div>
-              <p className="muted" style={{ fontSize: 14, lineHeight: 1.5 }}>"{L(lang, { id: "Tetap di Aave — likuiditas kuat, tak ada kabar audit negatif minggu ini.", en: "Staying on Aave — strong liquidity, no negative audit news this week." })}"</p>
-              <span className="tlink" style={{ marginTop: 8, display: "inline-block" }}>{L(lang, { id: "Lihat alasan lengkap", en: "See full reasoning" })} →</span>
+              <p className="muted" style={{ fontSize: 14, lineHeight: 1.5 }}>"{L(lang, { id: "Tetap di Aave, likuiditas kuat, tak ada kabar audit negatif minggu ini.", en: "Staying on Aave, strong liquidity, no negative audit news this week." })}"</p>
+              <div className="row gap-6 wrap" style={{ marginTop: 14 }}>
+                {[{ i: Icon.coin, l: "APY 4,1%" }, { i: Icon.pool, l: "TVL $1,2B" }, { i: Icon.shield, l: L(lang, { id: "Audit bersih", en: "Audit clean" }) }].map((c, i) => (
+                  <span key={i} className="chip" style={{ fontSize: 12, padding: "6px 10px" }}><c.i size={13} stroke="var(--clover-deep)" /> {c.l}</span>
+                ))}
+              </div>
+              <span className="tlink" style={{ marginTop: "auto", paddingTop: 14, display: "inline-block" }}>{L(lang, { id: "Lihat alasan lengkap", en: "See full reasoning" })} →</span>
             </div>
           </Reveal>
 
           {/* participation */}
           <Reveal delay={200} className="col-4">
-            <div className="card card-pad-lg card-sage" style={{ height: "100%", overflow: "hidden", position: "relative" }}>
+            <div className="card card-pad-lg card-sage" style={{ height: "100%", overflow: "hidden", position: "relative", display: "flex", flexDirection: "column" }}>
               <CloverWatermark corner="br" size={120} opacity={0.06} />
-              <div className="head" style={{ fontSize: 16, marginBottom: 16 }}>{L(lang, { id: "Caramu ikut", en: "Your stake" })}</div>
+              <div className="head" style={{ fontSize: 16, marginBottom: 18 }}>{L(lang, { id: "Caramu ikut", en: "Your stake" })}</div>
               <div className="row between" style={{ gap: 10 }}>
                 {[{ l: { id: "Modalmu", en: "Principal" }, v: "100" }, { l: { id: "Bunga", en: "Yield" }, v: "+3,42", c: "var(--clover)" }, { l: { id: "Peluang Menang", en: "Win Chance" }, v: "12,5%", c: "var(--gold-deep)" }].map((x, i) => (
-                  <div key={i} style={{ flex: 1 }}><div className="head tnum" style={{ fontSize: 24, color: x.c || "var(--forest)" }}>{x.v}</div><div className="muted tiny">{L(lang, x.l)}</div></div>
+                  <div key={i} style={{ flex: 1 }}><div className="head tnum" style={{ fontSize: 26, color: x.c || "var(--forest)" }}>{x.v}</div><div className="muted tiny" style={{ marginTop: 2 }}>{L(lang, x.l)}</div></div>
                 ))}
               </div>
-              <div className="vine-divide" />
-              <div className="row aic gap-8 tiny muted"><Icon.leaf size={14} stroke="var(--clover)" /> {L(lang, { id: "Deposit lebih besar = peluang menang lebih besar — undian adil via VRF.", en: "Bigger deposit = bigger win chance — fair draw via VRF." })}</div>
+              <div className="vine-divide" style={{ marginTop: "auto" }} />
+              <div className="row aic gap-8 tiny muted"><Icon.leaf size={14} stroke="var(--clover)" /> {L(lang, { id: "Deposit lebih besar = peluang menang lebih besar, undian adil via VRF.", en: "Bigger deposit = bigger win chance, fair draw via VRF." })}</div>
             </div>
           </Reveal>
 
           {/* fee */}
           <Reveal delay={260} className="col-4">
-            <div className="card card-pad-lg" style={{ height: "100%" }}>
+            <div className="card card-pad-lg" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
               <div className="head" style={{ fontSize: 16, marginBottom: 14 }}>{L(lang, { id: "Transparansi biaya", en: "Fee transparency" })}</div>
-              <div className="row aic gap-14">
-                <svg width="78" height="78" viewBox="0 0 96 96" style={{ flex: "0 0 auto" }}>
-                  <circle cx="48" cy="48" r="38" fill="none" stroke="var(--clover)" strokeWidth="15" strokeDasharray={`${0.9 * 238.7} 238.7`} transform="rotate(-90 48 48)" strokeLinecap="round" />
-                  <circle cx="48" cy="48" r="38" fill="none" stroke="var(--gold)" strokeWidth="15" strokeDasharray={`${0.1 * 238.7} 238.7`} strokeDashoffset={`${-0.9 * 238.7}`} transform="rotate(-90 48 48)" strokeLinecap="round" />
-                </svg>
-                <div className="col gap-6">
+              <div className="row aic gap-16">
+                {(() => {
+                  const R = 40, C = 2 * Math.PI * R, gap = 9;
+                  const winLen = 0.9 * C - gap, treaLen = 0.1 * C - gap;
+                  return (
+                    <svg width="92" height="92" viewBox="0 0 100 100" style={{ flex: "0 0 auto" }}>
+                      <circle cx="50" cy="50" r={R} fill="none" stroke="color-mix(in srgb,var(--forest) 8%, transparent)" strokeWidth="12" />
+                      <circle cx="50" cy="50" r={R} fill="none" stroke="var(--clover)" strokeWidth="12" strokeLinecap="round"
+                        strokeDasharray={`${winLen} ${C - winLen}`} strokeDashoffset={-(gap / 2)} transform="rotate(-90 50 50)" />
+                      <circle cx="50" cy="50" r={R} fill="none" stroke="var(--gold)" strokeWidth="12" strokeLinecap="round"
+                        strokeDasharray={`${treaLen} ${C - treaLen}`} strokeDashoffset={-(gap / 2 + winLen + gap)} transform="rotate(-90 50 50)" />
+                      <text x="50" y="47" textAnchor="middle" fontFamily="var(--font-head)" fontSize="21" fontWeight="700" fill="var(--gold-deep)">10%</text>
+                      <text x="50" y="63" textAnchor="middle" fontFamily="var(--font-body)" fontSize="10" fontWeight="600" fill="var(--ink-45)" style={{ textTransform: "uppercase", letterSpacing: ".06em" }}>{L(lang, { id: "biaya", en: "fee" })}</text>
+                    </svg>
+                  );
+                })()}
+                <div className="col gap-7">
                   <div className="row aic gap-8"><span style={{ width: 10, height: 10, borderRadius: 3, background: "var(--clover)" }} /><span className="tiny" style={{ fontWeight: 600 }}>90% {L(lang, { id: "pemenang", en: "winners" })}</span></div>
                   <div className="row aic gap-8"><span style={{ width: 10, height: 10, borderRadius: 3, background: "var(--gold)" }} /><span className="tiny" style={{ fontWeight: 600 }}>10% {L(lang, { id: "treasury", en: "treasury" })}</span></div>
                   <div className="tiny muted" style={{ lineHeight: 1.35, marginTop: 2 }}>{L(lang, { id: "Modal tak pernah dipotong.", en: "Principal never cut." })}</div>
                 </div>
+              </div>
+              <div className="row between aic" style={{ marginTop: "auto", paddingTop: 16 }}>
+                <span className="tiny muted" style={{ fontWeight: 600 }}>{L(lang, { id: "Biaya ronde ini", en: "Fee this round" })}</span>
+                <span className="head tnum" style={{ fontSize: 15, color: "var(--gold-deep)" }}>0,34 USDC</span>
               </div>
             </div>
           </Reveal>
@@ -242,11 +262,11 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
 
           {/* win history */}
           <Reveal delay={360} className="col-4">
-            <div className="card card-pad-lg" style={{ height: "100%" }}>
+            <div className="card card-pad-lg" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
               <div className="head" style={{ fontSize: 16, marginBottom: 12 }}>{L(lang, { id: "Riwayat menang", en: "Win history" })}</div>
-              <div className="col gap-10">
+              <div className="col" style={{ flex: 1, justifyContent: "space-between", gap: 10 }}>
                 {[{ r: 9, win: true, amt: "+18,20" }, { r: 8, win: false }, { r: 6, win: true, amt: "+9,80" }].map((it, i) => (
-                  <div key={i} className="row between aic" style={{ padding: "10px 12px", borderRadius: 12, background: it.win ? "color-mix(in srgb,var(--gold) 10%, var(--canvas-2))" : "var(--sage)" }}>
+                  <div key={i} className="row between aic" style={{ flex: 1, padding: "0 14px", borderRadius: 12, background: it.win ? "color-mix(in srgb,var(--gold) 10%, var(--canvas-2))" : "var(--sage)" }}>
                     <span className="tiny" style={{ fontWeight: 700, color: "var(--ink-45)" }}>{L(lang, { id: "Ronde", en: "Round" })} #{it.r}</span>
                     {it.win ? <span className="head tnum" style={{ fontSize: 15, color: "var(--gold-deep)" }}>{it.amt}</span>
                       : <span className="tiny" style={{ fontWeight: 600, color: "var(--clover-deep)" }}>{L(lang, { id: "Modal utuh", en: "Whole" })}</span>}

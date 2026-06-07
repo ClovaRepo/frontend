@@ -3,7 +3,7 @@ import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, Clo
 import { SafetyBonsai } from './web-bonsai.jsx';
 
 /* ============================================================
-   CLOVA WEB — Marketing landing page (desktop-first, responsive)
+   CLOVA WEB, Marketing landing page (desktop-first, responsive)
    ============================================================ */
 
 function WebNav({ lang, setLang, onEnter }) {
@@ -125,8 +125,8 @@ function WebLanding({ lang, setLang, t, onEnter }) {
             <span className="section-kicker" style={{ margin: 0 }}>{L(lang, { id: "Kenapa Aman", en: "Why it's safe" })}</span>
             <span className="badge badge-safe"><Icon.lock size={13} stroke="var(--clover-deep)" /> {L(lang, { id: "Dipaksa oleh kode", en: "Enforced by code" })}</span>
           </Reveal>
-          <Reveal delay={60}><h2 style={{ fontSize: 40, lineHeight: 1.12, maxWidth: 560, marginBottom: 8 }}>{L(lang, { id: "Aman bukan karena percaya AI \u2014 tapi karena dipaksa kode.", en: "Safe not because you trust the AI \u2014 but because code enforces it." })}</h2></Reveal>
-          <Reveal delay={120}><p className="muted" style={{ fontSize: 16, maxWidth: 520, marginBottom: 18 }}>{L(lang, { id: "Setiap cabang dipagari batasan on-chain. Inilah yang tak bisa dilakukan agen \u2014 selamanya.", en: "Every branch is fenced by on-chain limits. Here's what the agent simply cannot do \u2014 ever." })}</p></Reveal>
+          <Reveal delay={60}><h2 style={{ fontSize: 40, lineHeight: 1.12, maxWidth: 560, marginBottom: 8 }}>{L(lang, { id: "Aman bukan karena percaya AI, tapi karena dipaksa kode.", en: "Safe not because you trust the AI, but because code enforces it." })}</h2></Reveal>
+          <Reveal delay={120}><p className="muted" style={{ fontSize: 16, maxWidth: 520, marginBottom: 18 }}>{L(lang, { id: "Setiap cabang dipagari batasan on-chain. Inilah yang tak bisa dilakukan agen, selamanya.", en: "Every branch is fenced by on-chain limits. Here's what the agent simply cannot do, ever." })}</p></Reveal>
           <SafetyBonsai lang={lang} />
         </div>
       </div>
