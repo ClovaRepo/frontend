@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, nfmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 
 /* ============================================================
    CLOVA WEB, App shell (left sidebar) + desktop Dashboard
@@ -208,7 +208,7 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
               <div className="head" style={{ fontSize: 16, marginBottom: 18 }}>{L(lang, { id: "Caramu ikut", en: "Your stake" })}</div>
               <div className="row between" style={{ gap: 10 }}>
                 {[{ l: { id: "Modalmu", en: "Principal" }, v: "100" }, { l: { id: "Bunga", en: "Yield" }, v: "+3,42", c: "var(--clover)" }, { l: { id: "Peluang Menang", en: "Win Chance" }, v: "12,5%", c: "var(--gold-deep)" }].map((x, i) => (
-                  <div key={i} style={{ flex: 1 }}><div className="head tnum" style={{ fontSize: 26, color: x.c || "var(--forest)" }}>{x.v}</div><div className="muted tiny" style={{ marginTop: 2 }}>{L(lang, x.l)}</div></div>
+                  <div key={i} style={{ flex: 1 }}><div className="head tnum" style={{ fontSize: 26, color: x.c || "var(--forest)" }}>{nfmt(lang, x.v)}</div><div className="muted tiny" style={{ marginTop: 2 }}>{L(lang, x.l)}</div></div>
                 ))}
               </div>
               <div className="vine-divide" style={{ marginTop: "auto" }} />
@@ -244,7 +244,7 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
               </div>
               <div className="row between aic" style={{ marginTop: "auto", paddingTop: 16 }}>
                 <span className="tiny muted" style={{ fontWeight: 600 }}>{L(lang, { id: "Biaya ronde ini", en: "Fee this round" })}</span>
-                <span className="head tnum" style={{ fontSize: 15, color: "var(--gold-deep)" }}>0,34 USDC</span>
+                <span className="head tnum" style={{ fontSize: 15, color: "var(--gold-deep)" }}>{nfmt(lang, "0,34")} USDC</span>
               </div>
             </div>
           </Reveal>
@@ -254,7 +254,7 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
             <div className="card card-pad-lg">
               <div className="row between aic" style={{ marginBottom: 4 }}>
                 <div className="head" style={{ fontSize: 16 }}>{L(lang, { id: "Pertumbuhan kolam ronde ini", en: "Pool growth this round" })}</div>
-                <span className="head tnum" style={{ fontSize: 18, color: "var(--clover)" }}>+1.284 USDC</span>
+                <span className="head tnum" style={{ fontSize: 18, color: "var(--clover)" }}>+{nfmt(lang, "1.284")} USDC</span>
               </div>
               <AreaChart data={yieldSeries} color="var(--clover)" h={120} />
             </div>
@@ -268,7 +268,7 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
                 {[{ r: 9, win: true, amt: "+18,20" }, { r: 8, win: false }, { r: 6, win: true, amt: "+9,80" }].map((it, i) => (
                   <div key={i} className="row between aic" style={{ flex: 1, padding: "0 14px", borderRadius: 12, background: it.win ? "color-mix(in srgb,var(--gold) 10%, var(--canvas-2))" : "var(--sage)" }}>
                     <span className="tiny" style={{ fontWeight: 700, color: "var(--ink-45)" }}>{L(lang, { id: "Ronde", en: "Round" })} #{it.r}</span>
-                    {it.win ? <span className="head tnum" style={{ fontSize: 15, color: "var(--gold-deep)" }}>{it.amt}</span>
+                    {it.win ? <span className="head tnum" style={{ fontSize: 15, color: "var(--gold-deep)" }}>{nfmt(lang, it.amt)}</span>
                       : <span className="tiny" style={{ fontWeight: 600, color: "var(--clover-deep)" }}>{L(lang, { id: "Modal utuh", en: "Whole" })}</span>}
                   </div>
                 ))}

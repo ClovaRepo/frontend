@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, nfmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 import { useFlow, StatePill } from './screens-ob.jsx';
 
 /* ============================================================
@@ -51,7 +51,7 @@ function ScreenUndian({ lang, go, t }) {
             </div>
             <h1 style={{ fontSize: 25, marginBottom: 8 }}>{L(lang, { id: "Menarik pemenang ronde #12…", en: "Drawing round #12's winner…" })}</h1>
             <p className="muted" style={{ fontSize: 13.5 }}>{L(lang, { id: "Acak & adil lewat VRF on-chain.", en: "Random & fair via on-chain VRF." })}</p>
-            <div className="head tnum" style={{ fontSize: 38, color: "var(--gold-deep)", marginTop: 22 }}>1.284,00 USDC</div>
+            <div className="head tnum" style={{ fontSize: 38, color: "var(--gold-deep)", marginTop: 22 }}>{nfmt(lang, "1.284,00")} USDC</div>
           </div>
         )}
 
@@ -95,7 +95,7 @@ function ScreenUndian({ lang, go, t }) {
                     {w.you ? <Clover size={20} color="var(--gold)" stem={false} /> : <span style={{ width: 20, textAlign: "center", color: "var(--ink-45)", fontWeight: 700 }}>{i + 1}</span>}
                     <span className="tnum" style={{ fontWeight: 600, fontSize: 14, color: w.you ? "var(--gold-deep)" : "var(--ink)" }}>{w.addr}{w.you && <span className="tiny" style={{ marginLeft: 6, color: "var(--gold-deep)" }}>({L(lang, { id: "kamu", en: "you" })})</span>}</span>
                   </div>
-                  <span className="head tnum" style={{ fontSize: 16, color: "var(--gold-deep)" }}>+{w.amt}</span>
+                  <span className="head tnum" style={{ fontSize: 16, color: "var(--gold-deep)" }}>+{nfmt(lang, w.amt)}</span>
                 </div>
               ))}
             </div>
@@ -150,7 +150,7 @@ function ScreenDetailRonde({ lang, go, t }) {
         {/* stat grid */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
           <StatTile icon={Icon.leaf} label={L(lang, { id: "Penanam", en: "Planters" })} value="248" />
-          <StatTile icon={Icon.coin} label={L(lang, { id: "Modal dikelola", en: "Principal managed" })} value="24.800" sub="USDC" />
+          <StatTile icon={Icon.coin} label={L(lang, { id: "Modal dikelola", en: "Principal managed" })} value={nfmt(lang, "24.800")} sub="USDC" />
           <StatTile icon={Icon.drop} label={L(lang, { id: "Bunga disapu hari ini", en: "Yield swept today" })} value="+212" sub="USDC" />
           <StatTile icon={Icon.shieldLeaf} label={L(lang, { id: "Protokol aktif", en: "Active protocol" })} value="Aave v3" sub={L(lang, { id: "Sehat", en: "Healthy" })} />
         </div>
@@ -164,7 +164,7 @@ function ScreenDetailRonde({ lang, go, t }) {
           <div className="row between" style={{ gap: 10 }}>
             {[{ l: { id: "Modalmu", en: "Principal" }, v: "100", c: "var(--forest)" }, { l: { id: "Bunga tersumbang", en: "Yield given" }, v: "+3,42", c: "var(--clover)" }, { l: { id: "Peluang Menang", en: "Win Chance" }, v: "12,5%", c: "var(--gold-deep)" }].map((x, i) => (
               <div key={i} style={{ flex: 1 }}>
-                <div className="head tnum" style={{ fontSize: 19, color: x.c }}>{x.v}</div>
+                <div className="head tnum" style={{ fontSize: 19, color: x.c }}>{nfmt(lang, x.v)}</div>
                 <div className="muted tiny">{L(lang, x.l)}</div>
               </div>
             ))}
@@ -181,7 +181,7 @@ function ScreenDetailRonde({ lang, go, t }) {
                 <span className="tiny" style={{ fontWeight: 700, color: "var(--ink-45)" }}>{L(lang, { id: "Ronde", en: "Round" })} #{rd.r}</span>
                 <span className="badge" style={{ fontSize: 9.5, padding: "2px 7px", background: rd.dec === "move" ? "color-mix(in srgb,var(--gold) 20%, white)" : "var(--sage-2)", color: rd.dec === "move" ? "var(--gold-deep)" : "var(--clover-deep)" }}>{rd.dec === "move" ? L(lang, { id: "PINDAH", en: "MOVE" }) : L(lang, { id: "TETAP", en: "STAY" })}</span>
               </div>
-              <div className="head tnum" style={{ fontSize: 20, color: "var(--gold-deep)" }}>{rd.amt} <span style={{ fontSize: 12 }}>USDC</span></div>
+              <div className="head tnum" style={{ fontSize: 20, color: "var(--gold-deep)" }}>{nfmt(lang, rd.amt)} <span style={{ fontSize: 12 }}>USDC</span></div>
               <div className="tiny muted tnum" style={{ marginTop: 3 }}>{rd.win}</div>
               <div className="tiny muted" style={{ marginTop: 6 }}>{rd.proto}</div>
             </div>

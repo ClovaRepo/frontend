@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, nfmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 
 /* ============================================================
    CLOVA, Dashboard ("Kebunku") with 3 layout variants + Panel AI
@@ -118,7 +118,7 @@ function WinStrip({ lang }) {
               {it.win ? <Icon.trophy size={16} stroke="var(--gold-deep)" /> : <Clover size={16} color="var(--clover)" stem={false} />}
             </div>
             {it.win
-              ? <div className="head tnum" style={{ fontSize: 18, color: "var(--gold-deep)" }}>{it.amt}</div>
+              ? <div className="head tnum" style={{ fontSize: 18, color: "var(--gold-deep)" }}>{nfmt(lang, it.amt)}</div>
               : <Icon.shieldLeaf size={20} stroke="var(--clover)" />}
             <div className="tiny muted" style={{ marginTop: 4, lineHeight: 1.25 }}>{L(lang, it.label)}</div>
           </div>
@@ -306,8 +306,8 @@ function ScreenPanelAI({ lang, go, t }) {
             </div>
           ) : (
             <div className="row gap-8 wrap" style={{ marginBottom: 14 }}>
-              <SignalChip icon={Icon.coin} label="APY 4,1%" delay={140} />
-              <SignalChip icon={Icon.pool} label="TVL $1,2B" delay={200} />
+              <SignalChip icon={Icon.coin} label={nfmt(lang, "APY 4,1%")} delay={140} />
+              <SignalChip icon={Icon.pool} label={nfmt(lang, "TVL $1,2B")} delay={200} />
               <SignalChip icon={Icon.shield} label={L(lang, { id: "Audit: bersih", en: "Audit: clean" })} delay={260} />
               <SignalChip icon={Icon.spark} label={L(lang, { id: "Sentimen: stabil", en: "Sentiment: stable" })} delay={320} />
             </div>

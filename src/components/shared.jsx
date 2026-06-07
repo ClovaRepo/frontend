@@ -13,9 +13,21 @@ function L(lang, pair) {
   return pair[lang] != null ? pair[lang] : (pair.id || "");
 }
 
-/* ---------- number formatting (id locale style: 1.284,00) ---------- */
+/* ---------- number formatting (follows the active UI language) ----------
+   The app keeps <html lang> in sync with the language toggle, so number
+   output matches: en → 1,284.00 · id → 1.284,00 */
+function currentLocale() {
+  if (typeof document !== "undefined" && document.documentElement.lang === "id") return "id-ID";
+  return "en-US";
+}
 function fmt(n, dec = 2) {
-  return Number(n).toLocaleString("id-ID", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  return Number(n).toLocaleString(currentLocale(), { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+/* Re-localize an Indonesian-formatted numeric literal ("1.284,50", "12,5%",
+   "$1,2B") to the active language by swapping separators. Use on number-only
+   strings, never on prose. */
+function nfmt(lang, s) {
+  return lang === "en" ? String(s).replace(/[.,]/g, (m) => (m === "." ? "," : ".")) : s;
 }
 
 /* ---------- count-up hook ---------- */
@@ -614,4 +626,4 @@ function Toast({ show, children, tone = "safe" }) {
 
 /* ==================== exports ==================== */
 
-export { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, PixelTree, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast };
+export { L, fmt, nfmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, PixelTree, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast };

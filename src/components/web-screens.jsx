@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, nfmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 import { MainHead } from './web-app.jsx';
 
 const BACKEND_URL = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_BACKEND_URL) || "http://localhost:3001";
@@ -52,7 +52,7 @@ function WebKeeper({ lang, t, go }) {
   const latest = decisions?.[0];
 
   const defaultChips = [
-    { i: Icon.coin, l: "APY 4,1%" }, { i: Icon.pool, l: "TVL $1,2B" },
+    { i: Icon.coin, l: nfmt(lang, "APY 4,1%") }, { i: Icon.pool, l: nfmt(lang, "TVL $1,2B") },
     { i: Icon.shield, l: L(lang, { id: "Audit: bersih", en: "Audit: clean" }) },
     { i: Icon.spark, l: L(lang, { id: "Sentimen: stabil", en: "Sentiment: stable" }) },
     { i: Icon.drop, l: L(lang, { id: "Likuiditas: tinggi", en: "Liquidity: high" }) },
@@ -197,7 +197,7 @@ function WebPool({ lang, t, onDraw, go }) {
             <Reveal key={i} delay={140 + i * 50} className="col-4" style={{ gridColumn: "span 3" }}>
               <div className="card card-pad-lg" style={{ height: "100%" }}>
                 <st.i size={22} stroke="var(--clover-deep)" />
-                <div className="head tnum" style={{ fontSize: 26, marginTop: 10 }}>{st.v}</div>
+                <div className="head tnum" style={{ fontSize: 26, marginTop: 10 }}>{nfmt(lang, st.v)}</div>
                 <div className="muted tiny" style={{ marginTop: 2 }}>{L(lang, st.l)}</div>
                 {st.s && <div className="tiny" style={{ color: "var(--clover-deep)", fontWeight: 600, marginTop: 3 }}>{st.s}</div>}
               </div>
@@ -214,7 +214,7 @@ function WebPool({ lang, t, onDraw, go }) {
                       <span className="tiny" style={{ fontWeight: 700, color: "var(--ink-45)" }}>{L(lang, { id: "Ronde", en: "Round" })} #{rd.r}</span>
                       <span className="badge" style={{ fontSize: 9.5, padding: "2px 8px", background: rd.dec === "move" ? "color-mix(in srgb,var(--gold) 20%, white)" : "var(--sage-2)", color: rd.dec === "move" ? "var(--gold-deep)" : "var(--clover-deep)" }}>{rd.dec === "move" ? L(lang, { id: "PINDAH", en: "MOVE" }) : L(lang, { id: "TETAP", en: "STAY" })}</span>
                     </div>
-                    <div className="head tnum" style={{ fontSize: 22, color: "var(--gold-deep)" }}>{rd.amt} <span style={{ fontSize: 12 }}>USDC</span></div>
+                    <div className="head tnum" style={{ fontSize: 22, color: "var(--gold-deep)" }}>{nfmt(lang, rd.amt)} <span style={{ fontSize: 12 }}>USDC</span></div>
                     <div className="tiny muted tnum" style={{ marginTop: 4 }}>{rd.win} · {rd.proto}</div>
                   </div>
                 ))}
@@ -282,8 +282,8 @@ function WebLog({ lang, t, go }) {
             <div className="muted tiny" style={{ marginBottom: 16 }}>{L(lang, { id: "Ronde #12 · sedang berjalan", en: "Round #12 · running" })}</div>
             <div className="col gap-2">
               {[
-                { l: { id: "Bunga disumbang", en: "Yield contributed" }, v: "+3,42 USDC", accent: true },
-                { l: { id: "Peluang menang", en: "Win chance" }, v: "12,5%" },
+                { l: { id: "Bunga disumbang", en: "Yield contributed" }, v: nfmt(lang, "+3,42 USDC"), accent: true },
+                { l: { id: "Peluang menang", en: "Win chance" }, v: nfmt(lang, "12,5%") },
                 { l: { id: "Kolam hadiah", en: "Prize pool" }, v: L(lang, { id: "1.284 USDC", en: "1,284 USDC" }) },
                 { l: { id: "Undian berikutnya", en: "Next draw" }, v: L(lang, { id: "11j 24m", en: "11h 24m" }) },
               ].map((row, i) => (
@@ -316,7 +316,7 @@ function WebSettings({ lang, setLang, openModal, t, go }) {
               <div className="head" style={{ fontSize: 17, marginBottom: 8 }}>{L(lang, { id: "Akun", en: "Account" })}</div>
               {[{ i: Icon.wallet, l: { id: "Alamat dompet", en: "Wallet" }, v: "0x12…9aF3", b: <Icon.copy size={16} stroke="var(--clover)" /> },
                 { i: Icon.spark, l: { id: "Akun Pintar", en: "Smart Account" }, b: <span className="badge badge-active" style={{ fontSize: 10.5, padding: "3px 9px" }}>{L(lang, { id: "Aktif", en: "Active" })}</span> },
-                { i: Icon.leaf, l: { id: "Peluang Menang", en: "Win Chance" }, b: <span className="badge badge-active" style={{ fontSize: 10.5, padding: "3px 9px" }}>12,5%</span> },
+                { i: Icon.leaf, l: { id: "Peluang Menang", en: "Win Chance" }, b: <span className="badge badge-active" style={{ fontSize: 10.5, padding: "3px 9px" }}>{nfmt(lang, "12,5%")}</span> },
                 { i: Icon.pool, l: { id: "Jaringan", en: "Network" }, b: <span className="badge badge-soft">Base</span> }].map((row, i) => (
                 <div key={i} className="row between aic" style={{ padding: "14px 0", borderBottom: i < 3 ? "1px solid var(--hairline)" : "none" }}>
                   <div className="row aic gap-10"><row.i size={18} stroke="var(--forest-70)" /><span style={{ fontSize: 14.5, fontWeight: 500 }}>{L(lang, row.l)}</span></div>
