@@ -9,6 +9,7 @@ import { useWallet } from './wallet-context.jsx';
 
 /* ====================== 10. UNDIAN / WIN ====================== */
 function ScreenUndian({ lang, go, t }) {
+  const { round, poolYield } = useWallet();
   const result = t.drawResult || "win"; // 'win' | 'lose'
   const [phase, setPhase] = useState("pre"); // pre, drawing, result
   useEffect(() => {
@@ -34,12 +35,12 @@ function ScreenUndian({ lang, go, t }) {
 
         {phase === "pre" && (
           <div className="center reveal" style={{ marginTop: 20 }}>
-            <div className="badge badge-win" style={{ marginBottom: 16 }}><Icon.trophy size={14} stroke="var(--gold-deep)" /> {L(lang, { id: "Ronde #12 · Undian berlangsung", en: "Round #12 · Draw in progress" })}</div>
+            <div className="badge badge-win" style={{ marginBottom: 16 }}><Icon.trophy size={14} stroke="var(--gold-deep)" /> {L(lang, { id: `Ronde #${round ?? 1} · Undian berlangsung`, en: `Round #${round ?? 1} · Draw in progress` })}</div>
             <div style={{ display: "grid", placeItems: "center", margin: "10px 0 18px" }}>
               <Clover size={120} color="var(--clover)" breathe />
             </div>
             <h1 style={{ fontSize: 26, marginBottom: 8 }}>{L(lang, { id: "Kolam hadiah ronde ini", en: "This round's prize pool" })}</h1>
-            <div className="head tnum" style={{ fontSize: 46, color: "var(--gold-deep)", marginBottom: 6 }}><CountUp value={1284} dec={0} /> USDC</div>
+            <div className="head tnum" style={{ fontSize: 46, color: "var(--gold-deep)", marginBottom: 6 }}><CountUp value={Number(poolYield ?? 0)} dec={4} /> USDC</div>
             <p className="muted" style={{ fontSize: 13.5, marginBottom: 20 }}>{L(lang, { id: "Acak & adil lewat VRF on-chain.", en: "Random & fair via on-chain VRF." })}</p>
             <div className="row aic gap-10" style={{ background: "color-mix(in srgb,var(--gold) 11%, var(--canvas-2))", borderRadius: 14, padding: "14px 18px", marginBottom: 16, justifyContent: "center" }}>
               <Icon.robot size={18} stroke="var(--gold-deep)" />
@@ -133,16 +134,36 @@ function StatTile({ icon: I, label, value, sub }) {
 }
 
 function ScreenDetailRonde({ lang, go, t }) {
-  const chart = [40, 120, 260, 380, 520, 720, 880, 1010, 1140, 1284];
-  const rounds = [
-    { r: 11, win: "0x77…b2C1", amt: "1.102", proto: "Aave v3", dec: "stay" },
-    { r: 10, win: "0x4a…0e9D", amt: "1.340", proto: "Moonwell", dec: "move" },
-    { r: 9, win: "0x12…9aF3", amt: "980", proto: "Aave v3", dec: "stay" },
-  ];
+  const { round, poolYield, participants, principalUsdc, chancePct, activeProtocol } = useWallet();
+  const [status, setStatus] = useState(null);
+  const [decisions, setDecisions] = useState([]);
+
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? "http://localhost:3001";
+
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/status`).then(r => r.json()).then(setStatus).catch(() => {});
+    fetch(`${BACKEND_URL}/decisions?limit=5`).then(r => r.json()).then(d => Array.isArray(d) && setDecisions(d)).catch(() => {});
+  }, []);
+
+  const totalYield = status?.roundYieldPool ? Number(status.roundYieldPool) : Number(poolYield ?? 0);
+  const planters   = status?.participantCount ?? participants ?? 0;
+  const totalPrincipal = status ? (planters * (totalYield > 0 ? totalYield / 0.05 * 365 / 12 : 0)) : 0;
+  const protocol   = status?.activeProtocol ?? activeProtocol ?? "Aave v3";
+  const chartData  = decisions.length > 1
+    ? decisions.slice().reverse().map((d, i) => Number(d.yieldSweptUsdc ?? 0) * (i + 1))
+    : [0, 0, 0, 0, 0, 0, 0, 0, 0, totalYield];
+
+  const rounds = decisions.slice(0, 3).map(d => ({
+    r: d.round,
+    win: "—",
+    amt: Number(d.yieldSweptUsdc ?? 0).toFixed(2),
+    proto: d.recommendation === "TETAP" ? protocol : d.recommendation,
+    dec: d.recommendation === "TETAP" ? "stay" : "move",
+  }));
   return (
     <div className="screen" style={{ paddingBottom: 90 }}>
       <LeafFall density={(t.leafDensity ?? 1) * 0.4} />
-      <TopBar onBack={() => go("dashboard")} title={L(lang, { id: "Ronde #12", en: "Round #12" })}
+      <TopBar onBack={() => go("dashboard")} title={L(lang, { id: `Ronde #${status?.currentRound ?? round ?? 1}`, en: `Round #${status?.currentRound ?? round ?? 1}` })}
         right={<span className="badge badge-active"><span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--clover)" }} /> {L(lang, { id: "Berjalan", en: "Running" })}</span>} />
 
       <div style={{ padding: "8px 18px 20px", position: "relative", zIndex: 2 }}>
@@ -153,16 +174,16 @@ function ScreenDetailRonde({ lang, go, t }) {
         {/* pool panel + chart */}
         <div className="card reveal" style={{ padding: "20px 20px", background: "linear-gradient(160deg, color-mix(in srgb,var(--gold) 12%, var(--canvas-2)), var(--canvas-2))", marginBottom: 14 }}>
           <div className="muted tiny" style={{ fontWeight: 600 }}>{L(lang, { id: "Total bunga terkumpul ronde ini", en: "Total yield gathered this round" })}</div>
-          <div className="head tnum" style={{ fontSize: 38, color: "var(--gold-deep)", marginBottom: 12 }}><CountUp value={1284} dec={0} /> USDC</div>
-          <AreaChart data={chart} color="var(--clover)" h={84} />
+          <div className="head tnum" style={{ fontSize: 38, color: "var(--gold-deep)", marginBottom: 12 }}><CountUp value={totalYield} dec={4} /> USDC</div>
+          <AreaChart data={chartData} color="var(--clover)" h={84} />
         </div>
 
         {/* stat grid */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
-          <StatTile icon={Icon.leaf} label={L(lang, { id: "Penanam", en: "Planters" })} value="248" />
-          <StatTile icon={Icon.coin} label={L(lang, { id: "Modal dikelola", en: "Principal managed" })} value={nfmt(lang, "24.800")} sub="USDC" />
-          <StatTile icon={Icon.drop} label={L(lang, { id: "Bunga disapu hari ini", en: "Yield swept today" })} value="+212" sub="USDC" />
-          <StatTile icon={Icon.shieldLeaf} label={L(lang, { id: "Protokol aktif", en: "Active protocol" })} value="Aave v3" sub={L(lang, { id: "Sehat", en: "Healthy" })} />
+          <StatTile icon={Icon.leaf} label={L(lang, { id: "Penanam", en: "Planters" })} value={String(planters)} />
+          <StatTile icon={Icon.coin} label={L(lang, { id: "Modal dikelola", en: "Principal managed" })} value={Number(principalUsdc ?? 0).toFixed(2)} sub="USDC" />
+          <StatTile icon={Icon.drop} label={L(lang, { id: "Bunga disapu hari ini", en: "Yield swept today" })} value={`+${totalYield.toFixed(4)}`} sub="USDC" />
+          <StatTile icon={Icon.shieldLeaf} label={L(lang, { id: "Protokol aktif", en: "Active protocol" })} value={protocol} sub={L(lang, { id: "Sehat", en: "Healthy" })} />
         </div>
 
         {/* your participation */}
@@ -172,7 +193,7 @@ function ScreenDetailRonde({ lang, go, t }) {
             <Clover size={20} color="var(--clover)" stem={false} /><div className="head" style={{ fontSize: 15 }}>{L(lang, { id: "Caramu ikut", en: "Your stake" })}</div>
           </div>
           <div className="row between" style={{ gap: 10 }}>
-            {[{ l: { id: "Modalmu", en: "Principal" }, v: "100", c: "var(--forest)" }, { l: { id: "Bunga tersumbang", en: "Yield given" }, v: "+3,42", c: "var(--clover)" }, { l: { id: "Peluang Menang", en: "Win Chance" }, v: "12,5%", c: "var(--gold-deep)" }].map((x, i) => (
+            {[{ l: { id: "Modalmu", en: "Principal" }, v: Number(principalUsdc ?? 0).toFixed(2), c: "var(--forest)" }, { l: { id: "Bunga tersumbang", en: "Yield given" }, v: `+${totalYield.toFixed(4)}`, c: "var(--clover)" }, { l: { id: "Peluang Menang", en: "Win Chance" }, v: `${(chancePct ?? 0).toFixed(1)}%`, c: "var(--gold-deep)" }].map((x, i) => (
               <div key={i} style={{ flex: 1 }}>
                 <div className="head tnum" style={{ fontSize: 19, color: x.c }}>{nfmt(lang, x.v)}</div>
                 <div className="muted tiny">{L(lang, x.l)}</div>

@@ -138,6 +138,34 @@ function MainHead({ lang, title, sub, onDraw, go, poolYield, round }) {
 /* ===================== DASHBOARD ===================== */
 const BACKEND_URL_WEB = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_BACKEND_URL) || "http://localhost:3001";
 
+const BACKEND_URL_APP = (typeof import.meta !== "undefined" && import.meta.env?.VITE_BACKEND_URL) || "http://localhost:3001";
+
+function WinHistory({ lang }) {
+  const [wins, setWins] = useState([]);
+  useEffect(() => {
+    fetch(`${BACKEND_URL_APP}/wins?limit=5`).then(r => r.json()).then(d => Array.isArray(d) && setWins(d)).catch(() => {});
+  }, []);
+  return (
+    <div className="card card-pad-lg" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <div className="head" style={{ fontSize: 16, marginBottom: 12 }}>{L(lang, { id: "Riwayat menang", en: "Win history" })}</div>
+      <div className="col gap-10">
+        {wins.length === 0
+          ? <div className="muted tiny">{L(lang, { id: "Ronde pertama sedang berjalan.", en: "First round in progress." })}</div>
+          : wins.map((w, i) => (
+              <div key={i} className="row between aic" style={{ padding: "10px 12px", borderRadius: 12, background: "var(--sage)" }}>
+                <div className="col gap-2">
+                  <span className="tiny" style={{ fontWeight: 700, color: "var(--ink-45)" }}>{L(lang, { id: "Ronde", en: "Round" })} #{w.round}</span>
+                  <span className="tiny muted tnum">{w.winner !== "—" ? `${w.winner.slice(0,6)}…${w.winner.slice(-4)}` : "—"}</span>
+                </div>
+                <span className="head tnum" style={{ fontSize: 14, color: "var(--gold-deep)" }}>{Number(w.prizeUsdc).toFixed(4)} USDC</span>
+              </div>
+            ))
+        }
+      </div>
+    </div>
+  );
+}
+
 function WebDashboard({ lang, go, t, openModal, onDraw }) {
   const wallet = useWallet();
   const [poolData, setPoolData] = useState(null);
@@ -157,7 +185,7 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
       setLatestDecision(Array.isArray(dec) ? dec[0] : null);
     };
     load();
-    const id = setInterval(load, 30_000);
+    const id = setInterval(load, 60_000);
     return () => { alive = false; clearInterval(id); };
   }, [wallet.account, wallet.fetchPoolData]);
 
@@ -172,7 +200,7 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
   const yieldSeries = poolYield > 0
     ? [0, poolYield * 0.09, poolYield * 0.21, poolYield * 0.38, poolYield * 0.52,
        poolYield * 0.63, poolYield * 0.74, poolYield * 0.83, poolYield * 0.91, poolYield * 0.96, poolYield]
-    : [40, 120, 220, 360, 470, 560, 700, 820, 980, 1120, 1284];
+    : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
   const aiText = latestDecision?.reasoning
     ?? L(lang, { id: "Tetap di Aave — likuiditas kuat, tak ada kabar audit negatif minggu ini.", en: "Staying on Aave — strong liquidity, no negative audit news this week." });
@@ -240,9 +268,26 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
                 {participants} {L(lang, { id: "penanam ikut", en: "planters in" })}
               </div>
               <div style={{ marginTop: "auto", paddingTop: 10 }}>
-                <CountdownArc pct={0.68} gold size={210}
-                  label={L(lang, { id: "Ronde aktif", en: "Round active" })}
-                  sub={L(lang, { id: "menuju undian", en: "to the draw" })} />
+                {(() => {
+                  const now = Date.now();
+                  const nextSunday = new Date();
+                  nextSunday.setUTCHours(0, 0, 0, 0);
+                  const daysUntilSunday = (7 - nextSunday.getUTCDay()) % 7 || 7;
+                  nextSunday.setUTCDate(nextSunday.getUTCDate() + daysUntilSunday);
+                  const msLeft = nextSunday.getTime() - now;
+                  const totalMs = 7 * 24 * 3600 * 1000;
+                  const pct = Math.max(0.02, Math.min(0.98, 1 - msLeft / totalMs));
+                  const hLeft = Math.floor(msLeft / 3600000);
+                  const dLeft = Math.floor(hLeft / 24);
+                  const label = dLeft > 0
+                    ? L(lang, { id: `${dLeft}h ${hLeft % 24}m`, en: `${dLeft}d ${hLeft % 24}h` })
+                    : L(lang, { id: `${hLeft}j`, en: `${hLeft}h` });
+                  return (
+                    <CountdownArc pct={pct} gold size={210}
+                      label={label}
+                      sub={L(lang, { id: "menuju undian", en: "to the draw" })} />
+                  );
+                })()}
               </div>
               <div className="row aic gap-8" style={{ marginTop: 12, background: "color-mix(in srgb,var(--gold) 10%, var(--canvas-2))", borderRadius: 12, padding: "10px 14px" }}>
                 <Icon.robot size={15} stroke="var(--gold-deep)" />
@@ -341,22 +386,9 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
             </div>
           </Reveal>
 
-          {/* win history — on-chain events needed, keep static for now */}
+          {/* win history */}
           <Reveal delay={360} className="col-4">
-            <div className="card card-pad-lg" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-              <div className="head" style={{ fontSize: 16, marginBottom: 12 }}>{L(lang, { id: "Riwayat menang", en: "Win history" })}</div>
-              <div className="col gap-10">
-                {round > 1
-                  ? Array.from({ length: Math.min(3, Number(round) - 1) }, (_, i) => Number(round) - 1 - i).map((r) => (
-                      <div key={r} className="row between aic" style={{ padding: "10px 12px", borderRadius: 12, background: "var(--sage)" }}>
-                        <span className="tiny" style={{ fontWeight: 700, color: "var(--ink-45)" }}>{L(lang, { id: "Ronde", en: "Round" })} #{r}</span>
-                        <span className="tiny" style={{ fontWeight: 600, color: "var(--clover-deep)" }}>{L(lang, { id: "Modal utuh", en: "Whole" })}</span>
-                      </div>
-                    ))
-                  : <div className="muted tiny">{L(lang, { id: "Ronde pertama sedang berjalan.", en: "First round in progress." })}</div>
-                }
-              </div>
-            </div>
+            <WinHistory lang={lang} />
           </Reveal>
         </div>
       </div>

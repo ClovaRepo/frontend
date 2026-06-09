@@ -7,9 +7,11 @@
 ## Overview
 
 ```
-Phase 1 (Done)      → Single asset (USDC), 3 protocols, proportional tickets, AI rotation
-Phase 2 (Next)      → Multi-asset, split allocation, World ID, batching, UX polish
-Phase 3 (Future)    → Cross-chain, DAO governance, strategy marketplace, mobile app
+Phase 1 (Done)      → USDC on Base, 3 protocols, proportional tickets, AI rotation,
+                       cross-chain deposit via LI.FI (ETH/ARB/POL/BSC → Base)
+Phase 2 (Next)      → Multi-asset, split allocation, World ID, reverse withdrawal,
+                       batching, UX polish
+Phase 3 (Future)    → DAO governance, strategy marketplace, mobile app
 ```
 
 ---
@@ -66,29 +68,176 @@ nullifiers[nullifierHash] = true;  // prevent double-registration
 
 ---
 
-### 2.3 — Cross-Chain Deposits via LI.FI
+### 2.3 — Cross-Chain Deposits via LI.FI ✅ IMPLEMENTED
 
-**Current:** Users must have USDC on Base to participate.
+> Shipped in Phase 1. Users on any major chain can deposit into Clova without manually bridging first.
 
-**Phase 2:** Accept deposits from any major chain — LI.FI bridges and supplies to Aave in one click.
+#### Supported chains
+
+| Chain | Token | Chain ID |
+|---|---|---|
+| **Base** | USDC | 8453 (native — no bridge) |
+| Ethereum | USDC | 1 |
+| Arbitrum | USDC | 42161 |
+| Polygon | USDC | 137 |
+| BSC | BNB (native) | 56 |
+
+#### User flow
 
 ```
-User has USDC on Ethereum mainnet
-  → LI.FI SDK: bridge Ethereum → Base + supply to Aave
-  → Single transaction approval
-  → User appears in Clova pool on Base
+┌─────────────────────────────────────────────────────────────────────┐
+│  Deposit Modal                                                       │
+│                                                                      │
+│  [🔵 Base] [⚪ ETH] [🔷 ARB] [🟣 POL] [🟡 BSC]  ← chain tabs      │
+│                                                                      │
+│  If Base selected:                                                   │
+│    ┌──────────────────────────────────────────┐                     │
+│    │  100 USDC  [10] [50] [100] [Max]         │                     │
+│    │  Balance: 245.00 USDC                    │                     │
+│    └──────────────────────────────────────────┘                     │
+│    [Cancel]  [Deposit ▶]                                            │
+│                                                                      │
+│  If ETH/ARB/POL/BSC selected:                                       │
+│    Info: "Your USDC/BNB will be bridged to Base USDC via LI.FI"    │
+│    ┌──────────────────────────────────────────┐                     │
+│    │  50 USDC  [10] [50] [100]               │                     │
+│    │  ─────────────────────────────────────  │                     │
+│    │  You receive (est.)  ~49.73 USDC         │                     │
+│    │  Bridge fee          ~$0.27              │                     │
+│    │  Via                 Stargate            │                     │
+│    │  Est. time           5–15 min            │                     │
+│    └──────────────────────────────────────────┘                     │
+│    [Cancel]  [Bridge & Deposit ▶]                                   │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-**Supported source chains:** Ethereum, Arbitrum, Polygon, Optimism, Avalanche.
+#### Execution steps (cross-chain)
 
-**Frontend changes (screens-ob.jsx):**
-```jsx
-<ChainSelector chains={["ethereum", "arbitrum", "polygon", "base"]} />
-// If not Base → show bridge fee estimate + time estimate
-// Build LI.FI route → user approves single tx
+```
+1. APPROVE   ERC-20 approval for LI.FI router (skip for native BNB)
+             MetaMask signs approve(spender, MAX_UINT256)
+
+2. BRIDGE    Send LI.FI bridge transaction via MetaMask
+             (user is on source chain — MetaMask switches automatically)
+
+3. POLLING   Frontend polls LI.FI getStatus() every 12s
+             Status: PENDING → RECEIVING → DONE
+
+4. DEPOSIT   Bridge done. Frontend calls wallet.deposit(receivedAmount):
+               a. Switch MetaMask to Base
+               b. Approve USDC → Aave Pool
+               c. supply(USDC, amount, userAddress, 0) on Aave v3 Base
+               d. register(userAddress, "0x") on ClovaSavingsPool
+               e. POST /record-principal to backend
+
+5. ORIGIN    POST /record-origin saves originChainId + originToken
+             Used later for reverse withdrawal (Phase 2)
 ```
 
-**Note:** Bridge fee shown transparently in UI ("Bridge fee: ~$0.50, ETA: ~2 min").
+#### Key files
+
+| File | Role |
+|---|---|
+| `src/lib/lifi.js` | LI.FI SDK v4 wrapper — `fetchLifiQuote`, `ensureApproval`, `sendBridgeTx`, `pollBridgeStatus` |
+| `src/components/web-screens.jsx` → `WebModalDeposit` | Chain selector UI + cross-chain flow |
+| `backend/src/db.ts` | `saveOrigin` / `getOrigin` — persist origin chain per user |
+| `backend/src/api.ts` | `POST /record-origin`, `GET /origin/:address` |
+| `backend/data/origins.json` | Storage: `{ userAddress, originChainId, originChainName, originToken, originSymbol, savedAt }` |
+
+#### LI.FI SDK usage (v4 pattern)
+
+```typescript
+import { createClient, getQuote, getStatus } from "@lifi/sdk";
+
+const client = createClient({ integrator: "clova", apiKey: process.env.NEXT_PUBLIC_LIFI_API_KEY });
+
+// Get best bridge route
+const quote = await getQuote(client, {
+  fromChain:   42161,         // Arbitrum
+  toChain:     8453,          // Base
+  fromToken:   "0xaf88d065…", // USDC Arbitrum
+  toToken:     "0x833589fC…", // USDC Base
+  fromAmount:  "50000000",    // 50 USDC (6 decimals)
+  fromAddress: userAddress,
+  slippage:    0.005,
+});
+
+// quote.transactionRequest → send via MetaMask
+// quote.estimate.toAmount  → expected USDC on Base
+// quote.estimate.feeCosts  → breakdown of bridge fees
+// quote.tool               → bridge name (Stargate, Across, etc.)
+
+// Poll status after tx sent
+const status = await getStatus(client, {
+  txHash,
+  bridge:    quote.tool,
+  fromChain: 42161,
+  toChain:   8453,
+});
+// status.status → "PENDING" | "DONE" | "FAILED"
+```
+
+#### Fee transparency
+
+The deposit modal shows before user confirms:
+- **You receive (est.):** `quote.estimate.toAmount / 1e6` USDC
+- **Bridge fee:** sum of `quote.estimate.feeCosts[].amountUSD`
+- **Via:** `quote.toolDetails.name` (e.g. Stargate, Across, Hop)
+- **Est. time:** always shown as 5–15 min (conservative)
+
+Principal recorded is the **actual received amount** on Base (balance diff after bridge), not the quoted amount — protects against slippage.
+
+---
+
+### 2.3b — Reverse Withdrawal (Return to Origin Chain)
+
+> **Status: Phase 2.** The groundwork is in place — `originChain` is already stored per user. Only the withdrawal UI and reverse LI.FI quote need to be built.
+
+**The problem:** A user who deposited BNB from BSC currently receives USDC on Base when they withdraw. They'd have to bridge back manually.
+
+**The solution:** When a user withdraws, if their `originChain ≠ Base`, show a toggle:
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Withdraw                                           │
+│                                                     │
+│  Amount: 1.02 USDC                                  │
+│                                                     │
+│  ○ Receive as USDC on Base  (instant, no fee)       │
+│  ● Return as BNB on BSC     (bridge fee: ~$0.30,    │
+│                               est. ~0.004 BNB, 5min)│
+│                                                     │
+│  [Cancel]  [Withdraw ▶]                             │
+└─────────────────────────────────────────────────────┘
+```
+
+**Important caveats to show the user:**
+- Token price may have changed — show USD value, not just token amount
+- Two bridge fees total (deposit + withdrawal) — show cumulative cost
+- "Return to origin" is opt-in, never forced
+
+**What needs to be built:**
+
+```typescript
+// In lifi.js — new helper
+export async function fetchReverseQuote(toChainId, toToken, toTokenDecimals, usdcAmountHuman, userAddress) {
+  return getQuote(client, {
+    fromChain:   8453,        // Base
+    toChain:     toChainId,   // e.g. 56 (BSC)
+    fromToken:   BASE_USDC,
+    toToken,                  // e.g. native BNB
+    fromAmount:  parseUnits(String(usdcAmountHuman), 6).toString(),
+    fromAddress: userAddress,
+    toAddress:   userAddress,
+    slippage:    0.005,
+  });
+}
+```
+
+**Files to change:**
+- `web-screens.jsx` → `WebModalTarik`: fetch `GET /origin/:address`, show toggle if non-Base
+- `src/lib/lifi.js`: add `fetchReverseQuote`
+- Withdrawal flow: if reverse selected → Aave withdraw → LI.FI bridge back to origin chain
 
 ---
 
@@ -234,7 +383,8 @@ Governance token: earned by participating in the pool (not pre-mined, not sold).
 | P0 | PostgreSQL migration | Medium | High (production readiness) |
 | P0 | batchDepositYield contract | Low | High (gas efficiency) |
 | P1 | Multi-protocol allocation | High | High (core differentiation) |
-| P1 | Cross-chain deposits (LI.FI) | Medium | High (accessibility) |
+| ✅ | Cross-chain deposits (LI.FI) | Done | High (accessibility) |
+| P1 | Reverse withdrawal to origin chain | Medium | Medium (UX completeness) |
 | P2 | Multiple prize tiers | Medium | Medium (engagement) |
 | P2 | World ID integration | Medium | Medium (anti-Sybil) |
 | P3 | Automated emergency exit | High | High (trust) |

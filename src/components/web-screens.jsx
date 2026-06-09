@@ -2,9 +2,41 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { L, fmt, nfmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 import { MainHead } from './web-app.jsx';
 import { useWallet } from './wallet-context.jsx';
-import { formatUnits } from 'viem';
+import { formatUnits, parseUnits } from 'viem';
+import { BRIDGE_CHAINS, fetchLifiQuote, ensureApproval, sendBridgeTx, pollBridgeStatus, quoteEstimate } from '../lib/lifi.js';
 
 const BACKEND_URL = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_BACKEND_URL) || "http://localhost:3001";
+
+// Returns "CANCELLED" sentinel when user rejects, friendly string for real errors
+const CANCELLED = "__cancelled__";
+function friendlyErr(e, fallback = "Something went wrong") {
+  const msg = (e?.message || e?.details || String(e)).toLowerCase();
+  if (msg.includes("user denied") || msg.includes("user rejected") || msg.includes("rejected the request"))
+    return CANCELLED;
+  if (msg.includes("insufficient funds") || msg.includes("insufficient balance"))
+    return "Insufficient balance to cover gas fees.";
+  if (msg.includes("nonce") || msg.includes("already known"))
+    return "Transaction conflict — please try again.";
+  if (msg.includes("network") || msg.includes("failed to fetch") || msg.includes("connection"))
+    return "Network error — check your connection and retry.";
+  if (msg.includes("gas") && msg.includes("exceed"))
+    return "Transaction would exceed gas limit — try a smaller amount.";
+  if (msg.includes("reverted") || msg.includes("execution reverted"))
+    return "Transaction reverted by the contract. Check your balance and try again.";
+  // Strip long hex/viem stack from message
+  const clean = (e?.shortMessage || e?.message || fallback).replace(/\n.*/s, "").trim();
+  return clean.length > 120 ? fallback : clean;
+}
+
+// Shows a brief "cancelled" toast, auto-dismiss after 2s
+function useCancelToast() {
+  const [show, setShow] = useState(false);
+  const fire = useCallback(() => {
+    setShow(true);
+    setTimeout(() => setShow(false), 2300); // matches toastLife 2.2s + buffer
+  }, []);
+  return [show, fire];
+}
 
 function useDecisionsW() {
   const [decisions, setDecisions] = useState(null);
@@ -166,28 +198,67 @@ function WebKeeper({ lang, t, go }) {
 
 /* ===================== POOL DETAIL ===================== */
 function WebPool({ lang, t, onDraw, go }) {
-  const chart = [40, 120, 260, 380, 520, 720, 880, 1010, 1140, 1284];
-  const rounds = [
-    { r: 11, win: "0x77…b2C1", amt: "1.102", proto: "Aave v3", dec: "stay" },
-    { r: 10, win: "0x4a…0e9D", amt: "1.340", proto: "Moonwell", dec: "move" },
-    { r: 9, win: "0x12…9aF3", amt: "980", proto: "Aave v3", dec: "stay" },
-    { r: 8, win: "0x90…1aB2", amt: "1.045", proto: "Aave v3", dec: "stay" },
-  ];
+  const [status, setStatus] = useState(null);
+  const [decisions, setDecisions] = useState([]);
+  const [drawCountdown, setDrawCountdown] = useState({ label: "—", pct: 0 });
+
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/status`).then(r => r.json()).then(setStatus).catch(() => {});
+    fetch(`${BACKEND_URL}/decisions?limit=5`).then(r => r.json()).then(d => Array.isArray(d) && setDecisions(d)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    function calcDraw() {
+      const now = new Date();
+      const next = new Date(now);
+      next.setUTCDate(now.getUTCDate() + ((7 - now.getUTCDay()) % 7 || 7));
+      next.setUTCHours(0, 0, 0, 0);
+      const ms = next - now;
+      const totalMs = 7 * 24 * 3600 * 1000;
+      const h = Math.floor(ms / 3600000);
+      const m = Math.floor((ms % 3600000) / 60000);
+      const d = Math.floor(h / 24);
+      const label = d > 0
+        ? `${d}d ${h % 24}h`
+        : `${h}h ${m}m`;
+      setDrawCountdown({ label, pct: Math.max(0, 1 - ms / totalMs) });
+    }
+    calcDraw();
+    const t = setInterval(calcDraw, 60000);
+    return () => clearInterval(t);
+  }, []);
+
+  const totalYield   = Number(status?.roundYieldPool ?? 0);
+  const totalPrincipal = Number(status?.totalPrincipalUsdc ?? 0);
+  const planters     = status?.participantCount ?? 0;
+  const protocol     = status?.activeProtocol ?? "Aave v3";
+  const currentRound = status?.currentRound ?? 0;
+  const chartData   = decisions.length > 1
+    ? decisions.slice().reverse().map((d, i) => Number(d.yieldSweptUsdc ?? 0) * (i + 1))
+    : [0, 0, 0, 0, 0, 0, 0, 0, 0, totalYield];
+  const rounds = decisions.slice(0, 4).map(d => ({
+    r: d.round,
+    win: "—",
+    amt: Number(d.yieldSweptUsdc ?? 0).toFixed(4),
+    proto: d.recommendation === "TETAP" ? protocol : d.recommendation,
+    dec: d.recommendation === "TETAP" ? "stay" : "move",
+  }));
+
   return (
     <div className="main">
-      <MainHead lang={lang} go={go} title={L(lang, { id: "Kolam Hadiah · Ronde #12", en: "Prize Pool · Round #12" })} sub={L(lang, { id: "Sedang berjalan", en: "Currently running" })} />
+      <MainHead lang={lang} go={go} title={L(lang, { id: `Kolam Hadiah · Ronde #${currentRound}`, en: `Prize Pool · Round #${currentRound}` })} sub={L(lang, { id: "Sedang berjalan", en: "Currently running" })} />
       <div className="main-body">
         <div className="bento">
           <Reveal className="col-8">
             <div className="card card-pad-lg" style={{ background: "linear-gradient(160deg, color-mix(in srgb,var(--gold) 11%, var(--canvas-2)), var(--canvas-2))" }}>
               <div className="muted" style={{ fontWeight: 600, fontSize: 14 }}>{L(lang, { id: "Total bunga terkumpul ronde ini", en: "Total yield gathered this round" })}</div>
-              <div className="num-lg" style={{ color: "var(--gold-deep)", margin: "8px 0 18px" }}><CountUp value={1284} dec={0} /> <span style={{ fontSize: 22 }}>USDC</span></div>
-              <AreaChart data={chart} color="var(--clover)" h={130} />
+              <div className="num-lg" style={{ color: "var(--gold-deep)", margin: "8px 0 18px" }}><CountUp value={totalYield} dec={4} /> <span style={{ fontSize: 22 }}>USDC</span></div>
+              <AreaChart data={chartData} color="var(--clover)" h={130} />
             </div>
           </Reveal>
           <Reveal delay={80} className="col-4">
             <div className="card card-pad-lg" style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-              <CountdownArc pct={0.68} gold size={220} label={L(lang, { id: "11j 24m", en: "11h 24m" })} sub={L(lang, { id: "menuju undian", en: "to the draw" })} />
+              <CountdownArc pct={drawCountdown.pct} gold size={220} label={drawCountdown.label} sub={L(lang, { id: "menuju undian", en: "to the draw" })} />
               <div className="row aic gap-8" style={{ marginTop: 16, background: "color-mix(in srgb,var(--gold) 10%, var(--canvas-2))", borderRadius: 12, padding: "11px 14px", width: "100%" }}>
                 <Icon.robot size={15} stroke="var(--gold-deep)" />
                 <span className="tiny" style={{ fontWeight: 600, color: "var(--gold-deep)" }}>
@@ -197,10 +268,10 @@ function WebPool({ lang, t, onDraw, go }) {
             </div>
           </Reveal>
 
-          {[{ i: Icon.leaf, l: { id: "Penanam", en: "Planters" }, v: "248" },
-            { i: Icon.coin, l: { id: "Modal dikelola", en: "Principal managed" }, v: "24.800", s: "USDC" },
-            { i: Icon.drop, l: { id: "Bunga disapu hari ini", en: "Yield swept today" }, v: "+212", s: "USDC" },
-            { i: Icon.shieldLeaf, l: { id: "Protokol aktif", en: "Active protocol" }, v: "Aave v3", s: L(lang, { id: "Sehat", en: "Healthy" }) }].map((st, i) => (
+          {[{ i: Icon.leaf, l: { id: "Penanam", en: "Planters" }, v: String(planters) },
+            { i: Icon.coin, l: { id: "Modal dikelola", en: "Principal managed" }, v: totalPrincipal.toFixed(2), s: "USDC" },
+            { i: Icon.drop, l: { id: "Bunga disapu hari ini", en: "Yield swept today" }, v: `+${totalYield.toFixed(4)}`, s: "USDC" },
+            { i: Icon.shieldLeaf, l: { id: "Protokol aktif", en: "Active protocol" }, v: protocol, s: L(lang, { id: "Sehat", en: "Healthy" }) }].map((st, i) => (
             <Reveal key={i} delay={140 + i * 50} className="col-4" style={{ gridColumn: "span 3" }}>
               <div className="card card-pad-lg" style={{ height: "100%" }}>
                 <st.i size={22} stroke="var(--clover-deep)" />
@@ -236,17 +307,66 @@ function WebPool({ lang, t, onDraw, go }) {
 
 /* ===================== LOG / RIWAYAT ===================== */
 function WebLog({ lang, t, go }) {
+  const { round, poolYield, chancePct, principalUsdc } = useWallet();
   const [filter, setFilter] = useState("all");
+  const [decisions, setDecisions] = useState([]);
+  const [txs, setTxs] = useState([]);
+  const [status, setStatus] = useState(null);
+
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/decisions?limit=20`).then(r => r.json()).then(d => Array.isArray(d) && setDecisions(d)).catch(() => {});
+    fetch(`${BACKEND_URL}/transactions`).then(r => r.json()).then(d => Array.isArray(d) && setTxs(d)).catch(() => {});
+    fetch(`${BACKEND_URL}/status`).then(r => r.json()).then(setStatus).catch(() => {});
+  }, []);
+
   const filters = [{ k: "all", t: { id: "Semua", en: "All" } }, { k: "deposit", t: { id: "Setoran", en: "Deposits" } }, { k: "yield", t: { id: "Bunga", en: "Yield" } }, { k: "ai", t: { id: "Keputusan AI", en: "AI" } }, { k: "draw", t: { id: "Undian", en: "Draws" } }];
+
+  const relTime = (ts) => {
+    const diff = Date.now() - ts;
+    const h = Math.floor(diff / 3600000);
+    const d = Math.floor(diff / 86400000);
+    if (h < 1) return { id: "Baru saja", en: "Just now" };
+    if (h < 24) return { id: `${h} jam lalu`, en: `${h}h ago` };
+    if (d < 7) return { id: `${d} hari lalu`, en: `${d}d ago` };
+    return { id: `${d} hari lalu`, en: `${d}d ago` };
+  };
+  const dayLabel = (ts) => {
+    const d = Math.floor((Date.now() - ts) / 86400000);
+    if (d === 0) return { id: "Hari ini", en: "Today" };
+    if (d === 1) return { id: "Kemarin", en: "Yesterday" };
+    return { id: "Minggu ini", en: "This week" };
+  };
+
   const events = [
-    { day: { id: "Hari ini", en: "Today" }, cat: "ai", title: { id: "AI: TETAP di Aave, likuiditas kuat", en: "AI: STAY on Aave, strong liquidity" }, time: { id: "4 jam lalu", en: "4h ago" }, link: true },
-    { day: { id: "Hari ini", en: "Today" }, cat: "yield", title: { id: "Bunga +0,82 USDC disapu ke Kolam #12", en: "Yield +0.82 USDC swept to Pool #12" }, time: { id: "6 jam lalu", en: "6h ago" } },
-    { day: { id: "Kemarin", en: "Yesterday" }, cat: "draw", title: { id: "Undian ronde #11, belum hoki, modal utuh", en: "Draw round #11, no luck, principal whole" }, time: { id: "1 hari lalu", en: "1d ago" } },
-    { day: { id: "Kemarin", en: "Yesterday" }, cat: "ai", title: { id: "Percobaan aksi terlarang ditolak otomatis", en: "Forbidden action auto-rejected" }, time: { id: "1 hari lalu", en: "1d ago" }, safe: true },
-    { day: { id: "Minggu ini", en: "This week" }, cat: "draw", title: { id: "Menang ronde #9, +18,20 USDC", en: "Won round #9, +18.20 USDC" }, time: { id: "5 hari lalu", en: "5d ago" }, win: true },
-    { day: { id: "Minggu ini", en: "This week" }, cat: "deposit", title: { id: "Setor 100 USDC, modal awal dicatat", en: "Deposited 100 USDC, baseline recorded" }, time: { id: "5 hari lalu", en: "5d ago" } },
-  ];
+    ...decisions.map(d => ({
+      ts: d.timestamp,
+      day: dayLabel(d.timestamp),
+      cat: "ai",
+      title: d.recommendation === "TETAP"
+        ? { id: `AI: TETAP di ${status?.activeProtocol ?? "Aave"} — ${d.reasoning?.slice(0,50) ?? ""}…`, en: `AI: STAY on ${status?.activeProtocol ?? "Aave"} — ${d.reasoning?.slice(0,50) ?? ""}…` }
+        : { id: `AI: PINDAH ke ${d.recommendation} — ${d.reasoning?.slice(0,40) ?? ""}…`, en: `AI: MOVE to ${d.recommendation} — ${d.reasoning?.slice(0,40) ?? ""}…` },
+      time: relTime(d.timestamp),
+      link: true,
+    })),
+    ...txs.filter(tx => tx.type === "sweep").map(tx => ({
+      ts: tx.timestamp,
+      day: dayLabel(tx.timestamp),
+      cat: "yield",
+      title: { id: `Bunga +${Number(tx.yieldAmountUsdc ?? 0).toFixed(4)} USDC disapu ke Kolam`, en: `Yield +${Number(tx.yieldAmountUsdc ?? 0).toFixed(4)} USDC swept to Pool` },
+      time: relTime(tx.timestamp),
+    })),
+    ...txs.filter(tx => tx.type === "draw").map(tx => ({
+      ts: tx.timestamp,
+      day: dayLabel(tx.timestamp),
+      cat: "draw",
+      title: { id: `Undian ronde — modal utuh`, en: `Draw round — principal whole` },
+      time: relTime(tx.timestamp),
+    })),
+  ].sort((a, b) => b.ts - a.ts);
+
   const shown = events.filter((e) => filter === "all" || e.cat === filter);
+  const currentRound = status?.currentRound ?? round ?? 1;
+  const totalYield = status?.roundYieldPool ? Number(status.roundYieldPool) : Number(poolYield ?? 0);
   let lastDay = null;
   return (
     <div className="main">
@@ -293,13 +413,13 @@ function WebLog({ lang, t, go }) {
         <Reveal delay={120} className="col-4">
           <div className="card card-pad-lg" style={{ position: "sticky", top: 96 }}>
             <div className="head" style={{ fontSize: 17, marginBottom: 4 }}>{L(lang, { id: "Ronde ini", en: "This round" })}</div>
-            <div className="muted tiny" style={{ marginBottom: 16 }}>{L(lang, { id: "Ronde #12 · sedang berjalan", en: "Round #12 · running" })}</div>
+            <div className="muted tiny" style={{ marginBottom: 16 }}>{L(lang, { id: `Ronde #${currentRound} · sedang berjalan`, en: `Round #${currentRound} · running` })}</div>
             <div className="col gap-2">
               {[
-                { l: { id: "Bunga disumbang", en: "Yield contributed" }, v: nfmt(lang, "+3,42 USDC"), accent: true },
-                { l: { id: "Peluang menang", en: "Win chance" }, v: nfmt(lang, "12,5%") },
-                { l: { id: "Kolam hadiah", en: "Prize pool" }, v: L(lang, { id: "1.284 USDC", en: "1,284 USDC" }) },
-                { l: { id: "Undian berikutnya", en: "Next draw" }, v: L(lang, { id: "11j 24m", en: "11h 24m" }) },
+                { l: { id: "Bunga disumbang", en: "Yield contributed" }, v: `+${totalYield.toFixed(4)} USDC`, accent: true },
+                { l: { id: "Peluang menang", en: "Win chance" }, v: `${(chancePct ?? 0).toFixed(1)}%` },
+                { l: { id: "Kolam hadiah", en: "Prize pool" }, v: `${totalYield.toFixed(4)} USDC` },
+                { l: { id: "Undian berikutnya", en: "Next draw" }, v: L(lang, { id: "Otomatis (Minggu)", en: "Auto (Sunday)" }) },
               ].map((row, i) => (
                 <div key={i} className="row between aic" style={{ padding: "11px 0", borderBottom: i < 3 ? "1px solid var(--hairline)" : "none" }}>
                   <span className="muted" style={{ fontSize: 13.5, fontWeight: 500 }}>{L(lang, row.l)}</span>
@@ -320,6 +440,8 @@ function WebLog({ lang, t, go }) {
 
 /* ===================== SETTINGS ===================== */
 function WebSettings({ lang, setLang, openModal, t, go }) {
+  const { account, chancePct } = useWallet();
+  const shortAddr = account ? `${account.slice(0,6)}…${account.slice(-4)}` : "—";
   return (
     <div className="main">
       <MainHead lang={lang} go={go} title={L(lang, { id: "Pengaturan", en: "Settings" })} sub={L(lang, { id: "Kendali penuh & transparansi.", en: "Full control & transparency." })} />
@@ -328,9 +450,9 @@ function WebSettings({ lang, setLang, openModal, t, go }) {
           <Reveal className="col-6">
             <div className="card card-pad-lg" style={{ height: "100%" }}>
               <div className="head" style={{ fontSize: 17, marginBottom: 8 }}>{L(lang, { id: "Akun", en: "Account" })}</div>
-              {[{ i: Icon.wallet, l: { id: "Alamat dompet", en: "Wallet" }, v: "0x12…9aF3", b: <Icon.copy size={16} stroke="var(--clover)" /> },
+              {[{ i: Icon.wallet, l: { id: "Alamat dompet", en: "Wallet" }, v: shortAddr, b: <Icon.copy size={16} stroke="var(--clover)" /> },
                 { i: Icon.spark, l: { id: "Akun Pintar", en: "Smart Account" }, b: <span className="badge badge-active" style={{ fontSize: 10.5, padding: "3px 9px" }}>{L(lang, { id: "Aktif", en: "Active" })}</span> },
-                { i: Icon.leaf, l: { id: "Peluang Menang", en: "Win Chance" }, b: <span className="badge badge-active" style={{ fontSize: 10.5, padding: "3px 9px" }}>{nfmt(lang, "12,5%")}</span> },
+                { i: Icon.leaf, l: { id: "Peluang Menang", en: "Win Chance" }, b: <span className="badge badge-active" style={{ fontSize: 10.5, padding: "3px 9px" }}>{`${(chancePct ?? 0).toFixed(1)}%`}</span> },
                 { i: Icon.pool, l: { id: "Jaringan", en: "Network" }, b: <span className="badge badge-soft">Base</span> }].map((row, i) => (
                 <div key={i} className="row between aic" style={{ padding: "14px 0", borderBottom: i < 3 ? "1px solid var(--hairline)" : "none" }}>
                   <div className="row aic gap-10"><row.i size={18} stroke="var(--forest-70)" /><span style={{ fontSize: 14.5, fontWeight: 500 }}>{L(lang, row.l)}</span></div>
@@ -474,6 +596,7 @@ function WebModalTarik({ lang, onClose }) {
   const [amt, setAmt] = useState(() => principal || 0);
   const [state, setState] = useState("idle");
   const [err, setErr] = useState("");
+  const [cancelToast, fireCancelToast] = useCancelToast();
 
   if (state === "ok") return (
     <WebModal onClose={onClose}>
@@ -516,19 +639,24 @@ function WebModalTarik({ lang, onClose }) {
         ? <StatePillW tone="load">{L(lang, { id: "Menarik dari Aave…", en: "Withdrawing from Aave…" })}</StatePillW>
         : <div className="row gap-10">
             <button className="btn btn-ghost" onClick={onClose}>{L(lang, { id: "Batal", en: "Cancel" })}</button>
-            <button className="btn btn-primary grow btn-lg" disabled={amt < 1}
+            <button className="btn btn-primary grow btn-lg" disabled={amt <= 0}
               onClick={async () => {
                 setErr(""); setState("loading");
                 try {
                   await wallet.withdraw(amt);
                   setState("ok");
                 } catch (e) {
-                  setErr(e.message || "Withdraw failed");
+                  const msg = friendlyErr(e, "Withdraw failed");
+                  if (msg === CANCELLED) fireCancelToast();
+                  else if (msg) setErr(msg);
                   setState("idle");
                 }
               }}>{L(lang, { id: "Tarik", en: "Withdraw" })}</button>
           </div>
       }
+      <Toast show={cancelToast} tone="muted">
+        {L(lang, { id: "Transaksi dibatalkan", en: "Transaction cancelled" })}
+      </Toast>
     </WebModal>
   );
 }
@@ -537,6 +665,7 @@ function WebModalCabut({ lang, onClose }) {
   const wallet = useWallet();
   const [state, setState] = useState("idle");
   const [err, setErr] = useState("");
+  const [cancelToast, fireCancelToast] = useCancelToast();
   const impacts = [
     { id: "AI berhenti total", en: "AI stops entirely" },
     { id: "Modal tetap aman & milikmu", en: "Principal stays safe & yours" },
@@ -589,29 +718,113 @@ function WebModalCabut({ lang, onClose }) {
                   await wallet.revokeDelegation();
                   setState("ok");
                 } catch (e) {
-                  setErr(e.message || "Revoke failed");
+                  const msg = friendlyErr(e, "Revoke failed");
+                  if (msg === CANCELLED) fireCancelToast();
+                  else if (msg) setErr(msg);
                   setState("idle");
                 }
               }}>{L(lang, { id: "Ya, Cabut Izin", en: "Yes, Revoke" })}</button>
           </div>
       }
+      <Toast show={cancelToast} tone="muted">
+        {L(lang, { id: "Transaksi dibatalkan", en: "Transaction cancelled" })}
+      </Toast>
     </WebModal>
   );
 }
 
+const CHAIN_FLAGS = { 8453: "🔵", 1: "⚪", 42161: "🔷", 137: "🟣", 56: "🟡" };
+
 function WebModalDeposit({ lang, onClose }) {
   const wallet = useWallet();
-  const [amt, setAmt] = useState(10);
-  const [state, setState] = useState("idle");
-  const [err, setErr] = useState("");
-  const balance = wallet.usdcBalance > 0n ? Number(formatUnits(wallet.usdcBalance, 6)) : 0;
-  const quick = [10, 50, 100];
+  const [chain, setChain]   = useState(BRIDGE_CHAINS[0]); // Base default
+  const [amt, setAmt]       = useState(10);
+  const [state, setState]   = useState("idle"); // idle|quoting|approving|bridging|depositing|ok
+  const [step, setStep]     = useState("");
+  const [quote, setQuote]   = useState(null);
+  const [err, setErr]       = useState("");
+  const [cancelToast, fireCancelToast] = useCancelToast();
 
+  const isCross   = !chain.native;
+  const balance   = !isCross && wallet.usdcBalance > 0n ? Number(formatUnits(wallet.usdcBalance, 6)) : 0;
+  const quick     = [10, 50, 100];
+  const est       = isCross && quote ? quoteEstimate(quote) : null;
+  const busy      = ["approving", "bridging", "depositing"].includes(state);
+
+  // Refresh Base USDC balance on mount (Base flow only)
+  useEffect(() => { if (!isCross) wallet.refreshBalance?.(); }, [isCross]);
+
+  // Debounced LI.FI quote fetch for cross-chain
   useEffect(() => {
-    wallet.refreshBalance?.();
-    const id = setInterval(() => wallet.refreshBalance?.(), 5000);
-    return () => clearInterval(id);
-  }, []);
+    if (!isCross || amt < 1 || !wallet.account) { setQuote(null); return; }
+    setState("quoting");
+    const t = setTimeout(async () => {
+      try {
+        const q = await fetchLifiQuote(chain.id, chain.token, amt, chain.decimals, wallet.account);
+        setQuote(q); setState("idle");
+      } catch { setQuote(null); setState("idle"); }
+    }, 800);
+    return () => clearTimeout(t);
+  }, [isCross, chain.id, chain.token, chain.decimals, amt, wallet.account]);
+
+  const handleDeposit = async () => {
+    setErr("");
+
+    // ── Base: existing direct flow ─────────────────────────────────────────
+    if (!isCross) {
+      setState("depositing"); setStep("");
+      try { await wallet.deposit(amt); setState("ok"); }
+      catch (e) {
+        const msg = friendlyErr(e, "Deposit failed");
+        if (msg === CANCELLED) fireCancelToast(); else if (msg) setErr(msg);
+        setState("idle");
+      }
+      return;
+    }
+
+    // ── Cross-chain via LI.FI ──────────────────────────────────────────────
+    if (!quote) { setErr("Waiting for quote..."); return; }
+    try {
+      // 1. ERC-20 approval (skip for native BNB)
+      if (chain.token !== "0x0000000000000000000000000000000000000000") {
+        setState("approving");
+        setStep(L(lang, { id: "Menyetujui token…", en: "Approving token spending…" }));
+        await ensureApproval(chain, amt, quote.estimate?.approvalAddress ?? quote.transactionRequest?.to, wallet.account);
+      }
+
+      // 2. Send bridge tx
+      setState("bridging");
+      setStep(L(lang, { id: "Kirim transaksi bridge…", en: "Sending bridge tx…" }));
+      const txHash = await sendBridgeTx(chain, quote, wallet.account);
+
+      // 3. Poll LI.FI until DONE
+      setStep(L(lang, { id: "Bridge berlangsung (~5–15 menit)…", en: "Bridge in progress (~5–15 min)…" }));
+      await pollBridgeStatus(txHash, quote, chain.id, (s) => {
+        if (s.substatusMessage) setStep(s.substatusMessage);
+      });
+
+      // 4. Supply received USDC to Aave + register
+      setState("depositing");
+      setStep(L(lang, { id: "Bridge selesai! Menyetor ke Aave…", en: "Bridge done! Supplying to Aave…" }));
+      const balBefore = wallet.usdcBalance;
+      const balAfter  = await wallet.refreshBalance();
+      const gained    = balAfter > balBefore ? Number(balAfter - balBefore) / 1e6 : 0;
+      const toDeposit = gained > 0 ? gained : Number(quote.estimate?.toAmountMin ?? quote.estimate?.toAmount ?? 0) / 1e6;
+      await wallet.deposit(Math.max(0.01, toDeposit));
+
+      // 5. Notify backend of origin chain (for future reverse withdrawal)
+      await fetch(`${BACKEND_URL}/record-origin`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userAddress: wallet.account, originChainId: chain.id, originChainName: chain.name, originToken: chain.token, originSymbol: chain.symbol }),
+      }).catch(() => {});
+
+      setState("ok");
+    } catch (e) {
+      const msg = friendlyErr(e, "Bridge failed");
+      if (msg === CANCELLED) fireCancelToast(); else if (msg) setErr(msg);
+      setState("idle");
+    }
+  };
 
   if (state === "ok") return (
     <WebModal onClose={onClose}>
@@ -627,48 +840,89 @@ function WebModalDeposit({ lang, onClose }) {
   return (
     <WebModal onClose={onClose}>
       <h1 style={{ fontSize: 22, marginBottom: 6 }}>{L(lang, { id: "Tambah deposit", en: "Add deposit" })}</h1>
-      <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.5, marginBottom: 16 }}>
-        {L(lang, { id: "Deposit lebih besar = peluang menang lebih besar. Modal tetap milikmu.", en: "Bigger deposit = bigger win chance. Principal stays yours." })}
+      <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.5, marginBottom: 14 }}>
+        {L(lang, { id: "Deposit lebih besar = peluang lebih besar. Modal tetap milikmu.", en: "Bigger deposit = bigger win chance. Principal stays yours." })}
       </p>
+
+      {/* Chain selector */}
+      <div className="row gap-6" style={{ marginBottom: 14, flexWrap: "wrap" }}>
+        {BRIDGE_CHAINS.map((c) => (
+          <button key={c.id} disabled={busy}
+            className={"chip" + (chain.id === c.id ? " chip-on" : "")}
+            style={{ cursor: "pointer", fontSize: 12 }}
+            onClick={() => { setChain(c); setQuote(null); setErr(""); }}>
+            {CHAIN_FLAGS[c.id]} {c.name}
+          </button>
+        ))}
+      </div>
+
+      {isCross && (
+        <div className="tiny muted" style={{ marginBottom: 10, padding: "8px 12px", background: "color-mix(in srgb,var(--gold) 10%, var(--canvas-2))", borderRadius: 10, lineHeight: 1.5 }}>
+          {L(lang, { id: `Aset kamu di ${chain.name} akan di-bridge ke USDC Base via LI.FI, lalu langsung masuk pool.`, en: `Your ${chain.symbol} on ${chain.name} will be bridged to Base USDC via LI.FI, then deposited into the pool.` })}
+        </div>
+      )}
+
+      {/* Amount input */}
       <div className="card card-sage" style={{ padding: "16px 20px", marginBottom: 14 }}>
         <div className="row aic" style={{ justifyContent: "center", gap: 8 }}>
           <input className="amount-input" style={{ width: "auto", maxWidth: 160, fontSize: 42 }}
-            value={amt === 0 ? "" : amt} placeholder="0"
-            onChange={(e) => { const v = +e.target.value.replace(/\D/g, "") || 0; setAmt(Math.min(balance > 0 ? balance : 999999, v)); }}
+            value={amt === 0 ? "" : amt} placeholder="0" disabled={busy}
+            onChange={(e) => { const v = +e.target.value.replace(/\D/g, "") || 0; setAmt(!isCross && balance > 0 ? Math.min(balance, v) : v); }}
             inputMode="numeric" />
-          <span className="head" style={{ fontSize: 20, color: "var(--ink-45)" }}>USDC</span>
+          <span className="head" style={{ fontSize: 20, color: "var(--ink-45)" }}>{chain.symbol}</span>
         </div>
         <div className="row gap-8" style={{ justifyContent: "center", marginTop: 10 }}>
           {quick.map((q) => (
-            <button key={q} className={"chip" + (amt === q ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmt(q)}>{q}</button>
+            <button key={q} disabled={busy} className={"chip" + (amt === q ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmt(q)}>{q}</button>
           ))}
-          <button className={"chip" + (amt === balance ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmt(balance)}>Max</button>
+          {!isCross && <button disabled={busy} className={"chip" + (amt === balance ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmt(balance)}>Max</button>}
         </div>
-        <div className="muted tiny center" style={{ marginTop: 8 }}>
-          {L(lang, { id: "Saldo", en: "Balance" })}: <span className="tnum">{balance > 0 ? fmt(balance, 2) : "—"} USDC</span>
-        </div>
-      </div>
-      {err && <div className="tiny" style={{ color: "var(--danger)", marginBottom: 10, textAlign: "center" }}>{err}</div>}
-      {state === "loading"
-        ? <StatePillW tone="load">{L(lang, { id: "Menyetor…", en: "Depositing…" })}</StatePillW>
-        : <div className="row gap-10">
-            <button className="btn btn-ghost" onClick={onClose}>{L(lang, { id: "Batal", en: "Cancel" })}</button>
-            <button className="btn btn-primary grow btn-lg" disabled={amt < 1}
-              onClick={async () => {
-                setErr(""); setState("loading");
-                try {
-                  await wallet.deposit(amt);
-                  setState("ok");
-                } catch (e) {
-                  setErr(e.message || "Deposit failed");
-                  setState("idle");
-                }
-              }}>
-              <Icon.sprout size={17} stroke="#F4FBF6" />
-              {L(lang, { id: "Setor", en: "Deposit" })}
-            </button>
+        {!isCross && (
+          <div className="muted tiny center" style={{ marginTop: 8 }}>
+            {L(lang, { id: "Saldo Base", en: "Base balance" })}: <span className="tnum">{balance > 0 ? fmt(balance, 2) : "—"} USDC</span>
           </div>
-      }
+        )}
+      </div>
+
+      {/* LI.FI quote estimate */}
+      {isCross && (
+        <div className="card card-sage" style={{ padding: "12px 16px", marginBottom: 14, fontSize: 13 }}>
+          {state === "quoting" ? (
+            <div className="muted tiny center">Fetching route…</div>
+          ) : est ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div className="row between"><span className="muted">{L(lang, { id: "Kamu terima (est.)", en: "You receive (est.)" })}</span><span className="tnum" style={{ fontWeight: 700, color: "var(--clover-deep)" }}>~{est.received} USDC</span></div>
+              <div className="row between"><span className="muted">{L(lang, { id: "Biaya bridge", en: "Bridge fee" })}</span><span className="tnum muted">~${est.totalFeeUsd}</span></div>
+              <div className="row between"><span className="muted">{L(lang, { id: "Via", en: "Via" })}</span><span className="muted">{est.tool}</span></div>
+              <div className="row between"><span className="muted">{L(lang, { id: "Waktu", en: "Est. time" })}</span><span className="muted">5–15 min</span></div>
+            </div>
+          ) : (
+            <div className="muted tiny center">{L(lang, { id: "Masukkan jumlah untuk melihat estimasi.", en: "Enter amount to see estimate." })}</div>
+          )}
+        </div>
+      )}
+
+      {err && <div className="tiny" style={{ color: "var(--danger)", marginBottom: 10, textAlign: "center" }}>{err}</div>}
+
+      {/* Status during execution */}
+      {busy && <StatePillW tone="load" style={{ marginBottom: 12 }}>{step || L(lang, { id: "Memproses…", en: "Processing…" })}</StatePillW>}
+
+      {!busy && (
+        <div className="row gap-10">
+          <button className="btn btn-ghost" onClick={onClose}>{L(lang, { id: "Batal", en: "Cancel" })}</button>
+          <button className="btn btn-primary grow btn-lg"
+            disabled={amt < 1 || state === "quoting" || (isCross && !quote)}
+            onClick={handleDeposit}>
+            <Icon.sprout size={17} stroke="#F4FBF6" />
+            {isCross
+              ? L(lang, { id: "Bridge & Deposit", en: "Bridge & Deposit" })
+              : L(lang, { id: "Setor", en: "Deposit" })}
+          </button>
+        </div>
+      )}
+      <Toast show={cancelToast} tone="muted">
+        {L(lang, { id: "Transaksi dibatalkan", en: "Transaction cancelled" })}
+      </Toast>
     </WebModal>
   );
 }

@@ -32,6 +32,9 @@ export const AGENT_ADDRESS = (
   process.env.NEXT_PUBLIC_AGENT_ADDRESS || "0x817E6370fdacA82DEcdD05AD8f464981d05935d3"
 );
 
+// 1Shot relayer target wallet — delegation delegate MUST be this address for 1Shot to execute
+export const ONESHOT_TARGET = "0x26a529124f0bbf9af9d8f9f84a43efe47cf1199a";
+
 export const BACKEND_URL = (
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
 );

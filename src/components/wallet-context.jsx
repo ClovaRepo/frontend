@@ -9,7 +9,7 @@ import {
   CHAIN_ID, IS_MAINNET, ACTIVE_CHAIN, EIP7702_IMPL,
   USDC_ADDRESS, USDC_ABI, AAVE_POOL, AAVE_ABI,
   POOL_ADDRESS, POOL_ABI, ADAPTER_ADDRESS, ADAPTER_ABI,
-  AGENT_ADDRESS, BACKEND_URL,
+  AGENT_ADDRESS, ONESHOT_TARGET, BACKEND_URL,
 } from "../lib/clova.js";
 
 const WalletContext = createContext(null);
@@ -46,7 +46,7 @@ export function WalletProvider({ children }) {
   const [usdcBalance, setUsdcBalance]     = useState(0n);
 
   const publicClient = useRef(
-    createPublicClient({ chain: ACTIVE_CHAIN, transport: http(ACTIVE_CHAIN.rpcUrls.default.http[0]) })
+    createPublicClient({ chain: ACTIVE_CHAIN, transport: http(process.env.NEXT_PUBLIC_BASE_RPC_URL || ACTIVE_CHAIN.rpcUrls.default.http[0]) })
   ).current;
 
   // Sync when MetaMask account/disconnect changes externally
@@ -170,7 +170,7 @@ export function WalletProvider({ children }) {
         {
           chainId: CHAIN_ID,
           expiry,
-          to: AGENT_ADDRESS,  // session account = agent EOA
+          to: ONESHOT_TARGET,  // 1Shot relayer target — must be delegate for 1Shot execution
           permission: {
             type: "erc20-token-periodic",
             isAdjustmentAllowed: false,
@@ -332,38 +332,26 @@ export function WalletProvider({ children }) {
     setHasDelegation(false);
   }, [account]);
 
-  // ── Read live pool data ────────────────────────────────────────────────────
+  // ── Read live pool data — via backend /status to avoid RPC rate limits ────
   const fetchPoolData = useCallback(async () => {
     if (!account) return null;
-    const [principal, round, poolYield, participants, aaveValue] = await Promise.all([
-      publicClient.readContract({ address: POOL_ADDRESS, abi: POOL_ABI, functionName: "principalBaseline", args: [account] }).catch(() => 0n),
-      publicClient.readContract({ address: POOL_ADDRESS, abi: POOL_ABI, functionName: "currentRound" }).catch(() => 0n),
-      publicClient.readContract({ address: POOL_ADDRESS, abi: POOL_ABI, functionName: "roundYieldPool" }).catch(() => 0n),
-      publicClient.readContract({ address: POOL_ADDRESS, abi: POOL_ABI, functionName: "getParticipants" }).catch(() => []),
-      // aToken balance from adapter = principal + accrued yield
-      publicClient.readContract({ address: ADAPTER_ADDRESS, abi: ADAPTER_ABI, functionName: "valueOf", args: [account] }).catch(() => 0n),
-    ]);
-
-    const userYield = aaveValue > principal ? aaveValue - principal : 0n;
-
-    // totalWeight = sum of all principalBaseline (for win chance %)
-    const weights = await Promise.all(
-      participants.map((p) =>
-        publicClient.readContract({ address: POOL_ADDRESS, abi: POOL_ABI, functionName: "principalBaseline", args: [p] }).catch(() => 0n),
-      ),
-    );
-    const totalWeight = weights.reduce((a, b) => a + b, 0n);
-    const chancePct = totalWeight > 0n ? Number((principal * 10000n) / totalWeight) / 100 : 0;
-
-    return {
-      principalUsdc:    Number(formatUnits(principal, 6)),
-      userYieldUsdc:    Number(formatUnits(userYield, 6)),
-      currentRound:     Number(round),
-      poolYieldUsdc:    Number(formatUnits(poolYield, 6)),
-      participantCount: participants.length,
-      chancePct,
-    };
-  }, [account, publicClient]);
+    try {
+      const res = await fetch(`${BACKEND_URL}/status?user=${account}`);
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      const d = await res.json();
+      return {
+        principalUsdc:    Number(d.user?.principalUsdc ?? 0),
+        userYieldUsdc:    Number(d.user?.userYieldUsdc ?? 0),
+        currentRound:     d.currentRound ?? 0,
+        poolYieldUsdc:    Number(d.roundYieldPool ?? 0),
+        participantCount: d.participantCount ?? 0,
+        chancePct:        d.user?.chancePct ?? 0,
+        activeProtocol:   d.activeProtocol ?? "Aave v3",
+      };
+    } catch {
+      return null;
+    }
+  }, [account]);
 
   const value = {
     account,

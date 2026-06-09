@@ -321,6 +321,15 @@ button.chip:active { transform: scale(.96); }
 /* gentle screen/stage cross-fade (opacity-only → safe for sticky headers) */
 @keyframes screenIn { from { opacity: 0; } to { opacity: 1; } }
 
+/* toast: slide up → hold → fade out */
+@keyframes toastLife {
+  0%   { opacity: 0; transform: translateY(18px) scale(.94); }
+  14%  { opacity: 1; transform: translateY(0)    scale(1);   }
+  76%  { opacity: 1; transform: translateY(0)    scale(1);   }
+  100% { opacity: 0; transform: translateY(6px)  scale(.97); }
+}
+.toast-pop { animation: toastLife 2.2s cubic-bezier(.22,.68,0,1.2) forwards; }
+
 /* pixel-tree breeze, very subtle, anchored at the ground */
 @keyframes pixeltreeSway {
   0%,100% { transform: rotate(-1.2deg); }

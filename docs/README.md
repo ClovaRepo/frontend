@@ -57,6 +57,7 @@ This creates a genuinely autonomous agent: it earns (via treasury fee), spends (
 | Doc | Description |
 |---|---|
 | [Overview](./overview.md) | Problem, solution, round flow, hackathon fit |
+| [Delegation](./delegation.md) | ERC-7710 + EIP-7702 — how permissions work end-to-end |
 | [Architecture](./architecture.md) | Full technical architecture & component map |
 | [Smart Contracts](./smart-contracts.md) | Contract reference, ABIs, deployed addresses |
 | [AI Agent](./ai-agent.md) | Venice AI reasoning, guardrails, x402 payments |

@@ -651,13 +651,40 @@ function TopBar({ onBack, title, right, transparent }) {
 
 /* ---------- toast ---------- */
 function Toast({ show, children, tone = "safe" }) {
+  const [key, setKey] = React.useState(0);
+  React.useEffect(() => { if (show) setKey(k => k + 1); }, [show]);
   if (!show) return null;
-  const bg = tone === "win" ? "var(--gold)" : tone === "danger" ? "var(--danger)" : "var(--clover)";
+
+  const accent = tone === "win"    ? "var(--gold)"
+               : tone === "danger" ? "var(--danger)"
+               : tone === "muted"  ? "#9ca3af"
+               :                    "var(--clover)";
+  const icon = tone === "win"    ? "🏆"
+             : tone === "danger" ? "✕"
+             : tone === "muted"  ? "✕"
+             :                    "✓";
+
   return (
-    <div className="reveal" style={{ position: "absolute", bottom: 92, left: 16, right: 16, zIndex: 60,
-      background: bg, color: "#fff", borderRadius: 16, padding: "13px 16px", fontWeight: 600, fontSize: 14,
-      boxShadow: "var(--shadow-lift)", display: "flex", alignItems: "center", gap: 10 }}>
-      {children}
+    <div key={key} className="toast-pop" style={{
+      position: "absolute", bottom: 80, left: 12, right: 12, zIndex: 80,
+      background: "#fff",
+      border: `1.5px solid color-mix(in srgb, ${accent} 30%, transparent)`,
+      borderRadius: 18,
+      padding: "13px 16px",
+      boxShadow: `0 8px 32px rgba(20,58,42,.12), 0 0 0 0 ${accent}`,
+      display: "flex", alignItems: "center", gap: 12,
+      pointerEvents: "none",
+    }}>
+      {/* accent dot/icon */}
+      <div style={{
+        width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
+        background: `color-mix(in srgb, ${accent} 14%, transparent)`,
+        display: "grid", placeItems: "center",
+        fontSize: 14, fontWeight: 800, color: accent,
+      }}>{icon}</div>
+      <span style={{ fontSize: 14, fontWeight: 600, color: "var(--forest)", lineHeight: 1.3 }}>
+        {children}
+      </span>
     </div>
   );
 }
