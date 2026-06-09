@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, nfmt, clickable, growFromUsdc, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, nfmt, clickable, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { useWallet } from './wallet-context.jsx';
 
 /* ============================================================
    CLOVA, Dashboard ("Kebunku") with 3 layout variants + Panel AI
@@ -75,27 +76,27 @@ function DashTopBar({ lang, go }) {
 }
 
 /* ---- Hero plant card ---- */
-function HeroPlant({ lang, openModal, compact }) {
-  const principal = 100; // USDC — plant size scales with this
+function HeroPlant({ lang, openModal, compact, principalUsdc = 0, userYieldUsdc = 0, activeProtocol = "Aave v3" }) {
+  const grow = principalUsdc > 0 ? Math.min(1, principalUsdc / 500) : 0.62;
   return (
     <div className="card reveal card-lift" style={{ padding: compact ? "18px 20px" : "22px 22px", overflow: "hidden", position: "relative" }}>
       <CloverWatermark corner="br" size={150} opacity={0.05} />
       <div className="row" style={{ gap: 14, alignItems: "center" }}>
-        <div style={{ flex: "0 0 auto" }}><Plant grow={growFromUsdc(principal)} size={compact ? 96 : 116} /></div>
+        <div style={{ flex: "0 0 auto" }}><Plant grow={grow} size={compact ? 96 : 116} /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="muted tiny" style={{ fontWeight: 600, marginBottom: 2 }}>{L(lang, { id: "Modalku", en: "My principal" })}</div>
-          <div className="head tnum" style={{ fontSize: 32, lineHeight: 1 }}><CountUp value={principal} /></div>
+          <div className="head tnum" style={{ fontSize: 32, lineHeight: 1 }}><CountUp value={principalUsdc} /></div>
           <div className="head" style={{ fontSize: 15, color: "var(--ink-45)", marginTop: 1 }}>USDC</div>
           <span className="badge badge-safe" style={{ marginTop: 8 }}><Icon.shieldLeaf size={13} stroke="var(--clover-deep)" /> {L(lang, { id: "Aman & utuh", en: "Safe & whole" })}</span>
         </div>
       </div>
       <div className="row between aic" style={{ marginTop: 14, background: "var(--sage)", borderRadius: 14, padding: "11px 14px" }}>
         <span className="muted tiny" style={{ fontWeight: 600 }}>{L(lang, { id: "Bunga tersumbang ronde ini", en: "Yield contributed this round" })}</span>
-        <span className="head tnum" style={{ fontSize: 18, color: "var(--clover)" }}>+<CountUp value={3.42} /></span>
+        <span className="head tnum" style={{ fontSize: 18, color: "var(--clover)" }}>+<CountUp value={userYieldUsdc} /></span>
       </div>
       <div className="row between aic" style={{ marginTop: 10, padding: "0 2px" }}>
         <span className="row aic gap-6 tiny" style={{ fontWeight: 600, color: "var(--forest-70)" }}>
-          <Icon.leaf size={15} stroke="var(--clover)" /> Aave v3
+          <Icon.leaf size={15} stroke="var(--clover)" /> {activeProtocol}
           <span className="badge badge-active" style={{ padding: "3px 8px", fontSize: 11 }}>{L(lang, { id: "Sehat", en: "Healthy" })}</span>
         </span>
       </div>
@@ -108,16 +109,16 @@ function HeroPlant({ lang, openModal, compact }) {
 }
 
 /* ---- Prize pool panel ---- */
-function PrizePool({ lang, go, big }) {
+function PrizePool({ lang, go, big, currentRound = 1, poolYieldUsdc = 0, participantCount = 0 }) {
   return (
     <div className="card reveal card-lift" {...clickable(() => go("detailRonde"))} aria-label={L(lang, { id: "Buka Kolam Hadiah", en: "Open Prize Pool" })} style={{ cursor: "pointer",
       background: "linear-gradient(160deg, color-mix(in srgb,var(--gold) 13%, var(--canvas-2)), var(--canvas-2))", overflow: "hidden", position: "relative" }}>
       <div className="row between aic" style={{ marginBottom: 6 }}>
-        <span className="badge badge-win"><Icon.trophy size={13} stroke="var(--gold-deep)" /> {L(lang, { id: "Kolam Hadiah · Ronde #12", en: "Prize Pool · Round #12" })}</span>
+        <span className="badge badge-win"><Icon.trophy size={13} stroke="var(--gold-deep)" /> {L(lang, { id: `Kolam Hadiah · Ronde #${currentRound}`, en: `Prize Pool · Round #${currentRound}` })}</span>
         <Icon.chevron size={18} stroke="var(--gold-deep)" />
       </div>
-      <div className="head tnum" style={{ fontSize: big ? 40 : 34, color: "var(--gold-deep)" }}><CountUp value={1284} dec={0} /> <span style={{ fontSize: big ? 20 : 18 }}>USDC</span></div>
-      <div className="muted tiny" style={{ marginTop: 2, marginBottom: 12 }}>{L(lang, { id: "248 penanam ikut", en: "248 planters in" })}</div>
+      <div className="head tnum" style={{ fontSize: big ? 40 : 34, color: "var(--gold-deep)" }}><CountUp value={poolYieldUsdc} dec={2} /> <span style={{ fontSize: big ? 20 : 18 }}>USDC</span></div>
+      <div className="muted tiny" style={{ marginTop: 2, marginBottom: 12 }}>{L(lang, { id: `${participantCount} penanam ikut`, en: `${participantCount} planters in` })}</div>
       <CountdownArc pct={0.68} gold size={170}
         label={L(lang, { id: "11j 24m", en: "11h 24m" })}
         sub={L(lang, { id: "menuju undian", en: "to the draw" })} />
@@ -126,7 +127,10 @@ function PrizePool({ lang, go, big }) {
 }
 
 /* ---- AI keeper shortcut ---- */
-function KeeperCard({ lang, go }) {
+function KeeperCard({ lang, go, latestReasoning }) {
+  const snippet = latestReasoning
+    ? (latestReasoning.length > 100 ? latestReasoning.slice(0, 97) + "…" : latestReasoning)
+    : L(lang, { id: "Tetap di Aave — likuiditas kuat, tak ada kabar audit negatif.", en: "Staying on Aave — deep liquidity, no negative audit news." });
   return (
     <div className="card reveal card-lift" {...clickable(() => go("panelAI"))} aria-label={L(lang, { id: "Buka Pemelihara AI", en: "Open AI Keeper" })} style={{ cursor: "pointer", padding: "16px 18px" }}>
       <div className="row gap-12" style={{ alignItems: "flex-start" }}>
@@ -137,7 +141,7 @@ function KeeperCard({ lang, go }) {
             <span className="badge badge-active" style={{ padding: "3px 8px", fontSize: 10.5 }}>{L(lang, { id: "Aktif", en: "Active" })}</span>
           </div>
           <p className="muted" style={{ fontSize: 13, lineHeight: 1.45, margin: "5px 0 8px" }}>
-            "{L(lang, { id: "Tetap di Aave, likuiditas kuat, tak ada kabar audit negatif.", en: "Staying on Aave, deep liquidity, no negative audit news." })}"
+            "{snippet}"
           </p>
           <span className="tlink" style={{ fontSize: 13 }}>{L(lang, { id: "Lihat alasan lengkap", en: "See full reasoning" })} →</span>
         </div>
@@ -192,8 +196,39 @@ function FeeBar({ lang }) {
 
 /* ====================== DASHBOARD ====================== */
 function ScreenDashboard({ lang, go, t, openModal }) {
+  const wallet = useWallet();
   const variant = t.dashLayout || "garden";
   const stagger = (n) => ({ animationDelay: n * 80 + "ms" });
+
+  // Live pool data
+  const [poolData, setPoolData] = useState(null);
+  const [latestReasoning, setLatestReasoning] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        const [data, decisionsRes] = await Promise.all([
+          wallet.fetchPoolData(),
+          fetch(`${BACKEND_URL}/decisions?limit=1`).then((r) => r.json()).catch(() => []),
+        ]);
+        if (!alive) return;
+        if (data) setPoolData(data);
+        if (decisionsRes?.[0]?.reasoning) setLatestReasoning(decisionsRes[0].reasoning);
+      } catch (_) {}
+    };
+    load();
+    const id = setInterval(load, 30000); // refresh every 30s
+    return () => { alive = false; clearInterval(id); };
+  }, [wallet.account]);
+
+  const principal   = poolData?.principalUsdc   ?? 0;
+  const userYield   = poolData?.userYieldUsdc    ?? 0;
+  const poolYield   = poolData?.poolYieldUsdc    ?? 0;
+  const participants = poolData?.participantCount ?? 0;
+  const round       = poolData?.currentRound     ?? 1;
+  const chancePct   = poolData?.chancePct        ?? 0;
+  const protocol    = "Aave v3"; // from contract activeProtocol — simplified
 
   return (
     <div className="screen" style={{ paddingBottom: 90 }}>
@@ -207,9 +242,9 @@ function ScreenDashboard({ lang, go, t, openModal }) {
 
         {variant === "garden" && (
           <div className="col gap-14">
-            <div style={stagger(0)}><HeroPlant lang={lang} openModal={openModal} /></div>
-            <div style={stagger(1)}><PrizePool lang={lang} go={go} big /></div>
-            <div style={stagger(2)}><KeeperCard lang={lang} go={go} /></div>
+            <div style={stagger(0)}><HeroPlant lang={lang} openModal={openModal} principalUsdc={principal} userYieldUsdc={userYield} activeProtocol={protocol} /></div>
+            <div style={stagger(1)}><PrizePool lang={lang} go={go} big currentRound={round} poolYieldUsdc={poolYield} participantCount={participants} /></div>
+            <div style={stagger(2)}><KeeperCard lang={lang} go={go} latestReasoning={latestReasoning} /></div>
             <div style={stagger(3)}><WinStrip lang={lang} /></div>
             <div style={stagger(4)}><FeeBar lang={lang} /></div>
           </div>
@@ -217,24 +252,23 @@ function ScreenDashboard({ lang, go, t, openModal }) {
 
         {variant === "calm" && (
           <div className="col gap-14">
-            {/* big calm numbers, minimal illustration */}
             <div className="reveal card" style={{ ...stagger(0), padding: "24px 22px", textAlign: "center", overflow: "hidden" }}>
               <CloverWatermark corner="tr" size={130} opacity={0.05} />
               <div className="muted tiny" style={{ fontWeight: 600, marginBottom: 4 }}>{L(lang, { id: "Modalku, aman & utuh", en: "My principal, safe & whole" })}</div>
-              <div className="head tnum" style={{ fontSize: 52, lineHeight: 1 }}><CountUp value={100} /></div>
+              <div className="head tnum" style={{ fontSize: 52, lineHeight: 1 }}><CountUp value={principal} /></div>
               <div className="head" style={{ fontSize: 16, color: "var(--ink-45)", marginTop: 2 }}>USDC</div>
               <div className="vine-divide" />
               <div className="row between aic">
                 <span className="muted tiny">{L(lang, { id: "Bunga ronde ini", en: "Yield this round" })}</span>
-                <span className="head tnum" style={{ fontSize: 18, color: "var(--clover)" }}>+<CountUp value={3.42} /> USDC</span>
+                <span className="head tnum" style={{ fontSize: 18, color: "var(--clover)" }}>+<CountUp value={userYield} /> USDC</span>
               </div>
               <div className="row gap-10" style={{ marginTop: 16 }}>
                 <button className="btn btn-secondary grow btn-sm" onClick={() => openModal("tarik")}>{L(lang, { id: "Tarik Modal", en: "Withdraw" })}</button>
                 <button className="btn btn-danger-ghost btn-sm" onClick={() => openModal("cabut")}>{L(lang, { id: "Cabut Izin", en: "Revoke" })}</button>
               </div>
             </div>
-            <div style={stagger(1)}><PrizePool lang={lang} go={go} /></div>
-            <div style={stagger(2)}><KeeperCard lang={lang} go={go} /></div>
+            <div style={stagger(1)}><PrizePool lang={lang} go={go} currentRound={round} poolYieldUsdc={poolYield} participantCount={participants} /></div>
+            <div style={stagger(2)}><KeeperCard lang={lang} go={go} latestReasoning={latestReasoning} /></div>
             <div style={stagger(3)}><WinStrip lang={lang} /></div>
             <div style={stagger(4)}><FeeBar lang={lang} /></div>
           </div>
@@ -242,19 +276,18 @@ function ScreenDashboard({ lang, go, t, openModal }) {
 
         {variant === "plots" && (
           <div className="col gap-14">
-            {/* bento: hero spanning, then 2-up tiles */}
-            <div style={stagger(0)}><HeroPlant lang={lang} openModal={openModal} compact /></div>
+            <div style={stagger(0)}><HeroPlant lang={lang} openModal={openModal} compact principalUsdc={principal} userYieldUsdc={userYield} activeProtocol={protocol} /></div>
             <div className="row gap-12" style={{ alignItems: "stretch" }}>
               <div className="reveal card card-lift" {...clickable(() => go("detailRonde"))} aria-label={L(lang, { id: "Buka Kolam Hadiah", en: "Open Prize Pool" })} style={{ ...stagger(1), flex: 1, cursor: "pointer", background: "linear-gradient(160deg, color-mix(in srgb,var(--gold) 13%, var(--canvas-2)), var(--canvas-2))" }}>
-                <span className="badge badge-win" style={{ marginBottom: 8 }}><Icon.trophy size={12} stroke="var(--gold-deep)" /> {L(lang, { id: "Kolam #12", en: "Pool #12" })}</span>
-                <div className="head tnum" style={{ fontSize: 26, color: "var(--gold-deep)" }}><CountUp value={1284} dec={0} /></div>
-                <div className="muted tiny">USDC · 248 {L(lang, { id: "penanam", en: "planters" })}</div>
+                <span className="badge badge-win" style={{ marginBottom: 8 }}><Icon.trophy size={12} stroke="var(--gold-deep)" /> {L(lang, { id: `Kolam #${round}`, en: `Pool #${round}` })}</span>
+                <div className="head tnum" style={{ fontSize: 26, color: "var(--gold-deep)" }}><CountUp value={poolYield} dec={2} /></div>
+                <div className="muted tiny">USDC · {participants} {L(lang, { id: "penanam", en: "planters" })}</div>
               </div>
               <div className="reveal card card-lift" style={{ ...stagger(2), flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
                 <CountdownArc pct={0.68} gold size={130} label={L(lang, { id: "11j 24m", en: "11h 24m" })} sub={L(lang, { id: "undian", en: "draw" })} />
               </div>
             </div>
-            <div style={stagger(3)}><KeeperCard lang={lang} go={go} /></div>
+            <div style={stagger(3)}><KeeperCard lang={lang} go={go} latestReasoning={latestReasoning} /></div>
             <div style={stagger(4)}><WinStrip lang={lang} /></div>
             <div style={stagger(5)}><FeeBar lang={lang} /></div>
           </div>

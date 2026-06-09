@@ -1,4 +1,5 @@
 import "../styles/styles.css";
+import { WalletProvider } from "../components/wallet-context.jsx";
 
 const DESCRIPTION =
   "No-loss prize-linked savings. Managed by a non-custodial AI agent that is technically incapable of touching your principal.";
@@ -48,7 +49,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Quicksand:wght@500;600;700&family=Playfair+Display:wght@500;600;700&family=Lora:wght@500;600;700&display=swap"
         />
-        {children}
+        <WalletProvider>{children}</WalletProvider>
       </body>
     </html>
   );

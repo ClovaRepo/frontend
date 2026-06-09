@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { L, fmt, nfmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 import { useFlow, StatePill } from './screens-ob.jsx';
+import { useWallet } from './wallet-context.jsx';
 
 /* ============================================================
    CLOVA, Undian, Detail Ronde, Riwayat, Pengaturan, Modals
@@ -33,14 +34,23 @@ function ScreenUndian({ lang, go, t }) {
 
         {phase === "pre" && (
           <div className="center reveal" style={{ marginTop: 20 }}>
-            <div className="badge badge-win" style={{ marginBottom: 16 }}><Icon.trophy size={14} stroke="var(--gold-deep)" /> {L(lang, { id: "Ronde #12 siap diundi", en: "Round #12 ready to draw" })}</div>
+            <div className="badge badge-win" style={{ marginBottom: 16 }}><Icon.trophy size={14} stroke="var(--gold-deep)" /> {L(lang, { id: "Ronde #12 · Undian berlangsung", en: "Round #12 · Draw in progress" })}</div>
             <div style={{ display: "grid", placeItems: "center", margin: "10px 0 18px" }}>
               <Clover size={120} color="var(--clover)" breathe />
             </div>
             <h1 style={{ fontSize: 26, marginBottom: 8 }}>{L(lang, { id: "Kolam hadiah ronde ini", en: "This round's prize pool" })}</h1>
             <div className="head tnum" style={{ fontSize: 46, color: "var(--gold-deep)", marginBottom: 6 }}><CountUp value={1284} dec={0} /> USDC</div>
-            <p className="muted" style={{ fontSize: 13.5, marginBottom: 24 }}>{L(lang, { id: "Acak & adil lewat VRF on-chain.", en: "Random & fair via on-chain VRF." })}</p>
-            <button className="btn btn-gold btn-lg" onClick={() => setPhase("drawing")}><Icon.spark size={19} stroke="#3a2603" /> {L(lang, { id: "Tarik Undian", en: "Draw Now" })}</button>
+            <p className="muted" style={{ fontSize: 13.5, marginBottom: 20 }}>{L(lang, { id: "Acak & adil lewat VRF on-chain.", en: "Random & fair via on-chain VRF." })}</p>
+            <div className="row aic gap-10" style={{ background: "color-mix(in srgb,var(--gold) 11%, var(--canvas-2))", borderRadius: 14, padding: "14px 18px", marginBottom: 16, justifyContent: "center" }}>
+              <Icon.robot size={18} stroke="var(--gold-deep)" />
+              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--gold-deep)" }}>
+                {L(lang, { id: "Agen AI sedang menarik pemenang…", en: "AI agent is drawing the winner…" })}
+              </span>
+              <span style={{ width: 14, height: 14, borderRadius: "50%", border: "2.5px solid color-mix(in srgb,var(--gold) 30%, transparent)", borderTopColor: "var(--gold-deep)", animation: "spinClover .8s linear infinite", display: "inline-block" }} />
+            </div>
+            <p className="muted tiny" style={{ lineHeight: 1.5 }}>
+              {L(lang, { id: "Undian dijalankan otomatis oleh agen — kamu akan notifikasi saat pemenang dipilih.", en: "The draw runs automatically via the agent — you'll be notified when a winner is picked." })}
+            </p>
           </div>
         )}
 
@@ -414,8 +424,25 @@ function ModalSheet({ children, onClose }) {
 }
 
 function ModalTarik({ lang, onClose }) {
-  const [amt, setAmt] = useState(100);
-  const [state, setState, run] = useFlow("idle");
+  const wallet = useWallet();
+  const principalNum = wallet.principalUsdc
+    ? Number(wallet.principalUsdc) / 1e6
+    : 100;
+  const [amt, setAmt] = useState(Math.floor(principalNum));
+  const [state, setState] = useState("idle"); // idle, loading, ok, error
+  const [err, setErr] = useState("");
+
+  const doWithdraw = async () => {
+    setState("loading"); setErr("");
+    try {
+      await wallet.withdraw(amt);
+      setState("ok");
+    } catch (e) {
+      setErr(e.message || "Withdraw failed");
+      setState("idle");
+    }
+  };
+
   return (
     <ModalSheet onClose={onClose}>
       {state === "ok" ? (
@@ -431,19 +458,23 @@ function ModalTarik({ lang, onClose }) {
           <p className="muted" style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 18 }}>{L(lang, { id: "Modalmu selalu milikmu. Tarik sebagian atau semuanya.", en: "Your principal is always yours. Take part or all." })}</p>
           <div className="card card-sage" style={{ padding: "18px 20px", marginBottom: 14 }}>
             <div className="row aic" style={{ justifyContent: "center", gap: 8 }}>
-              <input className="amount-input" style={{ width: "auto", maxWidth: 180, fontSize: 44 }} value={amt} onChange={(e) => setAmt(Math.max(0, Math.min(100, +e.target.value.replace(/\D/g, "") || 0)))} inputMode="numeric" />
+              <input className="amount-input" style={{ width: "auto", maxWidth: 180, fontSize: 44 }}
+                value={amt}
+                onChange={(e) => setAmt(Math.max(0, Math.min(principalNum, +e.target.value.replace(/\D/g, "") || 0)))}
+                inputMode="numeric" />
               <span className="head" style={{ fontSize: 20, color: "var(--ink-45)" }}>USDC</span>
             </div>
             <div className="row gap-8" style={{ justifyContent: "center", marginTop: 12 }}>
-              <button className={"chip" + (amt === 50 ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmt(50)}>{L(lang, { id: "Sebagian", en: "Partial" })}</button>
-              <button className={"chip" + (amt === 100 ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmt(100)}>{L(lang, { id: "Semua (100)", en: "All (100)" })}</button>
+              <button className={"chip" + (amt === Math.floor(principalNum / 2) ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmt(Math.floor(principalNum / 2))}>{L(lang, { id: "Sebagian", en: "Partial" })}</button>
+              <button className={"chip" + (amt === Math.floor(principalNum) ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmt(Math.floor(principalNum))}>{L(lang, { id: `Semua (${Math.floor(principalNum)})`, en: `All (${Math.floor(principalNum)})` })}</button>
             </div>
           </div>
           <div className="tiny muted" style={{ lineHeight: 1.5, marginBottom: 18, padding: "0 4px" }}>{L(lang, { id: "Sisa modal tetap bekerja. Bunga yang sudah masuk Kolam ronde ini tetap diundi.", en: "Remaining principal keeps working. Yield already in this round's Pool still enters the draw." })}</div>
+          {err && <div className="tiny" style={{ color: "var(--danger)", marginBottom: 10, textAlign: "center" }}>{err}</div>}
           {state === "loading" ? <StatePill tone="load">{L(lang, { id: "Menarik…", en: "Withdrawing…" })}</StatePill> : (
             <div className="row gap-10">
               <button className="btn btn-ghost" onClick={onClose}>{L(lang, { id: "Batal", en: "Cancel" })}</button>
-              <button className="btn btn-primary grow btn-lg" onClick={() => run([["loading", 1400], ["ok", 0]])}>{L(lang, { id: "Tarik", en: "Withdraw" })}</button>
+              <button className="btn btn-primary grow btn-lg" onClick={doWithdraw}>{L(lang, { id: "Tarik", en: "Withdraw" })}</button>
             </div>
           )}
         </>
@@ -453,7 +484,21 @@ function ModalTarik({ lang, onClose }) {
 }
 
 function ModalCabut({ lang, onClose }) {
-  const [state, setState, run] = useFlow("idle");
+  const wallet = useWallet();
+  const [state, setState] = useState("idle"); // idle, loading, ok, error
+  const [err, setErr] = useState("");
+
+  const doRevoke = async () => {
+    setState("loading"); setErr("");
+    try {
+      await wallet.revokeDelegation();
+      setState("ok");
+    } catch (e) {
+      setErr(e.message || "Revoke failed");
+      setState("idle");
+    }
+  };
+
   const impacts = [
     { id: "AI berhenti total", en: "AI stops entirely" },
     { id: "Modal tetap aman & milikmu", en: "Principal stays safe & yours" },
@@ -487,10 +532,11 @@ function ModalCabut({ lang, onClose }) {
               </div>
             ))}
           </div>
+          {err && <div className="tiny" style={{ color: "var(--danger)", marginBottom: 10, textAlign: "center" }}>{err}</div>}
           {state === "loading" ? <StatePill tone="load">{L(lang, { id: "Mencabut…", en: "Revoking…" })}</StatePill> : (
             <div className="row gap-10">
               <button className="btn btn-ghost" onClick={onClose}>{L(lang, { id: "Batal", en: "Cancel" })}</button>
-              <button className="btn btn-danger grow btn-lg" onClick={() => run([["loading", 1400], ["ok", 0]])}>{L(lang, { id: "Ya, Cabut Izin", en: "Yes, Revoke" })}</button>
+              <button className="btn btn-danger grow btn-lg" onClick={doRevoke}>{L(lang, { id: "Ya, Cabut Izin", en: "Yes, Revoke" })}</button>
             </div>
           )}
         </>

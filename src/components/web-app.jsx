@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, nfmt, clickable, growFromUsdc, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, nfmt, clickable, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { useWallet } from './wallet-context.jsx';
 
 /* ============================================================
    CLOVA WEB, App shell (left sidebar) + desktop Dashboard
@@ -14,6 +15,10 @@ const WEB_NAV = [
 ];
 
 function Sidebar({ lang, setLang, screen, go, onExit }) {
+  const wallet = useWallet();
+  const shortAddr = wallet.account
+    ? wallet.account.slice(0, 6) + "…" + wallet.account.slice(-4)
+    : "—";
   return (
     <aside className="sidebar">
       <div className="row between aic" style={{ padding: "0 6px" }}>
@@ -35,7 +40,7 @@ function Sidebar({ lang, setLang, screen, go, onExit }) {
         <div className="wallet-pill">
           <div style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--canvas-2)", display: "grid", placeItems: "center", flex: "0 0 auto" }}><Icon.wallet size={18} stroke="var(--clover-deep)" /></div>
           <div style={{ minWidth: 0 }}>
-            <div className="tnum" style={{ fontWeight: 700, fontSize: 13.5, color: "var(--forest)" }}>0x12…9aF3</div>
+            <div className="tnum" style={{ fontWeight: 700, fontSize: 13.5, color: "var(--forest)" }}>{shortAddr}</div>
             <div className="tiny" style={{ color: "var(--clover-deep)", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}><Clover size={11} color="var(--clover-deep)" stem={false} /> {L(lang, { id: "Terverifikasi", en: "Verified" })}</div>
           </div>
         </div>
@@ -103,7 +108,11 @@ function NotifBell({ lang, go }) {
   );
 }
 
-function MainHead({ lang, title, sub, onDraw, go }) {
+function MainHead({ lang, title, sub, onDraw, go, poolYield, round }) {
+  const poolDisplay = poolYield != null && poolYield > 0
+    ? `${poolYield.toFixed(3)} USDC`
+    : "— USDC";
+  const roundDisplay = round && round !== "—" ? `#${round}` : "";
   return (
     <div className="main-head">
       <div>
@@ -113,10 +122,13 @@ function MainHead({ lang, title, sub, onDraw, go }) {
       <div className="row aic gap-12">
         <div className="row aic gap-8" style={{ background: "linear-gradient(160deg, color-mix(in srgb,var(--gold) 14%, var(--canvas-2)), var(--canvas-2))", borderRadius: 14, padding: "9px 14px" }}>
           <Icon.trophy size={16} stroke="var(--gold-deep)" />
-          <span className="tnum" style={{ fontWeight: 700, fontSize: 14, color: "var(--gold-deep)" }}>{L(lang, { id: "1.284 USDC", en: "1,284 USDC" })}</span>
-          <span className="tiny muted" style={{ marginLeft: 2 }}>· {L(lang, { id: "11j 24m", en: "11h 24m" })}</span>
+          <span className="tnum" style={{ fontWeight: 700, fontSize: 14, color: "var(--gold-deep)" }}>{poolDisplay}</span>
+          {roundDisplay && <span className="tiny muted" style={{ marginLeft: 2 }}>· Ronde {roundDisplay}</span>}
         </div>
-        {onDraw && <button className="btn btn-gold btn-sm" onClick={onDraw}><Icon.spark size={16} stroke="#3a2603" /> {L(lang, { id: "Undian", en: "Draw" })}</button>}
+        <div className="row aic gap-6" style={{ background: "color-mix(in srgb,var(--gold) 12%, var(--canvas-2))", borderRadius: 10, padding: "6px 12px" }}>
+          <Icon.robot size={14} stroke="var(--gold-deep)" />
+          <span className="tiny" style={{ fontWeight: 700, color: "var(--gold-deep)" }}>{L(lang, { id: "Agen aktif", en: "Agent active" })}</span>
+        </div>
         <NotifBell lang={lang} go={go} />
       </div>
     </div>
@@ -124,13 +136,58 @@ function MainHead({ lang, title, sub, onDraw, go }) {
 }
 
 /* ===================== DASHBOARD ===================== */
+const BACKEND_URL_WEB = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_BACKEND_URL) || "http://localhost:3001";
+
 function WebDashboard({ lang, go, t, openModal, onDraw }) {
-  const yieldSeries = [40, 120, 220, 360, 470, 560, 700, 820, 980, 1120, 1284];
-  const principal = 100; // USDC — plant size scales with this
+  const wallet = useWallet();
+  const [poolData, setPoolData] = useState(null);
+  const [latestDecision, setLatestDecision] = useState(null);
+
+  // Fetch pool data + AI decision on mount, refresh every 30s
+  useEffect(() => {
+    if (!wallet.account) return;
+    let alive = true;
+    const load = async () => {
+      const [pd, dec] = await Promise.all([
+        wallet.fetchPoolData().catch(() => null),
+        fetch(`${BACKEND_URL_WEB}/decisions?limit=1`).then((r) => r.json()).catch(() => []),
+      ]);
+      if (!alive) return;
+      setPoolData(pd);
+      setLatestDecision(Array.isArray(dec) ? dec[0] : null);
+    };
+    load();
+    const id = setInterval(load, 30_000);
+    return () => { alive = false; clearInterval(id); };
+  }, [wallet.account, wallet.fetchPoolData]);
+
+  const principal = poolData?.principalUsdc ?? 0;
+  const userYield = poolData?.userYieldUsdc ?? 0;
+  const poolYield = poolData?.poolYieldUsdc ?? 0;
+  const participants = poolData?.participantCount ?? 0;
+  const chancePct = poolData?.chancePct ?? 0;
+  const round = poolData?.currentRound ?? "—";
+
+  // Normalised yield series for chart — real pool yield as final point
+  const yieldSeries = poolYield > 0
+    ? [0, poolYield * 0.09, poolYield * 0.21, poolYield * 0.38, poolYield * 0.52,
+       poolYield * 0.63, poolYield * 0.74, poolYield * 0.83, poolYield * 0.91, poolYield * 0.96, poolYield]
+    : [40, 120, 220, 360, 470, 560, 700, 820, 980, 1120, 1284];
+
+  const aiText = latestDecision?.reasoning
+    ?? L(lang, { id: "Tetap di Aave — likuiditas kuat, tak ada kabar audit negatif minggu ini.", en: "Staying on Aave — strong liquidity, no negative audit news this week." });
+
+  const plantGrow = principal > 0 ? Math.min(0.95, 0.15 + (principal / 1000) * 0.8) : 0.15;
+
   return (
     <div className="main">
-      <MainHead lang={lang} go={go} title={L(lang, { id: "Kebunku 🌿", en: "My Garden 🌿" })}
-        sub={L(lang, { id: "Selamat datang kembali. Ronde #12 sedang berjalan.", en: "Welcome back. Round #12 is running." })} onDraw={onDraw} />
+      <MainHead lang={lang} go={go}
+        title={L(lang, { id: "Kebunku 🌿", en: "My Garden 🌿" })}
+        sub={L(lang, {
+          id: `Selamat datang kembali. Ronde #${round} sedang berjalan.`,
+          en: `Welcome back. Round #${round} is running.`,
+        })}
+        onDraw={onDraw} poolYield={poolYield} round={round} />
       <div className="main-body">
         <div className="bento">
           {/* HERO principal */}
@@ -142,14 +199,16 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
                 <span className="badge badge-safe"><Icon.shieldLeaf size={13} stroke="var(--clover-deep)" /> {L(lang, { id: "Aman & utuh", en: "Safe & whole" })}</span>
               </div>
               <div className="row aic gap-20" style={{ marginTop: 8 }}>
-                <div style={{ flex: "0 0 auto" }}><Plant grow={growFromUsdc(principal)} size={150} /></div>
+                <div style={{ flex: "0 0 auto" }}><Plant grow={plantGrow} size={150} /></div>
                 <div style={{ flex: 1 }}>
-                  <div className="num-xl"><CountUp value={principal} /></div>
+                  <div className="num-xl"><CountUp value={principal} dec={2} /></div>
                   <div className="head" style={{ fontSize: 18, color: "var(--ink-45)", marginTop: 2 }}>USDC</div>
                   <div className="row aic gap-10" style={{ marginTop: 16, background: "var(--sage)", borderRadius: 14, padding: "12px 16px" }}>
                     <Icon.drop size={18} stroke="var(--clover)" />
                     <span className="muted tiny" style={{ fontWeight: 600 }}>{L(lang, { id: "Bunga tersumbang ronde ini", en: "Yield contributed this round" })}</span>
-                    <span className="head tnum" style={{ fontSize: 18, color: "var(--clover)", marginLeft: "auto" }}>+<CountUp value={3.42} /></span>
+                    <span className="head tnum" style={{ fontSize: 18, color: "var(--clover)", marginLeft: "auto" }}>
+                      {userYield > 0 ? "+" : ""}<CountUp value={userYield} dec={4} />
+                    </span>
                   </div>
                 </div>
               </div>
@@ -159,7 +218,8 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
                   <span className="badge badge-active" style={{ fontSize: 11, padding: "3px 9px" }}>{L(lang, { id: "Sehat", en: "Healthy" })}</span>
                 </span>
                 <div className="row gap-10">
-                  <button className="btn btn-secondary btn-sm" onClick={() => openModal("tarik")}>{L(lang, { id: "Tarik Modal", en: "Withdraw" })}</button>
+                  <button className="btn btn-primary btn-sm" onClick={() => openModal("deposit")}><Icon.plus size={14} stroke="#F4FBF6" /> {L(lang, { id: "Tambah", en: "Add" })}</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => openModal("tarik")}>{L(lang, { id: "Tarik", en: "Withdraw" })}</button>
                   <button className="btn btn-danger-ghost btn-sm" onClick={() => openModal("cabut")}>{L(lang, { id: "Cabut Izin", en: "Revoke" })}</button>
                 </div>
               </div>
@@ -170,15 +230,26 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
           <Reveal delay={80} className="col-5">
             <div className="card card-pad-lg" style={{ height: "100%", background: "linear-gradient(160deg, color-mix(in srgb,var(--gold) 13%, var(--canvas-2)), var(--canvas-2))", display: "flex", flexDirection: "column" }}>
               <div className="row between aic">
-                <span className="badge badge-win"><Icon.trophy size={13} stroke="var(--gold-deep)" /> {L(lang, { id: "Kolam · Ronde #12", en: "Pool · Round #12" })}</span>
+                <span className="badge badge-win"><Icon.trophy size={13} stroke="var(--gold-deep)" /> {L(lang, { id: "Kolam · Ronde", en: "Pool · Round" })} #{round}</span>
                 <button className="tlink tiny" onClick={() => go("pool")}>{L(lang, { id: "Detail", en: "Details" })} →</button>
               </div>
-              <div className="num-lg" style={{ color: "var(--gold-deep)", marginTop: 12 }}><CountUp value={1284} dec={0} /> <span style={{ fontSize: 20 }}>USDC</span></div>
-              <div className="muted tiny" style={{ marginTop: 2 }}>{L(lang, { id: "248 penanam ikut", en: "248 planters in" })}</div>
-              <div style={{ marginTop: "auto", paddingTop: 10 }}>
-                <CountdownArc pct={0.68} gold size={210} label={L(lang, { id: "11j 24m", en: "11h 24m" })} sub={L(lang, { id: "menuju undian", en: "to the draw" })} />
+              <div className="num-lg" style={{ color: "var(--gold-deep)", marginTop: 12 }}>
+                <CountUp value={poolYield} dec={3} /> <span style={{ fontSize: 20 }}>USDC</span>
               </div>
-              <button className="btn btn-gold btn-block" style={{ marginTop: 12 }} onClick={onDraw}><Icon.spark size={17} stroke="#3a2603" /> {L(lang, { id: "Lihat Undian", en: "Open Draw" })}</button>
+              <div className="muted tiny" style={{ marginTop: 2 }}>
+                {participants} {L(lang, { id: "penanam ikut", en: "planters in" })}
+              </div>
+              <div style={{ marginTop: "auto", paddingTop: 10 }}>
+                <CountdownArc pct={0.68} gold size={210}
+                  label={L(lang, { id: "Ronde aktif", en: "Round active" })}
+                  sub={L(lang, { id: "menuju undian", en: "to the draw" })} />
+              </div>
+              <div className="row aic gap-8" style={{ marginTop: 12, background: "color-mix(in srgb,var(--gold) 10%, var(--canvas-2))", borderRadius: 12, padding: "10px 14px" }}>
+                <Icon.robot size={15} stroke="var(--gold-deep)" />
+                <span className="tiny" style={{ fontWeight: 600, color: "var(--gold-deep)" }}>
+                  {L(lang, { id: "Undian dijalankan otomatis oleh agen AI", en: "Draw is run automatically by the AI agent" })}
+                </span>
+              </div>
             </div>
           </Reveal>
 
@@ -192,13 +263,8 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
                   <span className="badge badge-active" style={{ fontSize: 10.5, padding: "3px 8px" }}>{L(lang, { id: "Aktif", en: "Active" })}</span>
                 </div>
               </div>
-              <p className="muted" style={{ fontSize: 14, lineHeight: 1.5 }}>"{L(lang, { id: "Tetap di Aave, likuiditas kuat, tak ada kabar audit negatif minggu ini.", en: "Staying on Aave, strong liquidity, no negative audit news this week." })}"</p>
-              <div className="row gap-6 wrap" style={{ marginTop: 14 }}>
-                {[{ i: Icon.coin, l: "APY 4,1%" }, { i: Icon.pool, l: "TVL $1,2B" }, { i: Icon.shield, l: L(lang, { id: "Audit bersih", en: "Audit clean" }) }].map((c, i) => (
-                  <span key={i} className="chip" style={{ fontSize: 12, padding: "6px 10px" }}><c.i size={13} stroke="var(--clover-deep)" /> {c.l}</span>
-                ))}
-              </div>
-              <span className="tlink" style={{ marginTop: "auto", paddingTop: 14, display: "inline-block" }}>{L(lang, { id: "Lihat alasan lengkap", en: "See full reasoning" })} →</span>
+              <p className="muted" style={{ fontSize: 14, lineHeight: 1.5 }}>"{aiText.length > 140 ? aiText.slice(0, 137) + "…" : aiText}"</p>
+              <span className="tlink" style={{ marginTop: 8, display: "inline-block" }}>{L(lang, { id: "Lihat alasan lengkap", en: "See full reasoning" })} →</span>
             </div>
           </Reveal>
 
@@ -208,12 +274,24 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
               <CloverWatermark corner="br" size={120} opacity={0.06} />
               <div className="head" style={{ fontSize: 16, marginBottom: 18 }}>{L(lang, { id: "Caramu ikut", en: "Your stake" })}</div>
               <div className="row between" style={{ gap: 10 }}>
-                {[{ l: { id: "Modalmu", en: "Principal" }, v: "100" }, { l: { id: "Bunga", en: "Yield" }, v: "+3,42", c: "var(--clover)" }, { l: { id: "Peluang Menang", en: "Win Chance" }, v: "12,5%", c: "var(--gold-deep)" }].map((x, i) => (
-                  <div key={i} style={{ flex: 1 }}><div className="head tnum" style={{ fontSize: 26, color: x.c || "var(--forest)" }}>{nfmt(lang, x.v)}</div><div className="muted tiny" style={{ marginTop: 2 }}>{L(lang, x.l)}</div></div>
-                ))}
+                <div style={{ flex: 1 }}>
+                  <div className="head tnum" style={{ fontSize: 24 }}><CountUp value={principal} dec={2} /></div>
+                  <div className="muted tiny">{L(lang, { id: "Modal", en: "Principal" })}</div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div className="head tnum" style={{ fontSize: 24, color: "var(--clover)" }}>+<CountUp value={userYield} dec={4} /></div>
+                  <div className="muted tiny">{L(lang, { id: "Bunga", en: "Yield" })}</div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div className="head tnum" style={{ fontSize: 24, color: "var(--gold-deep)" }}>{chancePct.toFixed(1)}%</div>
+                  <div className="muted tiny">{L(lang, { id: "Peluang Menang", en: "Win Chance" })}</div>
+                </div>
               </div>
-              <div className="vine-divide" style={{ marginTop: "auto" }} />
-              <div className="row aic gap-8 tiny muted"><Icon.leaf size={14} stroke="var(--clover)" /> {L(lang, { id: "Deposit lebih besar = peluang menang lebih besar, undian adil via VRF.", en: "Bigger deposit = bigger win chance, fair draw via VRF." })}</div>
+              <div className="vine-divide" />
+              <div className="row aic gap-8 tiny muted">
+                <Icon.leaf size={14} stroke="var(--clover)" />
+                {L(lang, { id: "Deposit lebih besar = peluang menang lebih besar — undian adil via VRF.", en: "Bigger deposit = bigger win chance — fair draw via VRF." })}
+              </div>
             </div>
           </Reveal>
 
@@ -255,24 +333,28 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
             <div className="card card-pad-lg">
               <div className="row between aic" style={{ marginBottom: 4 }}>
                 <div className="head" style={{ fontSize: 16 }}>{L(lang, { id: "Pertumbuhan kolam ronde ini", en: "Pool growth this round" })}</div>
-                <span className="head tnum" style={{ fontSize: 18, color: "var(--clover)" }}>+{nfmt(lang, "1.284")} USDC</span>
+                <span className="head tnum" style={{ fontSize: 18, color: "var(--clover)" }}>
+                  +<CountUp value={poolYield} dec={3} /> USDC
+                </span>
               </div>
               <AreaChart data={yieldSeries} color="var(--clover)" h={120} />
             </div>
           </Reveal>
 
-          {/* win history */}
+          {/* win history — on-chain events needed, keep static for now */}
           <Reveal delay={360} className="col-4">
             <div className="card card-pad-lg" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
               <div className="head" style={{ fontSize: 16, marginBottom: 12 }}>{L(lang, { id: "Riwayat menang", en: "Win history" })}</div>
-              <div className="col" style={{ flex: 1, justifyContent: "space-between", gap: 10 }}>
-                {[{ r: 9, win: true, amt: "+18,20" }, { r: 8, win: false }, { r: 6, win: true, amt: "+9,80" }].map((it, i) => (
-                  <div key={i} className="row between aic" style={{ flex: 1, padding: "0 14px", borderRadius: 12, background: it.win ? "color-mix(in srgb,var(--gold) 10%, var(--canvas-2))" : "var(--sage)" }}>
-                    <span className="tiny" style={{ fontWeight: 700, color: "var(--ink-45)" }}>{L(lang, { id: "Ronde", en: "Round" })} #{it.r}</span>
-                    {it.win ? <span className="head tnum" style={{ fontSize: 15, color: "var(--gold-deep)" }}>{nfmt(lang, it.amt)}</span>
-                      : <span className="tiny" style={{ fontWeight: 600, color: "var(--clover-deep)" }}>{L(lang, { id: "Modal utuh", en: "Whole" })}</span>}
-                  </div>
-                ))}
+              <div className="col gap-10">
+                {round > 1
+                  ? Array.from({ length: Math.min(3, Number(round) - 1) }, (_, i) => Number(round) - 1 - i).map((r) => (
+                      <div key={r} className="row between aic" style={{ padding: "10px 12px", borderRadius: 12, background: "var(--sage)" }}>
+                        <span className="tiny" style={{ fontWeight: 700, color: "var(--ink-45)" }}>{L(lang, { id: "Ronde", en: "Round" })} #{r}</span>
+                        <span className="tiny" style={{ fontWeight: 600, color: "var(--clover-deep)" }}>{L(lang, { id: "Modal utuh", en: "Whole" })}</span>
+                      </div>
+                    ))
+                  : <div className="muted tiny">{L(lang, { id: "Ronde pertama sedang berjalan.", en: "First round in progress." })}</div>
+                }
               </div>
             </div>
           </Reveal>

@@ -12,6 +12,7 @@ import { WebLanding } from "./web-landing.jsx";
 import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakColor, TweakSelect, TweakSlider } from "./tweaks.jsx";
 import { useClovaState } from "./app-state.js";
 import { WebSkeleton, OnboardSkeleton } from "./skeletons.jsx";
+import { useWallet } from "./wallet-context.jsx";
 
 const lazyNamed = (loader, name) => lazy(() => loader().then((m) => ({ default: m[name] })));
 const WebPool = lazyNamed(() => import("./web-screens.jsx"), "WebPool");
@@ -19,8 +20,9 @@ const WebKeeper = lazyNamed(() => import("./web-screens.jsx"), "WebKeeper");
 const WebLog = lazyNamed(() => import("./web-screens.jsx"), "WebLog");
 const WebSettings = lazyNamed(() => import("./web-screens.jsx"), "WebSettings");
 const WebDraw = lazyNamed(() => import("./web-screens.jsx"), "WebDraw");
-const WebModalTarik = lazyNamed(() => import("./web-screens.jsx"), "WebModalTarik");
-const WebModalCabut = lazyNamed(() => import("./web-screens.jsx"), "WebModalCabut");
+const WebModalTarik   = lazyNamed(() => import("./web-screens.jsx"), "WebModalTarik");
+const WebModalCabut   = lazyNamed(() => import("./web-screens.jsx"), "WebModalCabut");
+const WebModalDeposit = lazyNamed(() => import("./web-screens.jsx"), "WebModalDeposit");
 // Onboarding reuses the same 5 mobile steps, shown as a centered column on web.
 const OB_STEPS = {
   ob1: lazyNamed(() => import("./screens-ob.jsx"), "ScreenOB1"),
@@ -84,9 +86,18 @@ export default function WebApp() {
   const { lang, setLang, stage, setStage, screen, setScreen } = useClovaState();
   const [modal, setModal] = useState(null);
   const [draw, setDraw] = useState(false);
+  const wallet = useWallet();
 
   /* keep the document language in sync for a11y / screen readers */
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
+
+  /* When user disconnects MetaMask externally while in app, return to onboarding */
+  useEffect(() => {
+    if (stage === "app" && !wallet.account) {
+      setStage("onboarding");
+      window.scrollTo(0, 0);
+    }
+  }, [wallet.account, stage, setStage]);
 
   /* reveal failsafe (paused timeline while hidden) */
   useEffect(() => {
@@ -132,8 +143,9 @@ export default function WebApp() {
       </div>
 
       {draw && <Suspense fallback={null}><WebDraw lang={lang} t={t} onClose={() => setDraw(false)} /></Suspense>}
-      {modal === "tarik" && <Suspense fallback={null}><WebModalTarik lang={lang} onClose={() => setModal(null)} /></Suspense>}
-      {modal === "cabut" && <Suspense fallback={null}><WebModalCabut lang={lang} onClose={() => setModal(null)} /></Suspense>}
+      {modal === "tarik"   && <Suspense fallback={null}><WebModalTarik   lang={lang} onClose={() => setModal(null)} /></Suspense>}
+      {modal === "cabut"   && <Suspense fallback={null}><WebModalCabut   lang={lang} onClose={() => setModal(null)} /></Suspense>}
+      {modal === "deposit" && <Suspense fallback={null}><WebModalDeposit lang={lang} onClose={() => setModal(null)} /></Suspense>}
 
       <TweaksPanel>
         <TweakSection label={L(lang, { id: "Bahasa", en: "Language" })} />

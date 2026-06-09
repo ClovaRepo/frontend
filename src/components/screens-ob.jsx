@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { useWallet } from './wallet-context.jsx';
+import { formatUnits } from 'viem';
 
 /* ============================================================
    CLOVA, Onboarding steps 1..5
@@ -121,10 +123,34 @@ function WalletPicker({ lang, onPick, onClose }) {
 
 /* -------- 3. OB1, Connect wallet -------- */
 function ScreenOB1({ lang, go, t }) {
-  const [state, setState, run] = useFlow("idle");
+  const wallet = useWallet();
+  const [state, setState] = useState(wallet.account ? "connected" : "idle");
   const [picking, setPicking] = useState(false);
-  const [wallet, setWallet] = useState(null);
-  const pick = (w) => { setWallet(w); setPicking(false); run([["loading", 1400], ["connected", 0]]); };
+  const [err, setErr] = useState("");
+  const [walletInfo, setWalletInfo] = useState(null);
+
+  const pick = async (w) => {
+    setWalletInfo(w);
+    setPicking(false);
+    setState("loading");
+    setErr("");
+    try {
+      await wallet.connect();
+      setState("connected");
+    } catch (e) {
+      setErr(e.message || "Connection failed");
+      setState("idle");
+    }
+  };
+
+  // Skip onboarding if user already has a deposit on-chain
+  const handleContinue = () => {
+    if (wallet.principalUsdc > 0n) {
+      go("dashboard");
+    } else {
+      go("ob2");
+    }
+  };
   return (
     <OBShell lang={lang} step={1} t={t}>
       <div className="card reveal" style={{ padding: "26px 22px", overflow: "hidden" }}>
@@ -142,27 +168,36 @@ function ScreenOB1({ lang, go, t }) {
           <div className="reveal">
             <div className="row between aic" style={{ background: "var(--sage)", borderRadius: 14, padding: "14px 16px", marginBottom: 14 }}>
               <div className="row aic gap-10">
-                {wallet ? <WalletGlyph w={wallet} size={36} radius={999} /> : (
+                {walletInfo ? <WalletGlyph w={walletInfo} size={36} radius={999} /> : (
                   <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--canvas-2)", display: "grid", placeItems: "center" }}>
                     <Icon.wallet size={19} stroke="var(--clover-deep)" />
                   </div>
                 )}
                 <div>
-                  {wallet && <div className="tiny" style={{ fontWeight: 700, color: "var(--clover-deep)" }}>{wallet.name}</div>}
-                  <div className="head tnum" style={{ fontSize: 16 }}>0x12…9aF3</div>
+                  {walletInfo && <div className="tiny" style={{ fontWeight: 700, color: "var(--clover-deep)" }}>{walletInfo.name}</div>}
+                  <div className="head tnum" style={{ fontSize: 16 }}>
+                    {wallet.account ? wallet.account.slice(0, 6) + "…" + wallet.account.slice(-4) : "0x…"}
+                  </div>
                 </div>
               </div>
               <span className="badge badge-active"><span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--clover)" }} /> {L(lang, { id: "Terhubung", en: "Connected" })}</span>
             </div>
-            <button className="btn btn-primary btn-block btn-lg" onClick={() => go("ob2")}>{L(lang, { id: "Lanjut", en: "Continue" })} <Icon.arrow size={18} stroke="#F4FBF6" /></button>
+            <button className="btn btn-primary btn-block btn-lg" onClick={handleContinue}>
+              {wallet.principalUsdc > 0n
+                ? L(lang, { id: "Buka Dashboard →", en: "Open Dashboard →" })
+                : <>{L(lang, { id: "Lanjut", en: "Continue" })} <Icon.arrow size={18} stroke="#F4FBF6" /></>}
+            </button>
           </div>
         ) : state === "loading" ? (
-          <StatePill tone="load">{L(lang, { id: `Menghubungkan ${wallet?.name || ""}…`.trim(), en: `Connecting ${wallet?.name || ""}…`.trim() })}</StatePill>
+          <StatePill tone="load">{L(lang, { id: `Menghubungkan ${walletInfo?.name || ""}…`.trim(), en: `Connecting ${walletInfo?.name || ""}…`.trim() })}</StatePill>
         ) : (
-          <button className="btn btn-primary btn-block btn-lg" onClick={() => setPicking(true)}>
-            <Icon.wallet size={20} stroke="#F4FBF6" />
-            {L(lang, { id: "Hubungkan dompet", en: "Connect wallet" })}
-          </button>
+          <>
+            <button className="btn btn-primary btn-block btn-lg" onClick={() => setPicking(true)}>
+              <Icon.wallet size={20} stroke="#F4FBF6" />
+              {L(lang, { id: "Hubungkan dompet", en: "Connect wallet" })}
+            </button>
+            {err && <div className="tiny" style={{ color: "var(--danger)", marginTop: 8, textAlign: "center" }}>{err}</div>}
+          </>
         )}
         <div className="muted tiny center" style={{ marginTop: 14 }}>{L(lang, { id: "Tanpa biaya. Tanpa registrasi. Bisa keluar kapan saja.", en: "No fees. No sign-up. Leave anytime." })}</div>
       </div>
@@ -233,7 +268,9 @@ function ScreenOB2({ lang, go, t }) {
 
 /* -------- 5. OB3, Activate Smart Account -------- */
 function ScreenOB3({ lang, go, t }) {
-  const [state, setState, run] = useFlow("idle");
+  const wallet = useWallet();
+  const [state, setState] = useState(wallet.isUpgraded ? "ok" : "idle");
+  const [err, setErr] = useState("");
   const benefits = [
     { id: "Izin presisi & bisa dicabut", en: "Precise, revocable permission" },
     { id: "Hemat langkah", en: "Fewer steps" },
@@ -243,27 +280,28 @@ function ScreenOB3({ lang, go, t }) {
     <OBShell lang={lang} step={3} t={t}>
       <div className="card reveal" style={{ padding: "26px 22px", overflow: "hidden" }}>
         <CloverWatermark corner="br" size={120} opacity={0.05} />
-        <h1 style={{ fontSize: 25, marginBottom: 8 }}>{L(lang, { id: "Tingkatkan dompetmu jadi Akun Pintar", en: "Upgrade your wallet to a Smart Account" })}</h1>
+        <h1 style={{ fontSize: 25, marginBottom: 8 }}>{L(lang, { id: "Cara kerja Akun Pintar Clova", en: "How Clova Smart Accounts work" })}</h1>
         <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.55, marginBottom: 20 }}>
-          {L(lang, { id: "Sekali tanda tangan, dompetmu jadi 'pintar', bisa memberi izin terbatas ke pemelihara AI tanpa pernah menyerahkan kendali. Modalmu tetap 100% milikmu.",
-                     en: "One signature makes your wallet 'smart', able to grant the AI tender limited permission without ever handing over control. Your principal stays 100% yours." })}
+          {L(lang, { id: "Agen AI Clova berjalan sebagai Smart Account (EIP-7702) yang di-relay lewat 1Shot. Ini artinya agen bisa bertindak atas namamu — tapi HANYA dalam batas izin yang kamu tanda tangani di langkah berikutnya.",
+                     en: "Clova's AI agent runs as a Smart Account (EIP-7702) relayed through 1Shot. This means the agent can act on your behalf — but ONLY within the permission boundaries you sign in the next step." })}
         </p>
 
-        {/* morph visual */}
+        {/* visual: agent as smart account */}
         <div className="row aic between" style={{ background: "var(--sage)", borderRadius: 18, padding: "18px 16px", marginBottom: 18 }}>
           <div className="col aic gap-6" style={{ flex: 1 }}>
             <Icon.wallet size={34} stroke="var(--forest-70)" />
-            <span className="tiny muted">{L(lang, { id: "Dompet biasa", en: "Plain wallet" })}</span>
+            <span className="tiny muted" style={{ textAlign: "center" }}>{L(lang, { id: "Dompetmu", en: "Your wallet" })}</span>
           </div>
-          <div style={{ flex: "0 0 auto", color: "var(--clover)" }}>
+          <div style={{ flex: "0 0 auto", color: "var(--clover)", textAlign: "center" }}>
             <svg width="46" height="20" viewBox="0 0 46 20" fill="none"><path d="M2 10 Q 23 -4 44 10" stroke="var(--clover)" strokeWidth="2.4" strokeDasharray="2 4" strokeLinecap="round" /><path d="M38 5l6 5-6 5" stroke="var(--clover)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+            <div className="tiny" style={{ color: "var(--clover-deep)", fontWeight: 600, marginTop: 2 }}>izin berpagar</div>
           </div>
           <div className="col aic gap-6" style={{ flex: 1 }}>
             <div style={{ position: "relative" }}>
               <div style={{ position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)" }}><Clover size={20} color="var(--leaf)" stem={false} /></div>
-              <Icon.wallet size={34} stroke="var(--clover)" />
+              <Icon.robot size={34} stroke="var(--clover)" />
             </div>
-            <span className="tiny" style={{ fontWeight: 700, color: "var(--clover-deep)" }}>{L(lang, { id: "Akun Pintar", en: "Smart Account" })}</span>
+            <span className="tiny" style={{ fontWeight: 700, color: "var(--clover-deep)", textAlign: "center" }}>{L(lang, { id: "Agen Smart Account", en: "Agent Smart Account" })}</span>
           </div>
         </div>
 
@@ -273,19 +311,15 @@ function ScreenOB3({ lang, go, t }) {
           ))}
         </div>
 
-        {state === "ok" ? (
-          <div className="reveal">
-            <StatePill tone="ok">{L(lang, { id: "Akun Pintar aktif", en: "Smart Account active" })}</StatePill>
-            <button className="btn btn-primary btn-block btn-lg" style={{ marginTop: 14 }} onClick={() => go("ob4")}>{L(lang, { id: "Lanjut", en: "Continue" })} <Icon.arrow size={18} stroke="#F4FBF6" /></button>
+        <div className="reveal">
+          <div className="row aic gap-10" style={{ background: "var(--sage-2)", borderRadius: 14, padding: "13px 16px", marginBottom: 14 }}>
+            <Icon.robot size={20} stroke="var(--clover-deep)" />
+            <span className="tiny" style={{ fontWeight: 600, color: "var(--forest)" }}>
+              {L(lang, { id: "Agen Clova sudah aktif sebagai Smart Account via 1Shot + EIP-7702.", en: "Clova agent is active as a Smart Account via 1Shot + EIP-7702." })}
+            </span>
           </div>
-        ) : state === "loading" ? (
-          <StatePill tone="load">{L(lang, { id: "Menunggu tanda tangan…", en: "Waiting for signature…" })}</StatePill>
-        ) : (
-          <>
-            <button className="btn btn-primary btn-block btn-lg" onClick={() => run([["loading", 1500], ["ok", 0]])}>{L(lang, { id: "Aktifkan Akun Pintar", en: "Activate Smart Account" })}</button>
-            <div className="muted tiny center" style={{ marginTop: 12 }}>{L(lang, { id: "Biaya gas ringan, sekali.", en: "Light gas fee, one time." })}</div>
-          </>
-        )}
+          <button className="btn btn-primary btn-block btn-lg" onClick={() => go("ob4")}>{L(lang, { id: "Lanjut — Beri Izin", en: "Continue — Grant Permission" })} <Icon.arrow size={18} stroke="#F4FBF6" /></button>
+        </div>
       </div>
     </OBShell>
   );
@@ -316,7 +350,9 @@ function PermitCol({ tone, title, items }) {
 }
 
 function ScreenOB4({ lang, go, t }) {
-  const [state, setState, run] = useFlow("idle");
+  const wallet = useWallet();
+  const [state, setState] = useState(wallet.hasDelegation ? "ok" : "idle");
+  const [err, setErr] = useState("");
   return (
     <OBShell lang={lang} step={4} t={t} leafDensity={0.28}>
       <Reveal>
@@ -371,10 +407,22 @@ function ScreenOB4({ lang, go, t }) {
       ) : state === "loading" ? (
         <StatePill tone="load">{L(lang, { id: "Menunggu tanda tangan…", en: "Waiting for signature…" })}</StatePill>
       ) : (
-        <div className="row gap-10">
-          <button className="btn btn-ghost" onClick={() => go("ob3")}>{L(lang, { id: "Kembali", en: "Back" })}</button>
-          <button className="btn btn-primary grow btn-lg" onClick={() => run([["loading", 1600], ["ok", 0]])}>{L(lang, { id: "Setujui & Tanda Tangani", en: "Approve & Sign" })}</button>
-        </div>
+        <>
+          <div className="row gap-10">
+            <button className="btn btn-ghost" onClick={() => go("ob3")}>{L(lang, { id: "Kembali", en: "Back" })}</button>
+            <button className="btn btn-primary grow btn-lg" onClick={async () => {
+              setState("loading"); setErr("");
+              try {
+                await wallet.signAndStoreDelegation();
+                setState("ok");
+              } catch (e) {
+                setErr(e.message || "Signing failed");
+                setState("idle");
+              }
+            }}>{L(lang, { id: "Setujui & Tanda Tangani", en: "Approve & Sign" })}</button>
+          </div>
+          {err && <div className="tiny" style={{ color: "var(--danger)", marginTop: 8, textAlign: "center" }}>{err}</div>}
+        </>
       )}
     </OBShell>
   );
@@ -390,13 +438,22 @@ const CROSS_CHAINS = [
 ];
 
 function ScreenOB5({ lang, go, t }) {
-  const [amt, setAmt] = useState(100);
-  const [state, setState, run] = useFlow("idle"); // idle, approve, deposit, ok
+  const wallet = useWallet();
+  const [amt, setAmt] = useState(10);
+  const [state, setState] = useState("idle"); // idle, approve, deposit, ok
   const [srcChain, setSrcChain] = useState("base");
   const [showChains, setShowChains] = useState(false);
-  const balance = 540;
+  const [err, setErr] = useState("");
+  const balance = wallet.usdcBalance > 0n ? Number(formatUnits(wallet.usdcBalance, 6)) : 0;
+
+  // Auto-refresh balance saat layar ini aktif (user mungkin baru dapat USDC dari faucet)
+  useEffect(() => {
+    wallet.refreshBalance?.();
+    const id = setInterval(() => wallet.refreshBalance?.(), 5000);
+    return () => clearInterval(id);
+  }, []);
   const grow = Math.min(1, amt / 300);
-  const quick = [50, 100, 250];
+  const quick = [10, 50, 100];
   const selectedChain = CROSS_CHAINS.find((c) => c.id === srcChain);
 
   if (state === "ok") {
@@ -422,12 +479,30 @@ function ScreenOB5({ lang, go, t }) {
 
       <div className="card reveal" style={{ padding: "22px 20px" }}>
         <div className="center" style={{ marginBottom: 6 }}><Plant grow={grow} size={108} /></div>
-        <div className="row aic" style={{ justifyContent: "center", gap: 8 }}>
-          <input className="amount-input" style={{ width: "auto", maxWidth: 200 }} value={amt}
-            onChange={(e) => setAmt(Math.max(0, Math.min(balance, +e.target.value.replace(/\D/g, "") || 0)))} inputMode="numeric" />
-          <span className="head" style={{ fontSize: 22, color: "var(--ink-45)" }}>USDC</span>
+
+        {/* Amount input — clearly editable */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--sage)", borderRadius: 16, padding: "10px 20px 8px" }}>
+            <input
+              className="amount-input"
+              style={{ width: "auto", maxWidth: 160 }}
+              value={amt === 0 ? "" : amt}
+              placeholder="0"
+              onChange={(e) => { const v = +e.target.value.replace(/\D/g, "") || 0; setAmt(Math.min(balance > 0 ? balance : 999999, v)); }}
+              inputMode="numeric"
+              autoComplete="off"
+            />
+            <span className="head" style={{ fontSize: 22, color: "var(--ink-45)" }}>USDC</span>
+          </div>
+          <div className="muted tiny center" style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--clover-deep)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z" />
+            </svg>
+            {L(lang, { id: "Ketuk kotak hijau untuk ubah jumlah", en: "Tap the green box to type an amount" })}
+          </div>
         </div>
-        <div className="muted tiny center" style={{ marginTop: 4 }}>{L(lang, { id: "Saldo dompet", en: "Wallet balance" })}: <span className="tnum">{fmt(balance, 0)} USDC</span></div>
+        <div className="muted tiny center" style={{ marginTop: 4 }}>{L(lang, { id: "Saldo dompet", en: "Wallet balance" })}: <span className="tnum">{balance > 0 ? fmt(balance, 2) : "—"} USDC</span></div>
 
         <div className="row gap-8" style={{ marginTop: 16, justifyContent: "center" }}>
           {quick.map((q) => (
@@ -488,13 +563,25 @@ function ScreenOB5({ lang, go, t }) {
           : state === "deposit" ? <StatePill tone="load">{srcChain !== "base" ? L(lang, { id: "Menjembatani & menanam…", en: "Bridging & planting…" }) : L(lang, { id: "Menanam…", en: "Planting…" })}</StatePill>
           : (
             <>
-              <button className="btn btn-primary btn-block btn-lg" disabled={amt <= 0} onClick={() => run([["approve", 1300], ["deposit", 1500], ["ok", 0]])}>
+              <button className="btn btn-primary btn-block btn-lg" disabled={amt < 1 || state === "approve" || state === "deposit"} onClick={async () => {
+                setErr("");
+                setState("approve");
+                try {
+                  setState("deposit");
+                  await wallet.deposit(amt);
+                  setState("ok");
+                } catch (e) {
+                  setErr(e.message || "Deposit failed");
+                  setState("idle");
+                }
+              }}>
                 <Icon.sprout size={19} stroke="#F4FBF6" />
                 {srcChain !== "base"
                   ? L(lang, { id: "Jembatani & Setor", en: "Bridge & Deposit" })
                   : L(lang, { id: "Setor & Mulai", en: "Deposit & Start" })}
               </button>
               <div className="muted tiny center" style={{ marginTop: 12 }}>{L(lang, { id: "Modalmu tetap milikmu. Hanya bunga yang ikut diundi.", en: "Your principal stays yours. Only the yield enters the draw." })}</div>
+              {err && <div className="tiny" style={{ color: "var(--danger)", marginTop: 6, textAlign: "center" }}>{err}</div>}
             </>
           )}
       </div>

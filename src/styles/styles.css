@@ -263,8 +263,15 @@ button.chip:active { transform: scale(.96); }
   font-weight: 600;
   font-size: 52px;
   color: var(--forest);
-  background: transparent; border: none; outline: none;
+  background: transparent;
+  border: none;
+  outline: none;
   width: 100%; text-align: center;
+  padding-bottom: 2px;
+  cursor: text;
+}
+.amount-input:focus {
+  color: var(--clover-deep);
 }
 .amount-input::placeholder { color: color-mix(in srgb,var(--forest) 26%, transparent); }
 

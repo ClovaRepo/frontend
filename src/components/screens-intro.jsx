@@ -155,7 +155,7 @@ function ScreenLanding({ lang, go, t }) {
         </Reveal>
         <Reveal delay={340} className="row gap-8 wrap" style={{ marginTop: 18 }}>
           {[{ i: Icon.shieldLeaf, t: { id: "Modal tak tersentuh", en: "Principal untouched" } },
-            { i: Icon.leaf, t: { id: "1 manusia, 1 tiket", en: "1 human, 1 ticket" } },
+            { i: Icon.leaf, t: { id: "Peluang proporsional deposit", en: "Proportional deposit chance" } },
             { i: Icon.robot, t: { id: "Setiap keputusan dijelaskan", en: "Every decision explained" } }].map((c, i) => (
             <span key={i} className="chip tiny" style={{ padding: "8px 12px" }}>
               <c.i size={15} stroke="var(--clover-deep)" /> {L(lang, c.t)}
