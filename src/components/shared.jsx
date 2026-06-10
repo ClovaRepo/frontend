@@ -23,6 +23,16 @@ function currentLocale() {
 function fmt(n, dec = 2) {
   return Number(n).toLocaleString(currentLocale(), { minimumFractionDigits: dec, maximumFractionDigits: dec });
 }
+// Smart USDC formatter: shows enough decimals so non-zero values never display as 0.
+// 1.5 → "1.500" | 0.001 → "0.001" | 0.000002 → "0.000002" | 0 → "0.000"
+function fmtUsdc(n, minDec = 3) {
+  const v = Number(n);
+  if (v === 0) return fmt(0, minDec);
+  const dec = v < 10 ** -minDec
+    ? Math.min(Math.ceil(-Math.log10(v)), 8)
+    : minDec;
+  return fmt(v, dec);
+}
 /* Re-localize an Indonesian-formatted numeric literal ("1.284,50", "12,5%",
    "$1,2B") to the active language by swapping separators. Use on number-only
    strings, never on prose. */
@@ -722,4 +732,4 @@ function ChainIcon({ name = "", size = 16, radius = 999 }) {
 
 /* ==================== exports ==================== */
 
-export { L, fmt, nfmt, clickable, growFromUsdc, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, ChainIcon, Gardener, VineStepper, CountdownArc, Plant, PixelTree, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast };
+export { L, fmt, fmtUsdc, nfmt, clickable, growFromUsdc, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, ChainIcon, Gardener, VineStepper, CountdownArc, Plant, PixelTree, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast };

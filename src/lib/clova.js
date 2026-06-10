@@ -28,8 +28,28 @@ export const AAVE_POOL = IS_MAINNET
   ? "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5"     // Aave v3 Base mainnet
   : "0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27";    // Aave v3 Base Sepolia
 
+// aUSDC — Aave interest-bearing USDC (what user holds after depositing to Aave)
+// User delegates THIS token for Aave yield sweep + Aave→Moonwell rotation pull.
+// ERC20 transfer() only — enforcer rejects Aave.withdraw().
+export const AUSDC_ADDRESS = IS_MAINNET
+  ? "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB"   // aBasUSDC Base mainnet
+  : "0x96B8980C5c484d3e0345Dc77D92c3d2F36Af6a1a";  // aBasUSDC Base Sepolia
+
+// mUSDC — Moonwell interest-bearing USDC (Compound v2 mToken, transferable ERC20)
+// User delegates THIS token for Moonwell yield sweep.
+// Base Sepolia has no Moonwell → zero address (rotation disabled on testnet).
+export const MOONWELL_MUSDC_ADDRESS = IS_MAINNET
+  ? "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22"   // mUSDC Base mainnet
+  : "0x0000000000000000000000000000000000000000";   // not deployed on Sepolia
+
 export const AGENT_ADDRESS = (
   process.env.NEXT_PUBLIC_AGENT_ADDRESS || "0x817E6370fdacA82DEcdD05AD8f464981d05935d3"
+);
+
+// RotationHelper: user must approve aUSDC to this address for Aave→Moonwell rotation
+export const ROTATION_HELPER_ADDRESS = (
+  process.env.NEXT_PUBLIC_ROTATION_HELPER_ADDRESS ||
+  (IS_MAINNET ? "0xEa448dF1052212F1E7463628F98e836893DD23E2" : "0x0000000000000000000000000000000000000000")
 );
 
 // 1Shot relayer target wallet — delegation delegate MUST be this address for 1Shot to execute

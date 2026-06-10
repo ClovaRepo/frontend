@@ -7,9 +7,9 @@ import {
 import { erc7715ProviderActions } from "@metamask/smart-accounts-kit/actions";
 import {
   CHAIN_ID, IS_MAINNET, ACTIVE_CHAIN, EIP7702_IMPL,
-  USDC_ADDRESS, USDC_ABI, AAVE_POOL, AAVE_ABI,
+  USDC_ADDRESS, USDC_ABI, AAVE_POOL, AAVE_ABI, AUSDC_ADDRESS, MOONWELL_MUSDC_ADDRESS,
   POOL_ADDRESS, POOL_ABI, ADAPTER_ADDRESS, ADAPTER_ABI,
-  AGENT_ADDRESS, ONESHOT_TARGET, BACKEND_URL,
+  AGENT_ADDRESS, ONESHOT_TARGET, BACKEND_URL, ROTATION_HELPER_ADDRESS,
 } from "../lib/clova.js";
 
 const WalletContext = createContext(null);
@@ -87,15 +87,18 @@ export function WalletProvider({ children }) {
     const addr = accounts[0];
     setAccount(addr);
 
-    // Read on-chain state
-    const [bal, principal, participant] = await Promise.all([
+    // Read on-chain state + check backend for valid delegation
+    const [bal, principal, participant, delegationRes] = await Promise.all([
       publicClient.readContract({ address: USDC_ADDRESS, abi: USDC_ABI, functionName: "balanceOf", args: [addr] }),
       publicClient.readContract({ address: POOL_ADDRESS, abi: POOL_ABI, functionName: "principalBaseline", args: [addr] }).catch(() => 0n),
       publicClient.readContract({ address: POOL_ADDRESS, abi: POOL_ABI, functionName: "isParticipant", args: [addr] }).catch(() => false),
+      fetch(`${BACKEND_URL}/delegation/${addr}`).then(r => r.ok).catch(() => false),
     ]);
     setUsdcBalance(bal);
     setPrincipalUsdc(principal);
-    if (principal > 0n) { setIsUpgraded(true); setHasDelegation(true); }
+    // isUpgraded jika sudah ada principal on-chain; hasDelegation hanya jika backend juga punya delegasi
+    if (principal > 0n) setIsUpgraded(true);
+    if (principal > 0n && delegationRes) setHasDelegation(true);
 
     return addr;
   }, [publicClient]);
@@ -148,65 +151,94 @@ export function WalletProvider({ children }) {
   }, [account, publicClient]);
 
   // ── OB4: Request permissions via ERC-7715 (MetaMask Smart Accounts Kit) ──
-  // MetaMask blocks eth_signTypedData_v4 with DelegationManager domain.
-  // Correct path: erc7715ProviderActions().requestExecutionPermissions()
-  // MetaMask shows native consent UI, signs delegation INTERNALLY, returns
-  // grantedPermissions[].context = ERC-7710 permissionsContext for 1Shot.
   //
+  // Requests 2 permissions:
+  //   1. aUSDC (Aave) — yield sweep when on Aave, and full-balance pull for rotation
+  //   2. mUSDC (Moonwell) — yield sweep when on Moonwell (only on mainnet where Moonwell exists)
+  //
+  // 1Shot relay fee is paid by the agent from its own USDC (agent is EIP-7702 upgraded).
   // Requires MetaMask >= v13.23.0 (or Flask >= v13.5.0) for erc20-token-periodic.
   const signAndStoreDelegation = useCallback(async () => {
     if (!account) throw new Error("Connect wallet first");
 
-    // Extend walletClient with ERC-7715 provider actions
     const walletClient = createWalletClient({
       transport: custom(window.ethereum),
     }).extend(erc7715ProviderActions());
 
     const expiry = Math.floor(Date.now() / 1000) + 86400 * 30; // 30 days
 
-    let grantedPermissions;
-    try {
-      grantedPermissions = await walletClient.requestExecutionPermissions([
-        {
-          chainId: CHAIN_ID,
-          expiry,
-          to: ONESHOT_TARGET,  // 1Shot relayer target — must be delegate for 1Shot execution
-          permission: {
-            type: "erc20-token-periodic",
-            isAdjustmentAllowed: false,
-            data: {
-              tokenAddress: USDC_ADDRESS,
-              // Max 200 USDC per 7-day round — covers yield sweeping
-              periodAmount: parseUnits("200", 6),
-              periodDuration: 604800, // 7 days
-              justification: "CLOVA agent sweeps yield (≤200 USDC/week) ke prize pool",
-            },
-          },
+    // Permission 1: aUSDC — Aave yield sweep + rotation pull (needs full principal coverage)
+    const aavePermission = {
+      chainId: CHAIN_ID,
+      expiry,
+      to: ONESHOT_TARGET,
+      permission: {
+        type: "erc20-token-periodic",
+        isAdjustmentAllowed: false,
+        data: {
+          tokenAddress: AUSDC_ADDRESS,
+          periodAmount: parseUnits("10000", 6),
+          periodDuration: 604800,
+          justification: "CLOVA agent sweeps aUSDC yield dan pull untuk rotasi protokol (≤10,000/week)",
         },
-      ]);
+      },
+    };
+
+    // Request aUSDC permission (popup 1)
+    let grantedAave;
+    try {
+      grantedAave = await walletClient.requestExecutionPermissions([aavePermission]);
     } catch (err) {
       if (err.code === -32601 || err.code === 4200) {
-        throw new Error(
-          "MetaMask versi terlalu lama. Upgrade ke MetaMask ≥ v13.23.0 atau gunakan MetaMask Flask ≥ v13.5.0.",
-        );
+        throw new Error("MetaMask versi terlalu lama. Upgrade ke MetaMask ≥ v13.23.0 atau gunakan MetaMask Flask ≥ v13.5.0.");
       }
       throw err;
     }
 
-    // grantedPermissions[0].context = signed ERC-7710 delegation (hex)
-    // grantedPermissions[0].delegationManager = DelegationManager address used
-    const { context: permissionContext, delegationManager } = grantedPermissions[0];
+    const { context: permissionContext, delegationManager } = grantedAave[0];
 
-    // POST to backend — agent uses (permissionContext, delegationManager) to
-    // call sendTransactionWithDelegation via 1Shot relayer
+    // Request mUSDC permission (popup 2) — terpisah karena MetaMask tidak support batch
+    // Moonwell hanya tersedia di mainnet; skip di testnet
+    let mUsdcPermissionContext;
+    if (MOONWELL_MUSDC_ADDRESS !== "0x0000000000000000000000000000000000000000") {
+      try {
+        const moonwellPermission = {
+          chainId: CHAIN_ID,
+          expiry,
+          to: ONESHOT_TARGET,
+          permission: {
+            type: "erc20-token-periodic",
+            isAdjustmentAllowed: false,
+            data: {
+              tokenAddress: MOONWELL_MUSDC_ADDRESS,
+              periodAmount: parseUnits("200", 6),
+              periodDuration: 604800,
+              justification: "CLOVA agent sweeps mUSDC yield (≤200/week) saat aktif di Moonwell",
+            },
+          },
+        };
+        const grantedMoonwell = await walletClient.requestExecutionPermissions([moonwellPermission]);
+        mUsdcPermissionContext = grantedMoonwell[0]?.context;
+        console.log("[delegation] mUsdcPermissionContext:", mUsdcPermissionContext ? "✅ ada" : "❌ kosong");
+      } catch (err) {
+        // mUSDC permission opsional — sweep Moonwell tidak tersedia tapi rotasi tetap bisa
+        console.warn("[delegation] mUSDC permission skipped:", err.message);
+      }
+    }
+
     const res = await fetch(`${BACKEND_URL}/delegation`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userAddress: account, permissionContext, delegationManager }),
+      body: JSON.stringify({
+        userAddress: account,
+        permissionContext,
+        mUsdcPermissionContext,
+        delegationManager,
+      }),
     });
     if (!res.ok) throw new Error(`Failed to store delegation: ${await res.text()}`);
     setHasDelegation(true);
-    return { permissionContext, delegationManager };
+    return { permissionContext, mUsdcPermissionContext, delegationManager };
   }, [account]);
 
   // ── Helper: re-authorize + create walletClient ───────────────────────────
@@ -264,7 +296,40 @@ export function WalletProvider({ children }) {
     });
     await publicClient.waitForTransactionReceipt({ hash: supplyTx });
 
-    // 3. Register user on pool (permissionless — no worldId for MVP)
+    // 3. One-time approve aUSDC + mUSDC → RotationHelper (enables autonomous rotation)
+    //    Agent calls RotationHelper which uses transferFrom — needs user approval once.
+    if (ROTATION_HELPER_ADDRESS && ROTATION_HELPER_ADDRESS !== "0x0000000000000000000000000000000000000000") {
+      const ERC20_ABI = [{ name: "allowance", type: "function", stateMutability: "view", inputs: [{ name: "owner", type: "address" }, { name: "spender", type: "address" }], outputs: [{ type: "uint256" }] }, { name: "approve", type: "function", stateMutability: "nonpayable", inputs: [{ name: "spender", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ type: "bool" }] }];
+      const MAX = 2n ** 256n - 1n;
+
+      const aUsdcAllowance = await publicClient.readContract({
+        address: AUSDC_ADDRESS, abi: ERC20_ABI, functionName: "allowance",
+        args: [addr, ROTATION_HELPER_ADDRESS],
+      }).catch(() => 0n);
+      if (aUsdcAllowance < amount * 1000n) {
+        const tx = await walletClient.writeContract({
+          address: AUSDC_ADDRESS, abi: ERC20_ABI,
+          functionName: "approve", args: [ROTATION_HELPER_ADDRESS, MAX], gas: 100000n,
+        });
+        await publicClient.waitForTransactionReceipt({ hash: tx });
+      }
+
+      if (MOONWELL_MUSDC_ADDRESS && MOONWELL_MUSDC_ADDRESS !== "0x0000000000000000000000000000000000000000") {
+        const mUsdcAllowance = await publicClient.readContract({
+          address: MOONWELL_MUSDC_ADDRESS, abi: ERC20_ABI, functionName: "allowance",
+          args: [addr, ROTATION_HELPER_ADDRESS],
+        }).catch(() => 0n);
+        if (mUsdcAllowance === 0n) {
+          const tx = await walletClient.writeContract({
+            address: MOONWELL_MUSDC_ADDRESS, abi: ERC20_ABI,
+            functionName: "approve", args: [ROTATION_HELPER_ADDRESS, MAX], gas: 100000n,
+          });
+          await publicClient.waitForTransactionReceipt({ hash: tx });
+        }
+      }
+    }
+
+    // 4. Register user on pool (permissionless — no worldId for MVP)
     const isParticipant = await publicClient.readContract({
       address: POOL_ADDRESS, abi: POOL_ABI, functionName: "isParticipant", args: [addr],
     }).catch(() => false);
@@ -280,7 +345,7 @@ export function WalletProvider({ children }) {
       await publicClient.waitForTransactionReceipt({ hash: regTx });
     }
 
-    // 4. Notify backend to call recordPrincipal (agent-only function)
+    // 5. Notify backend to call recordPrincipal (agent-only function)
     await fetch(`${BACKEND_URL}/record-principal`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

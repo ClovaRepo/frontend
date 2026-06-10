@@ -201,7 +201,9 @@ The agent never "has" the user's funds in the sense of owning them — the withd
 
 ## Protocol-Specific Execution Differences
 
-Different protocols return withdrawn tokens differently:
+### Yield Sweep
+
+Different protocols return withdrawn tokens differently during sweep:
 
 | Protocol | Withdraw behavior | Executions needed |
 |---|---|---|
@@ -210,6 +212,27 @@ Different protocols return withdrawn tokens differently:
 | **Moonwell** | `redeemUnderlying(amount)` — sends to `msg.sender` (user's wallet) | 2 executions: redeem + `usdc.transfer(agent, amount)` |
 
 For Compound and Moonwell, the second execution (transfer to agent) is also within the delegation's `allowedMethods` — `transfer(address,uint256)` is listed as allowed, but the caveat on `allowedTargets` limits it to the USDC contract only. The agent cannot redirect these transfers.
+
+### Protocol Rotation (via RotationHelper — Atomic)
+
+Rotasi antar protokol dilakukan oleh **RotationHelper** — sebuah kontrak helper yang menggabungkan seluruh langkah perpindahan dana menjadi **1 transaksi EVM atomik**. Jika ada langkah yang gagal, seluruh tx di-revert dan user tetap memegang token aslinya.
+
+```
+Aave → Moonwell:
+  RotationHelper.rotateAaveToMoonwell(user, amount)
+    └─ pull aUSDC from user
+    └─ aave.withdraw → USDC
+    └─ moonwell.mint → mUSDC
+    └─ mUSDC.transfer → user
+
+Moonwell → Aave:
+  RotationHelper.rotateMoonwellToAave(user, amount)
+    └─ pull mUSDC from user
+    └─ moonwell.redeemUnderlying → USDC
+    └─ aave.supply(onBehalfOf: user) → aUSDC kembali ke user
+```
+
+**Prasyarat (sekali saat onboarding):** user harus approve aUSDC dan mUSDC ke alamat RotationHelper. Approval ini dilakukan otomatis di flow deposit. Setelah itu, agent bisa merotasi tanpa interaksi user lebih lanjut.
 
 ---
 

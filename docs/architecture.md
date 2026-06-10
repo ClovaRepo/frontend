@@ -85,10 +85,11 @@
 
 | Contract | Responsibility |
 |---|---|
-| `ClovaSavingsPool.sol` | Main pool: registration, yield sweep, draw, prize distribution |
+| `ClovaSavingsPool.sol` | Main pool: registration, yield sweep, draw, prize distribution. UUPS upgradeable proxy. |
 | `AaveAdapter.sol` | Wraps Aave v3 supply/withdraw/valueOf |
 | `CompoundAdapter.sol` | Wraps Compound Comet v3 supply/withdraw/valueOf |
 | `MoonwellAdapter.sol` | Wraps Moonwell mToken supply/redeemUnderlying/valueOf |
+| `RotationHelper.sol` | Atomic protocol rotation: pull aUSDC/mUSDC → swap protocol → return new tokens, 1 tx |
 
 ---
 
@@ -118,9 +119,10 @@ node-cron fires (ROUND_CRON)
     │       Wait confirm → approve USDC → depositYield per user
     │       Contract enforces I1: remaining ≥ baseline or REVERT
     │
-    ├─▶ rotateProtocol() [if recommendation ≠ TETAP]
-    │       For each user: withdraw from old → supply to new (via delegation)
-    │       Call pool.rotateProtocol(newProtocol)
+    ├─▶ rotateProtocolWithFunds() [if recommendation ≠ TETAP]
+    │       For each user: RotationHelper.rotateAaveToMoonwell() OR rotateMoonwellToAave()
+    │       Single atomic tx per user — EVM reverts if any step fails, user keeps original tokens
+    │       Call pool.rotateProtocol(newProtocol) to update active adapter
     │
     └─▶ saveDecision() → GET /decisions (AI transparency panel)
 
@@ -155,8 +157,10 @@ User opens Clova
     │       Caveat: allowedMethods [supply, withdraw, transfer, depositYield]
     │       → permissionContext stored in backend via POST /delegation
     │
-    ├─▶ Approve USDC
+    ├─▶ Approve tokens (one-time setup)
     │       usdc.approve(AAVE_POOL, amount)
+    │       aUSDC.approve(ROTATION_HELPER, max)   ← untuk rotasi Aave→Moonwell
+    │       mUSDC.approve(ROTATION_HELPER, max)   ← untuk rotasi Moonwell→Aave
     │
     ├─▶ Supply to Aave
     │       aave.supply(USDC, amount, userAddress, 0)

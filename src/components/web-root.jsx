@@ -144,7 +144,7 @@ export default function WebApp() {
 
       {draw && <Suspense fallback={null}><WebDraw lang={lang} t={t} onClose={() => setDraw(false)} /></Suspense>}
       {modal === "tarik"   && <Suspense fallback={null}><WebModalTarik   lang={lang} onClose={() => setModal(null)} /></Suspense>}
-      {modal === "cabut"   && <Suspense fallback={null}><WebModalCabut   lang={lang} onClose={() => setModal(null)} /></Suspense>}
+      {modal === "cabut"   && <Suspense fallback={null}><WebModalCabut   lang={lang} onClose={() => setModal(null)} go={go} /></Suspense>}
       {modal === "deposit" && <Suspense fallback={null}><WebModalDeposit lang={lang} onClose={() => setModal(null)} /></Suspense>}
 
       <TweaksPanel>

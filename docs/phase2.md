@@ -1,18 +1,85 @@
 # Phase 2 Roadmap
 
-> Phase 1 (current) is the hackathon MVP. Phase 2 is the production-ready evolution.
+> Phase 1 (MVP, hackathon) is live. This document describes what CLOVA becomes in production.
 
 ---
 
 ## Overview
 
 ```
-Phase 1 (Done)      → USDC on Base, 3 protocols, proportional tickets, AI rotation,
+Phase 1 (Live)      → 2 protocols (Aave + Moonwell), USDC on Base, proportional tickets,
+                       single Venice agent, atomic rotation via RotationHelper,
                        cross-chain deposit via LI.FI (ETH/ARB/POL/BSC → Base)
-Phase 2 (Next)      → Multi-asset, split allocation, World ID, reverse withdrawal,
-                       batching, UX polish
-Phase 3 (Future)    → DAO governance, strategy marketplace, mobile app
+
+Phase 2 (Next)      → Multi-agent system, split allocation across 5+ protocols,
+                       expanded protocol integrations, intelligent sweep timing,
+                       World ID, multi-prize tiers, PostgreSQL
+
+Phase 3 (Future)    → DAO governance, strategy marketplace, multi-chain, mobile app
 ```
+
+---
+
+## The Big Vision: From One Agent to a Multi-Agent System
+
+In Phase 1, one Venice AI instance does everything: analyze, decide, and supervise execution. This works for an MVP but limits depth.
+
+**Phase 2 introduces a specialized multi-agent architecture** where each agent is an expert at one job:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    CLOVA MULTI-AGENT SYSTEM (Phase 2)                   │
+│                                                                         │
+│  ┌──────────────────┐   ┌──────────────────┐   ┌──────────────────┐   │
+│  │  ANALYST AGENTS  │   │  STRATEGY AGENT  │   │    RISK AGENT    │   │
+│  │  (one per        │   │  (synthesizes    │   │  (portfolio-     │   │
+│  │   protocol)      │──▶│   all analyst    │──▶│   level safety   │   │
+│  │                  │   │   reports)       │   │   checks)        │   │
+│  └──────────────────┘   └──────────────────┘   └──────────────────┘   │
+│                                                          │              │
+│  ┌──────────────────┐   ┌──────────────────┐            │              │
+│  │  OPPORTUNITY     │   │  EXECUTION AGENT │◀───────────┘              │
+│  │  AGENT           │──▶│  (builds txs,    │                           │
+│  │  (finds new      │   │   calls 1Shot,   │                           │
+│  │   protocols)     │   │   sweeps yield)  │                           │
+│  └──────────────────┘   └──────────────────┘                           │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Agent Roles
+
+**Analyst Agents (one per protocol)**
+Each protocol gets a dedicated Venice AI agent that deeply researches just that one protocol:
+- APY trends (spot, 7d, 30d), TVL history, utilization rate
+- Web search: recent audits, governance votes, exploit reports, liquidity news
+- Output: `{ protocol, apy, tvl, utilization, riskScore, summary }`
+
+Running in parallel — all protocols analyzed simultaneously, not sequentially.
+
+**Strategy Agent**
+Receives all analyst reports and answers: *"Given these options, how should we allocate?"*
+- Weighs yield vs. risk vs. diversification benefit
+- Considers switching costs (gas, slippage)
+- Outputs allocation percentages: `{ Aave: 50, Compound: 30, Morpho: 20 }`
+
+**Risk Agent**
+Independent second opinion on the strategy proposal:
+- Validates no single protocol exceeds safe concentration (e.g. max 60% any one protocol)
+- Checks portfolio-level risk (correlated protocols, same underlying risk)
+- Can veto or adjust the strategy before execution
+
+**Opportunity Agent**
+Continuously scans for new protocols worth adding to the whitelist:
+- Monitors APY opportunities outside current whitelist
+- Checks protocol age, TVL maturity, audit history
+- Surfaces candidates for admin review — cannot add itself
+
+**Execution Agent**
+Purely mechanical — takes approved allocation and builds transactions:
+- Calculates per-user rebalancing amounts
+- Calls RotationHelper for atomic moves
+- Batches via 1Shot
+- Reports success/failure per user
 
 ---
 
@@ -20,29 +87,94 @@ Phase 3 (Future)    → DAO governance, strategy marketplace, mobile app
 
 ### 2.1 — Multi-Protocol Allocation (Split %)
 
-**Current:** 100% of funds on one protocol at a time (winner-take-all rotation).
+**Current:** 100% of funds in one protocol at a time (e.g. all on Aave).
 
-**Phase 2:** AI allocates across multiple protocols simultaneously:
+**Phase 2:** Multi-agent system allocates user funds across multiple protocols simultaneously.
+
+#### Concrete Example
 
 ```
-Example allocation:
-  Aave:     60% (stable, high TVL, baseline)
-  Compound: 30% (higher yield, some risk)
-  Moonwell: 10% (experimental, small exposure)
+Pool state:
+  User A: $1,000 USDC deposited
+  User B: $200  USDC deposited
+  User C: $800  USDC deposited
+  ─────────────────────────────
+  Total:  $2,000 USDC
+
+Multi-agent allocation decision:
+  Aave:    50% → $1,000 USDC (stable, high TVL, baseline safety)
+  Compound: 30% → $600  USDC (higher yield, healthy utilization)
+  Morpho:  20% → $400  USDC (efficient lending, growing TVL)
+
+Per user result (proportional to their deposit):
+  User A ($1,000): $500 Aave + $300 Compound + $200 Morpho
+  User B ($200):   $100 Aave + $60  Compound + $40  Morpho
+  User C ($800):   $400 Aave + $240 Compound + $160 Morpho
 ```
 
-**Why:** Risk diversification. A single protocol exploit doesn't wipe the whole pool. Venice AI already receives APY + TVL + risk signals for all protocols — it can output allocation percentages instead of binary recommendations.
+**Why this matters:**
+- A single protocol exploit only affects that allocation slice — not the whole pool
+- Different protocols peak at different times; diversification smooths yield
+- Risk Agent can enforce hard limits (e.g. max 60% any one protocol)
 
-**Changes needed:**
-- `ClovaSavingsPool`: track per-protocol balance per user
-- `AaveAdapter`/etc: support partial positions
-- `executor.ts`: build multi-step rotation (partial withdraw old → split supply new)
-- Venice prompt: output `{"allocations": {"Aave": 60, "Compound": 30, "Moonwell": 10}}`
-- Dashboard: show allocation breakdown per protocol
+**What needs to be built:**
+- `ClovaSavingsPool`: `principalBaseline` becomes a mapping per protocol per user
+- New `AllocationManager.sol`: tracks target allocations, executes rebalancing
+- `executor.ts`: build multi-protocol RotationHelper calls per user
+- Venice Strategy Agent prompt: output `{"allocations": {"Aave": 50, "Compound": 30, "Morpho": 20}}`
+- Dashboard: allocation pie chart per user, yield contribution per protocol
 
 ---
 
-### 2.2 — World ID Anti-Sybil (On-Chain)
+---
+
+### 2.2 — Expanded Protocol Integrations
+
+**Current:** Aave v3 (Base) + Moonwell (Base). Two protocols.
+
+**Phase 2+:** Integrate every major yield protocol on Base and expand to other chains.
+
+#### Target Protocol List
+
+| Protocol | Chain | Type | Why |
+|---|---|---|---|
+| **Aave v3** | Base ✅ | Lending | Live, highest TVL, baseline |
+| **Moonwell** | Base ✅ | Lending | Live, native Base |
+| **Compound v3** | Base | Lending | Adapter built, integration in progress |
+| **Morpho** | Base | Optimized lending | Higher yields, growing TVL |
+| **Seamless Protocol** | Base | Lending | Native Base, isolated markets |
+| **Fluid** | Base | Lending | Innovative liquidity layers |
+| **Yearn v3** | Base | Yield vault | Strategy abstraction |
+| **Spark** | Base | Lending | MakerDAO spin-off, sDAI yield |
+| **Euler v2** | Base | Modular lending | Risk-isolated vaults |
+| **Pendle** | Base | Yield trading | Fixed-rate yield strategies |
+
+Each protocol gets:
+1. A dedicated `IYieldAdapter` implementation
+2. An Analyst Agent that specializes in that protocol
+3. RotationHelper support for atomic moves
+
+#### Opportunity Agent — Protocol Discovery
+
+Rather than manually finding new protocols, the **Opportunity Agent** continuously monitors the DeFi ecosystem:
+
+```
+Weekly scan:
+  → Search for new protocols deployed on Base with TVL > $5M
+  → Check: age > 3 months, audit status, governance maturity
+  → Compare yield potential vs. existing whitelist
+  → Generate report: "Candidate: Fluid Protocol — $12M TVL, audited by Trail of Bits,
+     currently 7.2% APY on USDC, 3 months live, governance multisig"
+
+Result: flagged for admin review — Opportunity Agent cannot add to whitelist itself.
+Admin approves → new adapter deployed → Analyst Agent created for it
+```
+
+**Why this matters:** The whitelist grows organically as the DeFi ecosystem grows. CLOVA never needs a manual protocol addition — the Opportunity Agent surfaces candidates continuously.
+
+---
+
+### 2.4 — World ID Anti-Sybil (On-Chain)
 
 **Current:** Anti-Sybil is economic (proportional deposits). 1 person with 10 wallets = same weight as 1 wallet.
 
@@ -68,7 +200,7 @@ nullifiers[nullifierHash] = true;  // prevent double-registration
 
 ---
 
-### 2.3 — Cross-Chain Deposits via LI.FI ✅ IMPLEMENTED
+### 2.5 — Cross-Chain Deposits via LI.FI ✅ IMPLEMENTED
 
 > Shipped in Phase 1. Users on any major chain can deposit into Clova without manually bridging first.
 
@@ -376,17 +508,78 @@ Governance token: earned by participating in the pool (not pre-mined, not sold).
 
 ---
 
+### 2.11 — Venice-Driven Sweep (Intelligent Sweep Timing)
+
+**Current:** Sweep dijadwalkan oleh cron timer (misal setiap hari) — tidak peduli apakah yield sudah cukup besar atau belum.
+
+**Phase 2:** Sweep dipicu oleh Venice AI berdasarkan data yield aktual tiap user, bukan timer.
+
+#### Arsitektur
+
+```
+Scheduler (polling ringan, misal setiap jam)
+    │
+    ├─▶ Sub-agent per user: cek yieldAdapter.valueOf(user) − principalBaseline[user]
+    │       → kumpulkan: { user, pendingYield, pendingUsd, protocol, apy }
+    │
+    ├─▶ Kirim ringkasan ke Venice AI:
+    │       "Pool memiliki 5 user. Total yield tertunda: $4.82.
+    │        User terbesar: $2.10, terkecil: $0.08.
+    │        APY aktif: 5.2%. Gas estimasi 1Shot: $0.15.
+    │        Apakah sweep sekarang worth it?"
+    │
+    └─▶ Venice memutuskan:
+            SWEEP_NOW   → yield total > threshold & gas cost < % yield
+            WAIT        → yield terlalu kecil, buang-buang gas
+            SWEEP_LARGE → sweep hanya user dengan yield > X (skip yang kecil)
+```
+
+#### Contoh output Venice
+
+```json
+{
+  "decision": "SWEEP_LARGE",
+  "minYieldThresholdUsd": 0.50,
+  "reasoning": "Total yield $4.82 tapi tersebar 5 user. 3 user di atas $0.50 — sweep mereka sekarang menghasilkan $3.75 bersih setelah gas $0.15. 2 user sisanya ($0.08, $0.12) lebih efisien ditunda 2–3 hari lagi.",
+  "usersToSweep": ["0xAAA...", "0xBBB...", "0xCCC..."]
+}
+```
+
+#### Keuntungan
+
+| Metode | Masalah | Venice-Driven |
+|---|---|---|
+| Cron harian | Sweep saat yield $0.02 = buang gas | Sweep hanya saat worth it |
+| Cron harian | Semua user disweep meski ada yang kecil | Bisa selective per user |
+| Cron harian | Tidak adaptif ke kondisi gas/APY | Venice hitung efisiensi real-time |
+
+#### Perubahan yang dibutuhkan
+
+- `scheduler.ts`: ganti `cron.schedule` dengan polling ringan + logika "tanya Venice dulu"
+- `venice.ts`: tambah prompt khusus untuk keputusan sweep (terpisah dari keputusan rotasi)
+- `executor.ts`: support `sweepYieldBatch(selectedUsers)` — sudah bisa, tinggal pass subset
+- Backend: simpan `lastSweepDecision` di decisions log untuk transparansi
+
+---
+
 ## Phase 2 Priority Order
 
 | Priority | Feature | Effort | Impact |
 |---|---|---|---|
+| ✅ | 2 protocols live (Aave + Moonwell) | Done | Foundation |
+| ✅ | Cross-chain deposits (LI.FI) | Done | High (accessibility) |
+| ✅ | UUPS upgradeable proxy | Done | High (upgrade path) |
+| ✅ | Atomic rotation (RotationHelper) | Done | High (no custody window) |
 | P0 | PostgreSQL migration | Medium | High (production readiness) |
 | P0 | batchDepositYield contract | Low | High (gas efficiency) |
-| P1 | Multi-protocol allocation | High | High (core differentiation) |
-| ✅ | Cross-chain deposits (LI.FI) | Done | High (accessibility) |
-| P1 | Reverse withdrawal to origin chain | Medium | Medium (UX completeness) |
+| P0 | Venice-driven sweep timing (§2.11) | Medium | High (AI-native, gas efficient) |
+| P1 | **Multi-agent system** (§Big Vision) | High | Very High (core differentiation) |
+| P1 | **Multi-protocol allocation** (§2.1) | High | Very High (risk diversification) |
+| P1 | **Expanded protocol integrations** (§2.2) | Medium per protocol | High (more yield options) |
+| P2 | Opportunity Agent — protocol discovery | Medium | High (self-growing whitelist) |
+| P2 | Reverse withdrawal to origin chain | Medium | Medium (UX completeness) |
 | P2 | Multiple prize tiers | Medium | Medium (engagement) |
-| P2 | World ID integration | Medium | Medium (anti-Sybil) |
+| P2 | World ID integration | Medium | Medium (anti-Sybil bonus) |
 | P3 | Automated emergency exit | High | High (trust) |
 | P3 | Round history & analytics | Medium | Medium (transparency) |
 | P4 | Mobile PWA | High | Medium |
@@ -403,4 +596,5 @@ Governance token: earned by participating in the pool (not pre-mined, not sold).
 | EIP-7702 re-auth on every sweep | Performance overhead | Cache signed authorization with nonce tracking |
 | No retry logic for failed sweeps | Yield stays in Aave, not lost | Add sweep retry queue |
 | Venice API single point of failure | If Venice down, round skipped | Fallback to rules-based allocation |
-| No contract upgrade path | Deploy new contract = migrate users | Add proxy pattern (EIP-1967) |
+| ~~No contract upgrade path~~ | ✅ Sudah diselesaikan — ClovaSavingsPool di-deploy sebagai UUPS proxy (ERC1967) | — |
+| Cron-based sweep timer | Sweep dijadwalkan tanpa mempertimbangkan efisiensi gas vs. yield | Ganti dengan Venice-driven sweep (§2.11) |

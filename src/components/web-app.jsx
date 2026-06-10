@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, nfmt, clickable, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, fmtUsdc, nfmt, clickable, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 import { useWallet } from './wallet-context.jsx';
 
 /* ============================================================
@@ -110,7 +110,7 @@ function NotifBell({ lang, go }) {
 
 function MainHead({ lang, title, sub, onDraw, go, poolYield, round }) {
   const poolDisplay = poolYield != null && poolYield > 0
-    ? `${poolYield.toFixed(3)} USDC`
+    ? `${fmtUsdc(poolYield)} USDC`
     : "— USDC";
   const roundDisplay = round && round !== "—" ? `#${round}` : "";
   return (
@@ -235,7 +235,7 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
                     <Icon.drop size={18} stroke="var(--clover)" />
                     <span className="muted tiny" style={{ fontWeight: 600 }}>{L(lang, { id: "Bunga tersumbang ronde ini", en: "Yield contributed this round" })}</span>
                     <span className="head tnum" style={{ fontSize: 18, color: "var(--clover)", marginLeft: "auto" }}>
-                      {userYield > 0 ? "+" : ""}<CountUp value={userYield} dec={4} />
+                      {userYield > 0 ? "+" : ""}{fmtUsdc(userYield, 4)}
                     </span>
                   </div>
                 </div>
@@ -262,7 +262,7 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
                 <button className="tlink tiny" onClick={() => go("pool")}>{L(lang, { id: "Detail", en: "Details" })} →</button>
               </div>
               <div className="num-lg" style={{ color: "var(--gold-deep)", marginTop: 12 }}>
-                <CountUp value={poolYield} dec={3} /> <span style={{ fontSize: 20 }}>USDC</span>
+                {fmtUsdc(poolYield)} <span style={{ fontSize: 20 }}>USDC</span>
               </div>
               <div className="muted tiny" style={{ marginTop: 2 }}>
                 {participants} {L(lang, { id: "penanam ikut", en: "planters in" })}
@@ -324,7 +324,7 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
                   <div className="muted tiny">{L(lang, { id: "Modal", en: "Principal" })}</div>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div className="head tnum" style={{ fontSize: 24, color: "var(--clover)" }}>+<CountUp value={userYield} dec={4} /></div>
+                  <div className="head tnum" style={{ fontSize: 24, color: "var(--clover)" }}>+{fmtUsdc(userYield, 4)}</div>
                   <div className="muted tiny">{L(lang, { id: "Bunga", en: "Yield" })}</div>
                 </div>
                 <div style={{ flex: 1 }}>
@@ -379,7 +379,7 @@ function WebDashboard({ lang, go, t, openModal, onDraw }) {
               <div className="row between aic" style={{ marginBottom: 4 }}>
                 <div className="head" style={{ fontSize: 16 }}>{L(lang, { id: "Pertumbuhan kolam ronde ini", en: "Pool growth this round" })}</div>
                 <span className="head tnum" style={{ fontSize: 18, color: "var(--clover)" }}>
-                  +<CountUp value={poolYield} dec={3} /> USDC
+                  +{fmtUsdc(poolYield)} USDC
                 </span>
               </div>
               <AreaChart data={yieldSeries} color="var(--clover)" h={120} />

@@ -2,12 +2,15 @@
 
 ## Deployed Addresses (Base Mainnet — Chain ID 8453)
 
+> Semua kontrak di-deploy ulang pada Juni 2026 dengan pola **UUPS upgradeable proxy** (ERC1967). `ClovaSavingsPool` adalah proxy — implementasinya terpisah dan bisa di-upgrade oleh admin tanpa mengubah alamat proxy.
+
 | Contract | Address | Basescan |
 |---|---|---|
-| **ClovaSavingsPool** | `0x7A02E6c648d569C17EF6966C4Db80c569B597235` | [View](https://basescan.org/address/0x7A02E6c648d569C17EF6966C4Db80c569B597235) |
-| **AaveAdapter** | `0x7b4305AB9B3463bb243e7b3a65AbEf484e7ae598` | [View](https://basescan.org/address/0x7b4305AB9B3463bb243e7b3a65AbEf484e7ae598) |
-| **CompoundAdapter** | `0x0b1c84649999CE5c03E267087D5fDfD446471641` | [View](https://basescan.org/address/0x0b1c84649999CE5c03E267087D5fDfD446471641) |
-| **MoonwellAdapter** | `0x6e52d7803A5466F3b7a0Ec940a26d349110cd6D3` | [View](https://basescan.org/address/0x6e52d7803A5466F3b7a0Ec940a26d349110cd6D3) |
+| **ClovaSavingsPool** (proxy) | `0x96246c2d585D423931c00703Fa74589458B6050b` | [View](https://basescan.org/address/0x96246c2d585D423931c00703Fa74589458B6050b) |
+| **AaveAdapter** | `0xac8AA12d6E0Fd04D6A9A726A68af0D1109122557` | [View](https://basescan.org/address/0xac8AA12d6E0Fd04D6A9A726A68af0D1109122557) |
+| **CompoundAdapter** | `0x727B2c11A70d1C215b7A7455245731694e70AFb9` | [View](https://basescan.org/address/0x727B2c11A70d1C215b7A7455245731694e70AFb9) |
+| **MoonwellAdapter** | `0xc7D3b8cda22fcD1B0d3d651326E04C46b2A37ba9` | [View](https://basescan.org/address/0xc7D3b8cda22fcD1B0d3d651326E04C46b2A37ba9) |
+| **RotationHelper** | `0xEa448dF1052212F1E7463628F98e836893DD23E2` | [View](https://basescan.org/address/0xEa448dF1052212F1E7463628F98e836893DD23E2) |
 
 **External contracts used:**
 | Contract | Address |
@@ -18,6 +21,44 @@
 | Compound Comet | `0xb125E6687d4313864e53df431d5425969c15Eb2F` |
 | Moonwell mUSDC | `0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22` |
 | Pyth Entropy | `0x6E7D74FA7d5c90FEF9F0512987605a6d546181Bb` |
+
+---
+
+## RotationHelper
+
+Kontrak helper untuk rotasi protokol yang **atomic** — seluruh perpindahan dana terjadi dalam 1 transaksi EVM. Jika ada langkah yang gagal, EVM otomatis revert dan user tetap memegang token aslinya.
+
+### Alur Aave → Moonwell
+
+```
+1. RotationHelper.transferFrom(user, self, aUSDC amount)   — tarik aUSDC dari user
+2. aave.withdraw(USDC, amount, self)                       — tukar aUSDC → USDC
+3. usdc.approve(moonwell, amount)
+4. moonwell.mint(amount)                                   — deposit USDC → mUSDC
+5. mUSDC.transfer(user, mUsdcReceived)                     — kirim mUSDC ke user
+```
+
+### Alur Moonwell → Aave
+
+```
+1. RotationHelper.transferFrom(user, self, mUSDC amount)   — tarik mUSDC dari user
+2. moonwell.redeemUnderlying(usdcAmount)                   — tukar mUSDC → USDC
+3. usdc.approve(aave, usdcAmount)
+4. aave.supply(USDC, usdcAmount, user, 0)                  — deposit langsung ke nama user
+```
+
+### Prasyarat (sekali saat onboarding)
+
+User harus approve dua token ke RotationHelper:
+- `aUSDC.approve(ROTATION_HELPER, type(uint256).max)` — untuk rotasi Aave→Moonwell
+- `mUSDC.approve(ROTATION_HELPER, type(uint256).max)` — untuk rotasi Moonwell→Aave
+
+Approval ini dilakukan satu kali saat onboarding. Setelah itu, agent bisa merotasi dana user kapan saja secara otonom.
+
+```solidity
+function rotateAaveToMoonwell(address user, uint256 usdcAmount) external;
+function rotateMoonwellToAave(address user, uint256 mUsdcAmount) external;
+```
 
 ---
 

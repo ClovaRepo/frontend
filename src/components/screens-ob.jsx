@@ -145,8 +145,11 @@ function ScreenOB1({ lang, go, t }) {
 
   // Skip onboarding if user already has a deposit on-chain
   const handleContinue = () => {
-    if (wallet.principalUsdc > 0n) {
+    if (wallet.principalUsdc > 0n && wallet.hasDelegation) {
       go("dashboard");
+    } else if (wallet.principalUsdc > 0n && !wallet.hasDelegation) {
+      // Principal exists but delegation was revoked/missing — skip to ob4 to re-sign
+      go("ob4");
     } else {
       go("ob2");
     }
@@ -183,8 +186,10 @@ function ScreenOB1({ lang, go, t }) {
               <span className="badge badge-active"><span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--clover)" }} /> {L(lang, { id: "Terhubung", en: "Connected" })}</span>
             </div>
             <button className="btn btn-primary btn-block btn-lg" onClick={handleContinue}>
-              {wallet.principalUsdc > 0n
+              {wallet.principalUsdc > 0n && wallet.hasDelegation
                 ? L(lang, { id: "Buka Dashboard →", en: "Open Dashboard →" })
+                : wallet.principalUsdc > 0n
+                ? <>{L(lang, { id: "Aktifkan Ulang Izin →", en: "Re-activate Permission →" })} <Icon.arrow size={18} stroke="#F4FBF6" /></>
                 : <>{L(lang, { id: "Lanjut", en: "Continue" })} <Icon.arrow size={18} stroke="#F4FBF6" /></>}
             </button>
           </div>
@@ -402,14 +407,18 @@ function ScreenOB4({ lang, go, t }) {
             <Clover size={26} color="var(--clover)" stem={false} />
             <span className="head" style={{ fontSize: 16, color: "var(--clover-deep)" }}>{L(lang, { id: "Izin aman aktif", en: "Safe permission active" })}</span>
           </div>
-          <button className="btn btn-primary btn-block btn-lg" onClick={() => go("ob5")}>{L(lang, { id: "Lanjut", en: "Continue" })} <Icon.arrow size={18} stroke="#F4FBF6" /></button>
+          <button className="btn btn-primary btn-block btn-lg" onClick={() => wallet.principalUsdc > 0n ? go("dashboard") : go("ob5")}>
+            {wallet.principalUsdc > 0n
+              ? L(lang, { id: "Buka Dashboard →", en: "Open Dashboard →" })
+              : <>{L(lang, { id: "Lanjut", en: "Continue" })} <Icon.arrow size={18} stroke="#F4FBF6" /></>}
+          </button>
         </div>
       ) : state === "loading" ? (
         <StatePill tone="load">{L(lang, { id: "Menunggu tanda tangan…", en: "Waiting for signature…" })}</StatePill>
       ) : (
         <>
           <div className="row gap-10">
-            <button className="btn btn-ghost" onClick={() => go("ob3")}>{L(lang, { id: "Kembali", en: "Back" })}</button>
+            <button className="btn btn-ghost" onClick={() => wallet.principalUsdc > 0n ? go("ob1") : go("ob3")}>{L(lang, { id: "Kembali", en: "Back" })}</button>
             <button className="btn btn-primary grow btn-lg" onClick={async () => {
               setState("loading"); setErr("");
               try {

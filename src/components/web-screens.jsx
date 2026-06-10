@@ -7,6 +7,33 @@ import { BRIDGE_CHAINS, fetchLifiQuote, ensureApproval, sendBridgeTx, pollBridge
 
 const BACKEND_URL = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_BACKEND_URL) || "http://localhost:3001";
 
+// Re-sign delegation button — appears in AI keeper card.
+// Lets user add the new USDC fee permission (popup 3) without revoking first.
+function UpdatePermissionsBtn({ lang }) {
+  const wallet = useWallet();
+  const [state, setState] = useState("idle"); // idle | loading | ok | err
+  return (
+    <button
+      className="btn btn-secondary btn-sm"
+      disabled={state === "loading"}
+      title={L(lang, { id: "Perbarui 3 izin (tambah izin biaya relay)", en: "Update 3 permissions (add relay fee permission)" })}
+      onClick={async () => {
+        setState("loading");
+        try {
+          await wallet.signAndStoreDelegation();
+          setState("ok");
+          setTimeout(() => setState("idle"), 2500);
+        } catch (e) {
+          setState("err");
+          setTimeout(() => setState("idle"), 2500);
+        }
+      }}
+    >
+      {state === "loading" ? "…" : state === "ok" ? "✓" : state === "err" ? "✗" : L(lang, { id: "Perbarui", en: "Update" })}
+    </button>
+  );
+}
+
 // Returns "CANCELLED" sentinel when user rejects, friendly string for real errors
 const CANCELLED = "__cancelled__";
 function friendlyErr(e, fallback = "Something went wrong") {
@@ -470,7 +497,7 @@ function WebSettings({ lang, setLang, openModal, t, go }) {
                 <div style={{ flex: 1, background: "var(--canvas-2)", borderRadius: 12, padding: "12px 14px" }}><div className="tiny row aic gap-6" style={{ fontWeight: 700, color: "var(--clover-deep)", marginBottom: 5 }}><Icon.check size={14} stroke="var(--clover)" sw={2.6} /> {L(lang, { id: "BOLEH", en: "MAY" })}</div><div className="tiny muted" style={{ lineHeight: 1.4 }}>{L(lang, { id: "Pindah antar protokol putih · sapu bunga", en: "Move between whitelisted protocols · sweep yield" })}</div></div>
                 <div style={{ flex: 1, background: "color-mix(in srgb,var(--danger) 7%, var(--canvas-2))", borderRadius: 12, padding: "12px 14px" }}><div className="tiny row aic gap-6" style={{ fontWeight: 700, color: "var(--danger)", marginBottom: 5 }}><Icon.x size={14} stroke="var(--danger)" sw={2.6} /> {L(lang, { id: "TIDAK", en: "CANNOT" })}</div><div className="tiny muted" style={{ lineHeight: 1.4 }}>{L(lang, { id: "Sentuh modal · kirim ke luar daftar", en: "Touch principal · send off-list" })}</div></div>
               </div>
-              <div className="row gap-10"><button className="btn btn-secondary grow btn-sm" onClick={() => go("keeper")}>{L(lang, { id: "Lihat pemelihara", en: "View keeper" })}</button><button className="btn btn-danger-ghost btn-sm" onClick={() => openModal("cabut")}>{L(lang, { id: "Cabut Izin", en: "Revoke" })}</button></div>
+              <div className="row gap-10"><button className="btn btn-secondary grow btn-sm" onClick={() => go("keeper")}>{L(lang, { id: "Lihat pemelihara", en: "View keeper" })}</button><UpdatePermissionsBtn lang={lang} /><button className="btn btn-danger-ghost btn-sm" onClick={() => openModal("cabut")}>{L(lang, { id: "Cabut Izin", en: "Revoke" })}</button></div>
               <div className="tiny muted" style={{ marginTop: 10, lineHeight: 1.4 }}>{L(lang, { id: "Pemelihara membayar operasinya sendiri (x402).", en: "The keeper self-pays its operations (x402)." })}</div>
             </div>
           </Reveal>
@@ -661,7 +688,7 @@ function WebModalTarik({ lang, onClose }) {
   );
 }
 
-function WebModalCabut({ lang, onClose }) {
+function WebModalCabut({ lang, onClose, go }) {
   const wallet = useWallet();
   const [state, setState] = useState("idle");
   const [err, setErr] = useState("");
@@ -682,7 +709,10 @@ function WebModalCabut({ lang, onClose }) {
         <p className="muted" style={{ fontSize: 14, marginBottom: 20 }}>
           {L(lang, { id: "Pemelihara AI dinonaktifkan. Modalmu tetap di dompetmu.", en: "The AI keeper is disabled. Your principal stays in your wallet." })}
         </p>
-        <button className="btn btn-primary btn-block btn-lg" onClick={onClose}>{L(lang, { id: "Selesai", en: "Done" })}</button>
+        <button className="btn btn-primary btn-block btn-lg" style={{ marginBottom: 10 }} onClick={() => { onClose(); go && go("ob4"); }}>
+          {L(lang, { id: "Aktifkan Ulang Izin", en: "Re-grant Permission" })}
+        </button>
+        <button className="btn btn-ghost btn-block" onClick={onClose}>{L(lang, { id: "Nanti saja", en: "Maybe later" })}</button>
       </div>
     </WebModal>
   );

@@ -57,4 +57,4 @@ src/
 
 Botanical fintech, **light theme**. Jade green is primary; gold is reserved **only** for prizes/wins. See `../design-system/clova/MASTER.md` for the full token reference. Fonts: Fraunces (headings), Hanken Grotesk (body), Quicksand (wordmark).
 
-> The `tweaks.jsx` panel is a prototyping artifact (it talks to an external editor host) and is inert in normal use. Web3 wiring (MetaMask Smart Accounts, World ID, etc., per `../CLOVA_MASTER.md`) is not yet integrated — this is the UI layer.
+> The `tweaks.jsx` panel is a prototyping artifact (it talks to an external editor host) and is inert in normal use. Full Web3 integration is live: MetaMask Smart Accounts (EIP-7702 + ERC-7710 delegation), Aave deposit, yield sweep, protocol rotation via RotationHelper, and AI Transparency Panel — see `src/components/wallet-context.jsx`.

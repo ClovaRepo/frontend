@@ -2,9 +2,13 @@
 
 ## What is Clova?
 
-**Clova** is a no-loss prize-linked savings application on Base. A group of people deposit USDC. Their principal **never leaves their own smart account** and is never at risk. An AI agent (Venice) monitors DeFi protocols daily, rotates funds to the healthiest option, and sweeps the accumulated yield into a shared prize pool. Every week, a winner is picked by an **on-chain verifiable random function (Pyth Entropy)** — proportional to deposit size. Losers keep their principal, fully intact.
+**Clova** is a no-loss prize-linked savings application on Base, built around one core insight: *an AI agent that cannot steal from you is more powerful than one you merely trust not to.*
 
-> *"Save, never lose your principal, and compete to win the combined yield of everyone — managed by AI that is technically impossible to steal from you."*
+A group of people deposit USDC. Their principal **never leaves their own smart account**. An AI agent (Venice) monitors DeFi protocols daily using live web search, rotates funds to the healthiest option within strict on-chain bounds, and sweeps accumulated yield into a shared prize pool. Every week, a provably fair draw picks a winner proportional to deposit size. Non-winners keep 100% of their principal. The agent is self-funded via x402 micropayments.
+
+> *"Save, never lose your principal, win the combined yield of everyone — managed by AI that is technically impossible to steal from you."*
+
+**The key distinction:** CLOVA's security is not a policy or a promise. It is a mathematical constraint enforced by the EVM. The agent holds a bounded ERC-7710 delegation. The smart contract enforces `aTokenBalance ≥ principalBaseline` before accepting any yield deposit. If the agent is compromised and tries to sweep principal, the contract reverts and refunds. The user loses nothing.
 
 ---
 
@@ -211,9 +215,38 @@ Demo moment: x402 payment panel shows on-chain USDC transfers to Venice facilita
 |---|---|
 | **Non-custodial principal** | Users never give up ownership of their money |
 | **Bounded delegation (ERC-7710)** | Agent's power is enforced by math, not promises |
-| **AI seeks opportunities, not just risks** | Actively rotates to better yield, not just away from bad |
+| **Atomic rotation (RotationHelper)** | Protocol switches have zero custody window — EVM atomicity |
+| **AI judges quality, not just APY** | Venice uses web search to evaluate sustainability, audits, sentiment |
 | **Plain-language AI reasoning** | Full transparency — users understand every decision |
 | **On-chain VRF (Pyth Entropy)** | Winner selection is publicly verifiable, not trusting operator |
 | **Proportional + anti-Sybil tickets** | Fair by contribution, immune to wallet-splitting |
 | **Self-funded agent (x402)** | Agent pays for its own intelligence, sustainable by design |
 | **Batch execution (1Shot)** | All users swept in one tx — scales without proportional gas cost |
+
+---
+
+## What Comes Next
+
+CLOVA Phase 1 uses a single Venice AI instance. Phase 2 evolves this into a **multi-agent system** where each agent is an expert:
+
+- **Analyst Agents** — one per protocol, runs in parallel, deep-researches just that protocol
+- **Strategy Agent** — synthesizes all analyst reports into allocation percentages
+- **Risk Agent** — independent portfolio-level safety check before execution
+- **Opportunity Agent** — continuously scans for new protocols worth adding
+- **Execution Agent** — purely mechanical, builds and submits transactions
+
+With multi-agent allocation, user funds are split across multiple protocols simultaneously:
+
+```
+Example — $2,000 total pool:
+  Aave:    50% → $1,000  (stability, high TVL)
+  Compound: 30% → $600   (higher yield)
+  Morpho:  20% → $400   (efficient lending)
+
+Per user (proportional):
+  User A ($1,000): $500 Aave + $300 Compound + $200 Morpho
+  User B ($200):   $100 Aave + $60  Compound + $40  Morpho
+  User C ($800):   $400 Aave + $240 Compound + $160 Morpho
+```
+
+This means a single protocol exploit only affects that slice — not the whole pool. See [Phase 2 Roadmap](./phase2.md) for the full plan.
