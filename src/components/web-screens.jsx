@@ -747,6 +747,7 @@ function WebModalDeposit({ lang, onClose }) {
 
   const isCross   = !chain.native;
   const balance   = !isCross && wallet.usdcBalance > 0n ? Number(formatUnits(wallet.usdcBalance, 6)) : 0;
+  const maxVal    = Math.floor(balance * 100) / 100; // clean 2-dp max (no dust overflow)
   const quick     = [10, 50, 100];
   const est       = isCross && quote ? quoteEstimate(quote) : null;
   const busy      = ["approving", "bridging", "depositing"].includes(state);
@@ -875,7 +876,7 @@ function WebModalDeposit({ lang, onClose }) {
           {quick.map((q) => (
             <button key={q} disabled={busy} className={"chip" + (amt === q ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmt(q)}>{q}</button>
           ))}
-          {!isCross && <button disabled={busy} className={"chip" + (amt === balance ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmt(balance)}>Max</button>}
+          {!isCross && <button disabled={busy} className={"chip" + (amt === maxVal ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmt(maxVal)}>Max</button>}
         </div>
         {!isCross && (
           <div className="muted tiny center" style={{ marginTop: 8 }}>
