@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ChainIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 import { useWallet } from './wallet-context.jsx';
 import { formatUnits } from 'viem';
 
@@ -534,8 +534,8 @@ function ScreenOB5({ lang, go, t }) {
             {L(lang, { id: "Dari chain lain?", en: "From another chain?" })}
             <span style={{ fontWeight: 400, color: "var(--ink-45)" }}>{L(lang, { id: ", LI.FI akan jembatani otomatis", en: ", LI.FI bridges automatically" })}</span>
           </span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--clover)", marginLeft: 8 }}>
-            {selectedChain?.icon} {selectedChain?.label}
+          <span className="row aic gap-6" style={{ fontSize: 14, fontWeight: 700, color: "var(--clover)", marginLeft: 8 }}>
+            <ChainIcon name={selectedChain?.label} size={16} /> {selectedChain?.label}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink-45)" strokeWidth="2.5" strokeLinecap="round" style={{ marginLeft: 4, transform: showChains ? "rotate(180deg)" : "none", transition: "transform .2s" }}><path d="M6 9l6 6 6-6" /></svg>
           </span>
         </button>
@@ -544,8 +544,8 @@ function ScreenOB5({ lang, go, t }) {
             <div className="row gap-6 wrap" style={{ padding: "4px 6px" }}>
               {CROSS_CHAINS.map((c) => (
                 <button key={c.id} onClick={() => { setSrcChain(c.id); setShowChains(false); }}
-                  className={"chip" + (srcChain === c.id ? " chip-on" : "")} style={{ cursor: "pointer", fontSize: 13 }}>
-                  {c.icon} {c.label}
+                  className={"chip" + (srcChain === c.id ? " chip-on" : "")} style={{ cursor: "pointer", fontSize: 13, gap: 7 }}>
+                  <ChainIcon name={c.label} size={16} /> {c.label}
                 </button>
               ))}
             </div>

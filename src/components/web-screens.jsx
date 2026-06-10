@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { L, fmt, nfmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
+import { L, fmt, nfmt, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, ChainIcon, Gardener, VineStepper, CountdownArc, Plant, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast } from './shared.jsx';
 import { MainHead } from './web-app.jsx';
 import { useWallet } from './wallet-context.jsx';
 import { formatUnits, parseUnits } from 'viem';
@@ -849,9 +849,9 @@ function WebModalDeposit({ lang, onClose }) {
         {BRIDGE_CHAINS.map((c) => (
           <button key={c.id} disabled={busy}
             className={"chip" + (chain.id === c.id ? " chip-on" : "")}
-            style={{ cursor: "pointer", fontSize: 12 }}
+            style={{ cursor: "pointer", fontSize: 12, gap: 7 }}
             onClick={() => { setChain(c); setQuote(null); setErr(""); }}>
-            {CHAIN_FLAGS[c.id]} {c.name}
+            <ChainIcon name={c.name} size={16} /> {c.name}
           </button>
         ))}
       </div>

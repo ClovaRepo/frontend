@@ -657,38 +657,69 @@ function Toast({ show, children, tone = "safe" }) {
 
   const accent = tone === "win"    ? "var(--gold)"
                : tone === "danger" ? "var(--danger)"
-               : tone === "muted"  ? "#9ca3af"
+               : tone === "muted"  ? "var(--clover-deep)"
                :                    "var(--clover)";
-  const icon = tone === "win"    ? "🏆"
-             : tone === "danger" ? "✕"
-             : tone === "muted"  ? "✕"
-             :                    "✓";
+  const Glyph = tone === "win"    ? Icon.trophy
+              : tone === "danger" ? Icon.x
+              : tone === "muted"  ? Icon.leaf
+              :                    Icon.check;
 
   return (
     <div key={key} className="toast-pop" style={{
       position: "absolute", bottom: 80, left: 12, right: 12, zIndex: 80,
-      background: "#fff",
-      border: `1.5px solid color-mix(in srgb, ${accent} 30%, transparent)`,
+      background: "var(--canvas-2)",
+      border: `1.5px solid color-mix(in srgb, ${accent} 28%, transparent)`,
       borderRadius: 18,
       padding: "13px 16px",
-      boxShadow: `0 8px 32px rgba(20,58,42,.12), 0 0 0 0 ${accent}`,
-      display: "flex", alignItems: "center", gap: 12,
+      boxShadow: "0 14px 36px rgba(20,58,42,.16)",
+      display: "flex", alignItems: "center", gap: 12, overflow: "hidden",
       pointerEvents: "none",
     }}>
-      {/* accent dot/icon */}
+      {/* soft botanical watermark */}
+      <CloverWatermark corner="br" size={70} opacity={0.06} />
+      {/* accent leaf/icon chip */}
       <div style={{
         width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
-        background: `color-mix(in srgb, ${accent} 14%, transparent)`,
+        background: `color-mix(in srgb, ${accent} 15%, var(--canvas))`,
         display: "grid", placeItems: "center",
-        fontSize: 14, fontWeight: 800, color: accent,
-      }}>{icon}</div>
-      <span style={{ fontSize: 14, fontWeight: 600, color: "var(--forest)", lineHeight: 1.3 }}>
+      }}><Glyph size={17} stroke={accent} sw={2.2} /></div>
+      <span style={{ fontSize: 14, fontWeight: 600, color: "var(--forest)", lineHeight: 1.3, position: "relative" }}>
         {children}
       </span>
     </div>
   );
 }
 
+/* ---------- network/chain icon (real logo via the chain's site, tinted
+   fallback if offline) ---------- */
+const CHAIN_META = (name = "") => {
+  const k = name.toLowerCase();
+  if (k.includes("base")) return ["base.org", "#0052FF"];
+  if (k.includes("ether")) return ["ethereum.org", "#627EEA"];
+  if (k.includes("arbitrum") || k.includes("arb")) return ["arbitrum.io", "#12AAFF"];
+  if (k.includes("polygon") || k.includes("matic")) return ["polygon.technology", "#8247E5"];
+  if (k.includes("bnb") || k.includes("bsc") || k.includes("binance")) return ["bnbchain.org", "#F0B90B"];
+  if (k.includes("optimism") || k === "op") return ["optimism.io", "#FF0420"];
+  return [null, "var(--clover)"];
+};
+function ChainIcon({ name = "", size = 16, radius = 999 }) {
+  const [err, setErr] = useState(false);
+  const [domain, tint] = CHAIN_META(name);
+  return (
+    <span style={{ width: size, height: size, borderRadius: radius, overflow: "hidden", flex: "0 0 auto",
+      display: "inline-grid", placeItems: "center", verticalAlign: "middle",
+      background: `color-mix(in srgb, ${tint} 18%, var(--canvas-2))` }}>
+      {domain && !err ? (
+        <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt="" loading="lazy"
+          width={Math.round(size * 0.72)} height={Math.round(size * 0.72)} style={{ display: "block", borderRadius: "50%" }}
+          onError={() => setErr(true)} />
+      ) : (
+        <span style={{ width: size * 0.5, height: size * 0.5, borderRadius: "50%", background: tint }} />
+      )}
+    </span>
+  );
+}
+
 /* ==================== exports ==================== */
 
-export { L, fmt, nfmt, clickable, growFromUsdc, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, Gardener, VineStepper, CountdownArc, Plant, PixelTree, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast };
+export { L, fmt, nfmt, clickable, growFromUsdc, useCountUp, CountUp, Clover, Wordmark, LeafShape, LeafFall, CloverWatermark, Ic, Icon, ActivityIcon, ChainIcon, Gardener, VineStepper, CountdownArc, Plant, PixelTree, Confetti, AreaChart, Collapse, Reveal, TopBar, Toast };
