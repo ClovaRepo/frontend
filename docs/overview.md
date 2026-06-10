@@ -126,19 +126,23 @@ Bigger deposits contribute more yield to the prize pool, so they deserve proport
 
 ### Layer 4 — Self-Funded Agent (x402 + ERC-7710)
 
-The agent pays for every Venice API call using **x402 micropayments**:
+The agent pays for every Venice API call using **x402 micropayments**, funded by a **bounded ERC-7710 treasury delegation**:
 
 ```
 Agent → POST /x402/venice (no payment header)
-      ← 402 Payment Required (USDC amount, address)
-Agent → sends USDC on-chain to treasury
-Agent → POST /x402/venice (X-402-Payment header with proof)
+      ← 402 Payment Required (0.001 USDC)
+Agent → redeemDelegations(treasuryDelegation, USDC.transfer(venice, 0.001))
+      → DelegationManager enforces caveats on-chain:
+        ✓ Only USDC contract (not ETH, not other tokens)
+        ✓ Max 5 USDC total (ERC20TransferAmountEnforcer)
+      → USDC flows from TREASURY to Venice — not from agent wallet
+Agent → POST /x402/venice (X-PAYMENT header with delegation redemption proof)
       ← Venice AI response
 ```
 
-The USDC comes from a separate treasury delegation — bounded to a daily maximum, payable only to the Venice facilitator address. The agent cannot drain the treasury.
+The treasury signed a bounded ERC-7710 delegation to the agent. Even if the agent is compromised, it can only transfer max 5 USDC total to Venice — enforced on-chain by MetaMask's DelegationManager contract, not by the agent's own code.
 
-This makes Clova's agent genuinely autonomous: it earns revenue (10% protocol fee from yield), spends it on intelligence (x402 → Venice), and operates entirely without human top-ups.
+This is the first production example of **x402 + ERC-7710 combined**: an AI agent that autonomously pays for its own intelligence using a delegated, on-chain-bounded micropayment mechanism.
 
 ---
 
@@ -203,7 +207,7 @@ All user-facing on-chain execution goes through 1Shot. The agent uses 1Shot's `r
 Demo moment: sweep cycle runs → one 1Shot transaction covers all users → webhook confirms.
 
 ### x402 + ERC-7710
-The agent pays Venice per API call via x402, authorized by a bounded treasury delegation (ERC-7710). This satisfies the x402 + ERC-7710 combined track — the first production example of an AI agent autonomously paying for its own intelligence using delegated on-chain micropayments.
+The agent pays Venice per API call via x402, funded by a bounded ERC-7710 treasury delegation. The treasury signed a delegation to the agent: "transfer USDC, max 5 USDC total, only to Venice." Every Venice call triggers HTTP 402 → agent redeems treasury delegation → USDC flows from treasury to Venice → Venice responds. Two technologies, one mechanism: x402 handles the payment protocol, ERC-7710 enforces the spending bounds on-chain.
 
 Demo moment: x402 payment panel shows on-chain USDC transfers to Venice facilitator — agent funded itself.
 

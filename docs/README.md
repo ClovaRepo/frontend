@@ -45,7 +45,7 @@ If any step fails, the EVM reverts the entire transaction. The user never loses 
 
 ### 4. The Agent Pays for Itself
 
-The agent earns 10% of swept yield, deposited to treasury. It spends from treasury to pay Venice per call via **x402 micropayments** — a bounded ERC-7710 treasury delegation that caps daily spend and restricts payment to Venice's facilitator address only. The agent cannot drain the treasury.
+The agent earns 10% of swept yield to treasury. It pays Venice per call via **x402 + ERC-7710**: treasury holds a signed delegation to the agent (max 5 USDC, USDC only). Every Venice call triggers HTTP 402 → agent redeems treasury delegation → USDC flows from treasury to Venice — enforced on-chain by MetaMask's DelegationManager. Verifiable on Basescan.
 
 This is the first production example of an AI agent autonomously paying for its own intelligence using on-chain micropayments.
 
@@ -127,7 +127,7 @@ x402 payment log: agent paid 0.001 USDC to Venice. Agent calls requestDraw() →
 | Track | Prize | How CLOVA qualifies |
 |---|---|---|
 | **Best Agent** | $3,000 | Fully autonomous: daily signal → Venice → guard → 1Shot sweep → weekly draw |
-| **Best x402 + ERC-7710** | $3,000 | Agent pays Venice per call via x402 funded by bounded ERC-7710 treasury delegation |
+| **Best x402 + ERC-7710** | $3,000 | Real HTTP 402 → on-chain USDC payment to Venice; ERC-7710 delegation for yield sweep |
 | **Best Use of Venice** | $3,000 | Venice is the decision-maker every round; full reasoning surfaced in UI |
 | **Best Use of 1Shot** | $1,000 | All execution via `relayer_send7710Transaction` with 7702 + USDC gas |
 
