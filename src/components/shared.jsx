@@ -118,8 +118,8 @@ function Wordmark({ size = 30, light = false }) {
                    fontFamily: "var(--font-mark)", fontWeight: 700,
                    fontSize: size, color: c1, letterSpacing: "-.01em", lineHeight: 1 }}>
       Cl
-      <Clover size={size * 0.92} color={light ? "#6BCB95" : "var(--clover)"} stem={false}
-              style={{ margin: `0 ${-size * 0.02}px` }} />
+      <Clover size={size * 1.12} color={light ? "#6BCB95" : "var(--clover)"} stem={false}
+              style={{ margin: `0 ${-size * 0.04}px` }} />
       va
     </span>
   );
