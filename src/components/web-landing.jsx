@@ -87,7 +87,7 @@ function WebLanding({ lang, setLang, t, onEnter }) {
           </div>
           <div className="hero-art">
             <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
-              <Clover size={360} color="color-mix(in srgb,var(--leaf) 65%, var(--clover))" breathe />
+              <Clover size={360} color="color-mix(in srgb,var(--leaf) 65%, var(--clover))" breathe pinwheel />
             </div>
             {/* floating prize chip */}
             <Reveal delay={360} className="card" style={{ position: "absolute", right: 0, top: 30, padding: "16px 20px", background: "linear-gradient(160deg, color-mix(in srgb,var(--gold) 14%, var(--canvas-2)), var(--canvas-2))", boxShadow: "var(--shadow-soft)" }}>

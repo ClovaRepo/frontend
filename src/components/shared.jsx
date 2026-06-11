@@ -97,7 +97,7 @@ function CountUp({ value, dec = 2, prefix = "", suffix = "", start = true, class
    ============================================================ */
 
 /* Four-leaf clover (the brand mark glyph). size in px. */
-function Clover({ size = 40, color = "var(--clover)", stem = true, breathe = false, spin = false, style }) {
+function Clover({ size = 40, color = "var(--clover)", stem = true, breathe = false, spin = false, pinwheel = false, style }) {
   const anim = spin ? "spinClover 3.4s linear infinite"
             : breathe ? "breathe 3.2s var(--ease-soft) infinite" : "none";
   return (
@@ -105,17 +105,20 @@ function Clover({ size = 40, color = "var(--clover)", stem = true, breathe = fal
          style={{ display: "block", animation: anim, transformOrigin: "32px 30px", ...style }}>
       {stem && <path d="M32 36 C32 46 30 52 26 58" stroke={color} strokeWidth="3"
                      strokeLinecap="round" opacity=".85" fill="none" />}
-      {/* four heart-ish leaves around center */}
-      {[0, 90, 180, 270].map((a) => (
-        <g key={a} transform={`rotate(${a} 32 30)`}>
-          <path d="M32 30 C30 18 18 16 18 24 C18 31 26 31 32 30 Z"
-                fill={color} opacity={a % 180 === 0 ? 1 : .92}
-                transform="translate(0 -1)" />
-          <path d="M32 30 C34 18 46 16 46 24 C46 31 38 31 32 30 Z"
-                fill={color} opacity={a % 180 === 0 ? .82 : .74} />
-        </g>
-      ))}
-      <circle cx="32" cy="30" r="3" fill="color-mix(in srgb, var(--forest) 55%, transparent)" />
+      {/* four heart-ish leaves — spin as a pinwheel around the center; stem stays put */}
+      <g className={pinwheel ? "clover-petals" : undefined}
+         style={pinwheel ? { transformBox: "view-box", transformOrigin: "32px 30px" } : undefined}>
+        {[0, 90, 180, 270].map((a) => (
+          <g key={a} transform={`rotate(${a} 32 30)`}>
+            <path d="M32 30 C30 18 18 16 18 24 C18 31 26 31 32 30 Z"
+                  fill={color} opacity={a % 180 === 0 ? 1 : .92}
+                  transform="translate(0 -1)" />
+            <path d="M32 30 C34 18 46 16 46 24 C46 31 38 31 32 30 Z"
+                  fill={color} opacity={a % 180 === 0 ? .82 : .74} />
+          </g>
+        ))}
+        <circle cx="32" cy="30" r="3" fill="color-mix(in srgb, var(--forest) 55%, transparent)" />
+      </g>
     </svg>
   );
 }
@@ -667,11 +670,11 @@ function Toast({ show, children, tone = "safe" }) {
 
   const accent = tone === "win"    ? "var(--gold)"
                : tone === "danger" ? "var(--danger)"
-               : tone === "muted"  ? "var(--clover-deep)"
+               : tone === "muted"  ? "var(--forest)"
                :                    "var(--clover)";
   const Glyph = tone === "win"    ? Icon.trophy
               : tone === "danger" ? Icon.x
-              : tone === "muted"  ? Icon.leaf
+              : tone === "muted"  ? Icon.x
               :                    Icon.check;
 
   return (

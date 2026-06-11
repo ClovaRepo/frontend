@@ -14,8 +14,11 @@ body { background: var(--canvas); overflow-x: hidden; }
 .web-bg {
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background:
-    radial-gradient(70% 50% at 8% -6%, color-mix(in srgb,var(--leaf) 22%, transparent), transparent 60%),
-    radial-gradient(60% 45% at 102% 4%, color-mix(in srgb,var(--clover) 14%, transparent), transparent 55%),
+    radial-gradient(48% 42% at 70% 4%,  color-mix(in srgb,var(--clover) 24%, transparent), transparent 66%),
+    radial-gradient(30% 30% at 93% 9%,  color-mix(in srgb,var(--gold)   18%, transparent), transparent 70%),
+    radial-gradient(42% 46% at 97% 38%, color-mix(in srgb,var(--leaf)   28%, transparent), transparent 68%),
+    radial-gradient(48% 52% at 80% 58%, color-mix(in srgb,var(--clover) 18%, transparent), transparent 70%),
+    radial-gradient(64% 52% at 4% 2%,   color-mix(in srgb,var(--leaf)   16%, transparent), transparent 62%),
     var(--canvas);
 }
 

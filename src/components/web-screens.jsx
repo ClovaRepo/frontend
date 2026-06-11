@@ -768,7 +768,8 @@ const CHAIN_FLAGS = { 8453: "🔵", 1: "⚪", 42161: "🔷", 137: "🟣", 56: "�
 function WebModalDeposit({ lang, onClose }) {
   const wallet = useWallet();
   const [chain, setChain]   = useState(BRIDGE_CHAINS[0]); // Base default
-  const [amt, setAmt]       = useState(10);
+  const [amtStr, setAmtStr] = useState("10");
+  const amt = parseFloat(amtStr) || 0;
   const [state, setState]   = useState("idle"); // idle|quoting|approving|bridging|depositing|ok
   const [step, setStep]     = useState("");
   const [quote, setQuote]   = useState(null);
@@ -778,7 +779,9 @@ function WebModalDeposit({ lang, onClose }) {
   const isCross   = !chain.native;
   const balance   = !isCross && wallet.usdcBalance > 0n ? Number(formatUnits(wallet.usdcBalance, 6)) : 0;
   const maxVal    = Math.floor(balance * 100) / 100; // clean 2-dp max (no dust overflow)
-  const quick     = [10, 50, 100];
+  const pctAmt    = (p) => Math.floor(balance * p) / 100; // p = percent of balance, 2-dp floor
+  const pcts      = [25, 50, 75];     // Base: % of balance
+  const quick     = [10, 50, 100];    // cross-chain: fixed amounts (balance unknown here)
   const est       = isCross && quote ? quoteEstimate(quote) : null;
   const busy      = ["approving", "bridging", "depositing"].includes(state);
 
@@ -897,16 +900,30 @@ function WebModalDeposit({ lang, onClose }) {
       <div className="card card-sage" style={{ padding: "16px 20px", marginBottom: 14 }}>
         <div className="row aic" style={{ justifyContent: "center", gap: 8 }}>
           <input className="amount-input" style={{ width: "auto", maxWidth: 160, fontSize: 42 }}
-            value={amt === 0 ? "" : amt} placeholder="0" disabled={busy}
-            onChange={(e) => { const v = +e.target.value.replace(/\D/g, "") || 0; setAmt(!isCross && balance > 0 ? Math.min(balance, v) : v); }}
-            inputMode="numeric" />
+            value={amtStr} placeholder="0" disabled={busy}
+            onChange={(e) => {
+              // keep digits + a single decimal point, cap at 6 dp (USDC precision)
+              let v = e.target.value.replace(/[^0-9.]/g, "");
+              const parts = v.split(".");
+              v = parts.length > 1 ? parts[0] + "." + parts.slice(1).join("").slice(0, 6) : parts[0];
+              setAmtStr(v);
+            }}
+            onBlur={() => { if (!isCross && balance > 0 && amt > maxVal) setAmtStr(String(maxVal)); }}
+            inputMode="decimal" />
           <span className="head" style={{ fontSize: 20, color: "var(--ink-45)" }}>{chain.symbol}</span>
         </div>
         <div className="row gap-8" style={{ justifyContent: "center", marginTop: 10 }}>
-          {quick.map((q) => (
-            <button key={q} disabled={busy} className={"chip" + (amt === q ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmt(q)}>{q}</button>
-          ))}
-          {!isCross && <button disabled={busy} className={"chip" + (amt === maxVal ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmt(maxVal)}>Max</button>}
+          {isCross
+            ? quick.map((q) => (
+                <button key={q} disabled={busy} className={"chip" + (amt === q ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmtStr(String(q))}>{q}</button>
+              ))
+            : pcts.map((p) => {
+                const val = pctAmt(p);
+                return (
+                  <button key={p} disabled={busy || balance <= 0} className={"chip" + (val > 0 && amt === val ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmtStr(String(val))}>{p}%</button>
+                );
+              })}
+          {!isCross && <button disabled={busy || balance <= 0} className={"chip" + (maxVal > 0 && amt === maxVal ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmtStr(String(maxVal))}>Max</button>}
         </div>
         {!isCross && (
           <div className="muted tiny center" style={{ marginTop: 8 }}>
