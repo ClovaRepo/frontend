@@ -2,7 +2,7 @@
 
 ## Core Philosophy
 
-> "Safe not because you trust the AI, but because the code makes it impossible."
+> "Safe not because you trust the AI, but because its reach is bounded and revocable on-chain."
 
 Security in Clova is enforced at **multiple independent layers**. No single point of failure can result in user fund loss.
 
@@ -10,7 +10,7 @@ Security in Clova is enforced at **multiple independent layers**. No single poin
 
 ## Three On-Chain Invariants
 
-### I1 — Agent Cannot Touch Principal
+### I1 — Principal Guarded On-Chain
 
 ```solidity
 function depositYield(address user, uint256 amount) external onlyAgent {
@@ -32,7 +32,7 @@ Even if:
 - Venice AI is hacked and returns malicious instructions
 - The backend is fully controlled by an attacker
 
-...the smart contract will **revert** any attempt to sweep more than `aTokenBalance − principalBaseline`. Principal is mathematically unreachable.
+...the smart contract will **revert and refund** any yield deposit that would leave a user below `principalBaseline`. Combined with the 5 USDC delegation ceiling, the agent's reach into user funds is bounded to single-digit dollars — fully on-chain.
 
 ### I2 — Funds Only Exit to Winner or Treasury
 
@@ -53,32 +53,80 @@ The AI cannot route funds to a protocol it invented. Venice can only recommend p
 
 ---
 
-## ERC-7710 Delegation Bounds
+## Delegation Security Model
 
-User's signed delegation explicitly constrains what the agent can call:
+### Two-Layer Protection — Yield Sweep
 
-```typescript
-caveats: [
-  caveat("allowedTargets", [
-    AAVE_POOL,
-    COMPOUND_COMET,
-    MOONWELL_MUSDC,
-    PRIZE_POOL,
-    USDC_ADDRESS,  // for transfer to agent in Compound/Moonwell flow
-  ]),
-  caveat("allowedMethods", [
-    "supply(address,uint256,address,uint16)",
-    "withdraw(address,uint256,address)",
-    "withdraw(address,uint256)",
-    "redeemUnderlying(uint256)",
-    "transfer(address,uint256)",
-  ]),
-]
+User principal is protected by two independent layers. If either is bypassed, the other still enforces:
+
+**Layer 1 — MetaMask ERC-7715 (delegation ceiling)**
+
+User signs an `erc20-token-allowance` permission via MetaMask's `requestExecutionPermissions`. The ceiling is **5 USDC fixed** — MetaMask's enforcer rejects any transfer above this amount, regardless of how much aUSDC the user holds.
+
+This ceiling is the agent's entire blast radius. No matter how large a user's deposit, a single permission can never move more than 5 USDC of aUSDC — enforced on-chain by MetaMask's DelegationManager, not by trust or policy. The permission is revocable in one click. (ERC-7715 enforces an *amount* cap, not a yield-only rule by itself — the precise yield-only bound is the job of Layer 2 below, and of the planned `YieldSweeper`.)
+
+**Layer 2 — Contract-level guard (on-chain)**
+
+`depositYield()` reads the live aToken balance after the agent's withdrawal and reverts if principal was touched:
+
+```solidity
+uint256 remaining = yieldAdapter.valueOf(user); // live aToken balance after withdrawal
+if (remaining < baseline) {
+    usdc.safeTransfer(msg.sender, amount); // refund
+    revert AgentCannotTouchPrincipal(amount, remaining, baseline);
+}
 ```
 
-The delegation enforcer (MetaMask DelegationManager) rejects any transaction that calls a method or target not in these caveats. **On-chain enforcement, not just policy.**
+Layer 2 is the on-chain backstop: on every sweep the pool re-reads the user's live Aave balance and refuses to record any yield deposit that would leave them below their recorded principal — the funds are refunded and the transaction reverts. Combined with the small Layer 1 ceiling, the agent's room to misbehave is bounded to single-digit dollars, fully on-chain and revocable. The agent is powerful, but it is not privileged.
 
 Users can revoke at any time via the "Cabut Izin" button → agent immediately loses all access.
+
+> **Roadmap:** A future `YieldSweeper` contract will make the principal guard even tighter by enforcing the yield-only rule atomically at the contract level, removing the need for a static ceiling entirely. See [Phase 2 Roadmap](./phase2.md).
+
+---
+
+## Agent Self-Payment — x402 + ERC-7710
+
+The agent funds its own Venice AI usage with no human in the loop, via two complementary mechanisms:
+
+- **x402 (HTTP 402 micropayments)** — when Venice requires payment, the agent settles per call over the x402 protocol. The agent literally pays for its own intelligence.
+- **Bounded ERC-7710 treasury delegation** — a treasury delegation signed off-line with a private key (not the browser) gives the agent a *capped* operational budget it can draw from autonomously:
+
+```
+Treasury wallet (private key — backend, not browser)
+  → signDelegation (EIP-712)
+  → scope: Erc20TransferAmount
+  → token: USDC
+  → maxAmount: 5 USDC
+  → redeemed by agent via DelegationManager.redeemDelegations
+```
+
+The on-chain enforcer caps exposure at 5 USDC per signing — even if the agent server were fully compromised, the treasury cannot be drained beyond that bound. The agent holds no unlimited spending key.
+
+Together these satisfy the **x402 + ERC-7710** track: the agent pays for itself (x402) inside a cryptographically bounded budget (ERC-7710), with zero user interaction.
+
+---
+
+## Phase 2 — YieldSweeper Contract
+
+The fundamental limitation of yield sweep via delegation is that the ceiling is **static** (set at signing time), while yield is **dynamic** (accumulates every second). A 5 USDC ceiling is a safe approximation, but not a mathematically precise yield-only bound.
+
+**Planned fix (post-hackathon):**
+
+Deploy a `YieldSweeper` contract — same pattern as `RotationHelper`:
+
+```
+User approves: aUSDC.approve(yieldSweeper, type(uint256).max)  (one-time)
+
+Agent calls:   yieldSweeper.sweep(user)
+  → reads principalBaseline[user] from ClovaSavingsPool (live, on-chain)
+  → reads aUSDC.balanceOf(user)
+  → computes yield = balance - baseline
+  → transfers ONLY yield to prize pool
+  → reverts if balance < baseline (atomic — user keeps everything on failure)
+```
+
+This makes the principal guard move from the pool contract to the sweep contract itself, and removes the need for a delegation ceiling entirely. The agent's approval is controlled by the `onlyRole(AGENT_ROLE)` modifier on YieldSweeper.
 
 ---
 
@@ -128,11 +176,18 @@ AI recommendations are validated before execution:
 
 ---
 
+## Operational Key Security
+
+Treasury and agent keys are held server-side. The treasury ERC-7710 delegation limits what the agent can do with treasury funds to a maximum of 5 USDC per signing, enforced on-chain by MetaMask's `Erc20TransferAmountEnforcer` — even if the server is fully compromised, the treasury cannot be drained beyond that bound. The agent key controls only AGENT_ROLE on the pool contract: it can trigger sweeps and draws, but cannot modify the whitelist, change fee parameters, or move principal.
+
+---
+
 ## Threat Model
 
 | Threat | Impact | Mitigation |
 |---|---|---|
-| Agent wallet compromised | Could trigger early draw, spam sweep | Rate limits, I1 prevents principal loss, draw just picks winner early |
+| Agent wallet compromised | Could trigger early draw, spam sweep | Rate limits, I1 on-chain guard, draw just picks winner early |
+| Treasury key compromised | Treasury funds at risk | ERC-7710 delegation caps exposure to 5 USDC per signing |
 | Venice AI returns malicious recommendation | Tries to move to rogue protocol | I3 whitelist, guardrails block, on-chain protocol approval |
 | Backend database wiped | Delegations lost, agent can't sweep | Users can re-sign delegations, principal still safe in Aave |
 | Aave exploit | User principal at risk | Not in Clova's control — whitelist + TVL guardrail halts agent |

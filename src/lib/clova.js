@@ -55,6 +55,14 @@ export const ROTATION_HELPER_ADDRESS = (
 // 1Shot relayer target wallet — delegation delegate MUST be this address for 1Shot to execute
 export const ONESHOT_TARGET = "0x26a529124f0bbf9af9d8f9f84a43efe47cf1199a";
 
+// YieldOnlyCaveatEnforcer — on-chain gate that prevents any call except
+// aUSDC.transfer(agent, amount) where amount ≤ (aUSDC balance − principal baseline).
+// Deployed on Base mainnet only (testnet = zero address → use testnet-only delegation flow).
+export const YIELD_ONLY_ENFORCER = (
+  process.env.NEXT_PUBLIC_YIELD_ONLY_ENFORCER ||
+  (IS_MAINNET ? "0xF4244fA95B97E1E7936B99bF766C43Af6CE725e7" : "0x0000000000000000000000000000000000000000")
+);
+
 export const BACKEND_URL = (
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
 );

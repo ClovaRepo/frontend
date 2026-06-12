@@ -46,7 +46,10 @@ export function WalletProvider({ children }) {
   const [usdcBalance, setUsdcBalance]     = useState(0n);
 
   const publicClient = useRef(
-    createPublicClient({ chain: ACTIVE_CHAIN, transport: http(process.env.NEXT_PUBLIC_BASE_RPC_URL || ACTIVE_CHAIN.rpcUrls.default.http[0]) })
+    createPublicClient({
+      chain: ACTIVE_CHAIN,
+      transport: http(process.env.NEXT_PUBLIC_BASE_RPC_URL || ACTIVE_CHAIN.rpcUrls.default.http[0], { batch: true }),
+    })
   ).current;
 
   // Sync when MetaMask account/disconnect changes externally
@@ -150,95 +153,61 @@ export function WalletProvider({ children }) {
     return null;
   }, [account, publicClient]);
 
-  // ── OB4: Request permissions via ERC-7715 (MetaMask Smart Accounts Kit) ──
+  // ── OB4: Create ERC-7710 delegation via MetaMask ERC-7715 flow ────────────
   //
-  // Requests 2 permissions:
-  //   1. aUSDC (Aave) — yield sweep when on Aave, and full-balance pull for rotation
-  //   2. mUSDC (Moonwell) — yield sweep when on Moonwell (only on mainnet where Moonwell exists)
+  // MetaMask memblokir eth_signTypedData_v4 untuk delegation struct pada internal accounts.
+  // Wajib pakai wallet_requestExecutionPermissions (ERC-7715) untuk browser extension.
+  // MetaMask menampilkan permission UI yang jelas, lalu mengembalikan permissionContext + delegationManager.
   //
-  // 1Shot relay fee is paid by the agent from its own USDC (agent is EIP-7702 upgraded).
-  // Requires MetaMask >= v13.23.0 (or Flask >= v13.5.0) for erc20-token-periodic.
+  // Proteksi principal tetap berlapis:
+  //   1. erc20-token-allowance — MetaMask enforcer membatasi total aUSDC yang bisa ditransfer
+  //   2. Backend — hanya sweep yield (currentBalance - baseline), tidak menyentuh modal
+  //   3. Pool contract depositYield — validasi on-chain bahwa principal masih utuh
   const signAndStoreDelegation = useCallback(async () => {
     if (!account) throw new Error("Connect wallet first");
 
-    const walletClient = createWalletClient({
+    await switchToActiveChain();
+
+    const extendedWalletClient = createWalletClient({
+      chain: ACTIVE_CHAIN,
       transport: custom(window.ethereum),
     }).extend(erc7715ProviderActions());
 
-    const expiry = Math.floor(Date.now() / 1000) + 86400 * 30; // 30 days
+    // Ceiling tetap 5 USDC regardless of principal size.
+    // Alasan: MetaMask browser (ERC-7715) tidak support custom caveats seperti allowedTargets/yieldOnly.
+    // Satu-satunya pembatas di layer delegasi adalah amount ceiling.
+    // 5 USDC = cukup untuk akumulasi yield beberapa ronde, tapi jauh di bawah principal manapun.
+    // Perlindungan yield-only yang sesungguhnya ada di contract depositYield (cek on-chain).
+    const allowanceCeiling = parseUnits("5", 6); // 5 USDC fixed ceiling
 
-    // Permission 1: aUSDC — Aave yield sweep + rotation pull (needs full principal coverage)
-    const aavePermission = {
+    const permissions = await extendedWalletClient.requestExecutionPermissions([{
       chainId: CHAIN_ID,
-      expiry,
       to: ONESHOT_TARGET,
       permission: {
-        type: "erc20-token-periodic",
-        isAdjustmentAllowed: false,
+        type: "erc20-token-allowance",
         data: {
           tokenAddress: AUSDC_ADDRESS,
-          periodAmount: parseUnits("10000", 6),
-          periodDuration: 604800,
-          justification: "CLOVA agent sweeps aUSDC yield dan pull untuk rotasi protokol (≤10,000/week)",
+          allowanceAmount: allowanceCeiling,
+          justification: "CLOVA yield sweep — max 5 USDC per permission, principal protected by contract",
         },
+        isAdjustmentAllowed: false,
       },
-    };
+    }]);
 
-    // Request aUSDC permission (popup 1)
-    let grantedAave;
-    try {
-      grantedAave = await walletClient.requestExecutionPermissions([aavePermission]);
-    } catch (err) {
-      if (err.code === -32601 || err.code === 4200) {
-        throw new Error("MetaMask versi terlalu lama. Upgrade ke MetaMask ≥ v13.23.0 atau gunakan MetaMask Flask ≥ v13.5.0.");
-      }
-      throw err;
+    if (!permissions || permissions.length === 0) {
+      throw new Error("MetaMask tidak memberikan izin");
     }
 
-    const { context: permissionContext, delegationManager } = grantedAave[0];
-
-    // Request mUSDC permission (popup 2) — terpisah karena MetaMask tidak support batch
-    // Moonwell hanya tersedia di mainnet; skip di testnet
-    let mUsdcPermissionContext;
-    if (MOONWELL_MUSDC_ADDRESS !== "0x0000000000000000000000000000000000000000") {
-      try {
-        const moonwellPermission = {
-          chainId: CHAIN_ID,
-          expiry,
-          to: ONESHOT_TARGET,
-          permission: {
-            type: "erc20-token-periodic",
-            isAdjustmentAllowed: false,
-            data: {
-              tokenAddress: MOONWELL_MUSDC_ADDRESS,
-              periodAmount: parseUnits("200", 6),
-              periodDuration: 604800,
-              justification: "CLOVA agent sweeps mUSDC yield (≤200/week) saat aktif di Moonwell",
-            },
-          },
-        };
-        const grantedMoonwell = await walletClient.requestExecutionPermissions([moonwellPermission]);
-        mUsdcPermissionContext = grantedMoonwell[0]?.context;
-        console.log("[delegation] mUsdcPermissionContext:", mUsdcPermissionContext ? "✅ ada" : "❌ kosong");
-      } catch (err) {
-        // mUSDC permission opsional — sweep Moonwell tidak tersedia tapi rotasi tetap bisa
-        console.warn("[delegation] mUSDC permission skipped:", err.message);
-      }
-    }
+    const { context: permissionContext, delegationManager } = permissions[0];
 
     const res = await fetch(`${BACKEND_URL}/delegation`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userAddress: account,
-        permissionContext,
-        mUsdcPermissionContext,
-        delegationManager,
-      }),
+      body: JSON.stringify({ userAddress: account, permissionContext, delegationManager }),
     });
     if (!res.ok) throw new Error(`Failed to store delegation: ${await res.text()}`);
     setHasDelegation(true);
-    return { permissionContext, mUsdcPermissionContext, delegationManager };
+    return { permissionContext, delegationManager };
   }, [account]);
 
   // ── Helper: re-authorize + create walletClient ───────────────────────────

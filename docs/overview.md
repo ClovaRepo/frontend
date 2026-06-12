@@ -2,13 +2,13 @@
 
 ## What is Clova?
 
-**Clova** is a no-loss prize-linked savings application on Base, built around one core insight: *an AI agent that cannot steal from you is more powerful than one you merely trust not to.*
+**Clova** is a no-loss prize-linked savings application on Base, built around one core insight: *an AI agent whose reach is bounded on-chain is more powerful than one you merely trust not to misbehave.*
 
 A group of people deposit USDC. Their principal **never leaves their own smart account**. An AI agent (Venice) monitors DeFi protocols daily using live web search, rotates funds to the healthiest option within strict on-chain bounds, and sweeps accumulated yield into a shared prize pool. Every week, a provably fair draw picks a winner proportional to deposit size. Non-winners keep 100% of their principal. The agent is self-funded via x402 micropayments.
 
-> *"Save, never lose your principal, win the combined yield of everyone — managed by AI that is technically impossible to steal from you."*
+> *"Save, never lose your principal, win the combined yield of everyone — managed by an AI whose access to your funds is capped on-chain and revocable in one click."*
 
-**The key distinction:** CLOVA's security is not a policy or a promise. It is a mathematical constraint enforced by the EVM. The agent holds a bounded ERC-7710 delegation. The smart contract enforces `aTokenBalance ≥ principalBaseline` before accepting any yield deposit. If the agent is compromised and tries to sweep principal, the contract reverts and refunds. The user loses nothing.
+**The key distinction:** CLOVA's security is not a policy or a promise — it is a bounded permission enforced by the EVM. The agent holds a delegation capped at 5 USDC per signing, and the pool contract enforces `aTokenBalance ≥ principalBaseline` before accepting any yield deposit, reverting and refunding otherwise. Even a fully compromised agent can move at most 5 USDC of a user's funds — a fraction of any real deposit — and the user can revoke instantly.
 
 ---
 
@@ -17,13 +17,13 @@ A group of people deposit USDC. Their principal **never leaves their own smart a
 ### Problem 1 — People Fear Giving AI Access to Their Money
 
 Current AI agent frameworks require users to trust that the AI will not misbehave. There is no standard way to grant an AI agent:
-- **Bounded** permissions (only yield, never principal)
+- **Bounded** permissions (capped reach, principal guarded on-chain)
 - **Auditable** permissions (logged on-chain)
 - **Revokable** permissions (exit anytime, instantly effective)
 
 Without these, users rationally refuse to let AI touch their funds. The result: AI agents in DeFi are either custodial (platform holds your money) or theoretical.
 
-**Clova's answer:** ERC-7710 delegation with on-chain enforced caveats. The agent's permission is not a promise — it is a mathematical constraint enforced by the smart contract.
+**Clova's answer:** a bounded ERC-7715/7710 delegation plus on-chain contract guards. The agent's permission is not a promise — it is an amount-capped, revocable constraint enforced by MetaMask's DelegationManager and the pool contract.
 
 ### Problem 2 — DeFi Yield Management is Complex and Time-Consuming
 
@@ -126,23 +126,22 @@ Bigger deposits contribute more yield to the prize pool, so they deserve proport
 
 ### Layer 4 — Self-Funded Agent (x402 + ERC-7710)
 
-The agent pays for every Venice API call using **x402 micropayments**, funded by a **bounded ERC-7710 treasury delegation**:
+The agent monitors Venice credit balance after every AI call. When credits run low, it automatically tops up using **x402**:
 
 ```
-Agent → POST /x402/venice (no payment header)
-      ← 402 Payment Required (0.001 USDC)
-Agent → redeemDelegations(treasuryDelegation, USDC.transfer(venice, 0.001))
-      → DelegationManager enforces caveats on-chain:
-        ✓ Only USDC contract (not ETH, not other tokens)
-        ✓ Max 5 USDC total (ERC20TransferAmountEnforcer)
-      → USDC flows from TREASURY to Venice — not from agent wallet
-Agent → POST /x402/venice (X-PAYMENT header with delegation redemption proof)
-      ← Venice AI response
+Agent detects low Venice credits
+      → POST /api/v1/x402/top-up (no payment)
+      ← 402 Payment Required (5 USDC, EIP-155:8453)
+Agent signs ERC-3009 TransferWithAuthorization from treasury wallet
+      → POST /api/v1/x402/top-up (X-PAYMENT header with signed authorization)
+      ← Venice verifies on-chain → executes transfer → credits added
 ```
 
-The treasury signed a bounded ERC-7710 delegation to the agent. Even if the agent is compromised, it can only transfer max 5 USDC total to Venice — enforced on-chain by MetaMask's DelegationManager contract, not by the agent's own code.
+The treasury wallet is connected to the Venice account — every top-up is attributed to the correct account automatically. Venice verifies the authorization before executing the transfer, so no USDC is lost if the request fails.
 
-This is the first production example of **x402 + ERC-7710 combined**: an AI agent that autonomously pays for its own intelligence using a delegated, on-chain-bounded micropayment mechanism.
+**ERC-7710** handles yield sweep and protocol rotation: every agent action on user funds goes through bounded user delegations enforced by MetaMask's DelegationManager. The agent's reach is capped at 5 USDC per permission, and the pool contract rejects any sweep that would dip into principal.
+
+Together: x402 keeps the agent funded autonomously, ERC-7710 keeps the agent's permissions cryptographically bounded.
 
 ---
 
@@ -207,9 +206,11 @@ All user-facing on-chain execution goes through 1Shot. The agent uses 1Shot's `r
 Demo moment: sweep cycle runs → one 1Shot transaction covers all users → webhook confirms.
 
 ### x402 + ERC-7710
-The agent pays Venice per API call via x402, funded by a bounded ERC-7710 treasury delegation. The treasury signed a delegation to the agent: "transfer USDC, max 5 USDC total, only to Venice." Every Venice call triggers HTTP 402 → agent redeems treasury delegation → USDC flows from treasury to Venice → Venice responds. Two technologies, one mechanism: x402 handles the payment protocol, ERC-7710 enforces the spending bounds on-chain.
+**x402**: when Venice credits drop below threshold, agent auto-tops up — treasury wallet signs ERC-3009 authorization, Venice verifies and adds credits. No manual top-up needed, no USDC lost on failure.
 
-Demo moment: x402 payment panel shows on-chain USDC transfers to Venice facilitator — agent funded itself.
+**ERC-7710**: all yield sweep and rotation actions go through user delegations enforced by MetaMask's DelegationManager. Agent permissions are cryptographically bounded — no principal can be touched.
+
+Demo moment: backend log shows auto top-up triggered → Venice credits increase → agent continues operating autonomously.
 
 ---
 

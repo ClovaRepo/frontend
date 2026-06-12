@@ -151,10 +151,10 @@ User opens Clova
     │       walletClient.signAuthorization({ contractAddress: EIP7702_IMPL })
     │       MetaMask signs 7702 authorization → agent EOA becomes smart account
     │
-    ├─▶ Sign Delegation (ERC-7710)
-    │       erc7715ProviderActions → wallet_grantPermissions
-    │       Caveat: allowedTargets [AAVE_POOL, COMPOUND_COMET, MOONWELL, PRIZE_POOL]
-    │       Caveat: allowedMethods [supply, withdraw, transfer, depositYield]
+    ├─▶ Sign Delegation (ERC-7715)
+    │       erc7715ProviderActions → requestExecutionPermissions
+    │       Permission: erc20-token-allowance on aUSDC, 5 USDC ceiling
+    │       Delegate: 1Shot relayer · principal guarded on-chain by depositYield()
     │       → permissionContext stored in backend via POST /delegation
     │
     ├─▶ Approve tokens (one-time setup)

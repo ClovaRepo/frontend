@@ -117,7 +117,7 @@ function PrizePool({ lang, go, big, currentRound = 1, poolYieldUsdc = 0, partici
         <span className="badge badge-win"><Icon.trophy size={13} stroke="var(--gold-deep)" /> {L(lang, { id: `Kolam Hadiah · Ronde #${currentRound}`, en: `Prize Pool · Round #${currentRound}` })}</span>
         <Icon.chevron size={18} stroke="var(--gold-deep)" />
       </div>
-      <div className="head tnum" style={{ fontSize: big ? 40 : 34, color: "var(--gold-deep)" }}><CountUp value={poolYieldUsdc} dec={2} /> <span style={{ fontSize: big ? 20 : 18 }}>USDC</span></div>
+      <div className="head tnum" style={{ fontSize: big ? 40 : 34, color: "var(--gold-deep)" }}><CountUp value={poolYieldUsdc} dec={6} /> <span style={{ fontSize: big ? 20 : 18 }}>USDC</span></div>
       <div className="muted tiny" style={{ marginTop: 2, marginBottom: 12 }}>{L(lang, { id: `${participantCount} penanam ikut`, en: `${participantCount} planters in` })}</div>
       <CountdownArc pct={0.68} gold size={170}
         label={L(lang, { id: "11j 24m", en: "11h 24m" })}
@@ -218,7 +218,7 @@ function ScreenDashboard({ lang, go, t, openModal }) {
       } catch (_) {}
     };
     load();
-    const id = setInterval(load, 30000); // refresh every 30s
+    const id = setInterval(load, 60000); // refresh every 60s
     return () => { alive = false; clearInterval(id); };
   }, [wallet.account]);
 
@@ -280,7 +280,7 @@ function ScreenDashboard({ lang, go, t, openModal }) {
             <div className="row gap-12" style={{ alignItems: "stretch" }}>
               <div className="reveal card card-lift" {...clickable(() => go("detailRonde"))} aria-label={L(lang, { id: "Buka Kolam Hadiah", en: "Open Prize Pool" })} style={{ ...stagger(1), flex: 1, cursor: "pointer", background: "linear-gradient(160deg, color-mix(in srgb,var(--gold) 13%, var(--canvas-2)), var(--canvas-2))" }}>
                 <span className="badge badge-win" style={{ marginBottom: 8 }}><Icon.trophy size={12} stroke="var(--gold-deep)" /> {L(lang, { id: `Kolam #${round}`, en: `Pool #${round}` })}</span>
-                <div className="head tnum" style={{ fontSize: 26, color: "var(--gold-deep)" }}><CountUp value={poolYield} dec={2} /></div>
+                <div className="head tnum" style={{ fontSize: 26, color: "var(--gold-deep)" }}><CountUp value={poolYield} dec={6} /></div>
                 <div className="muted tiny">USDC · {participants} {L(lang, { id: "penanam", en: "planters" })}</div>
               </div>
               <div className="reveal card card-lift" style={{ ...stagger(2), flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>

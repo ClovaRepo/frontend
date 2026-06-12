@@ -49,35 +49,33 @@ This is the main delegation. Every user who joins Clova signs exactly one delega
 
 ### What it grants
 
+In the browser, MetaMask issues this delegation through the **ERC-7715** flow (`requestExecutionPermissions`). ERC-7715 supports amount-bounded token permissions — not arbitrary custom caveats — so the user delegation is a single capped allowance:
+
 ```typescript
-createDelegation({
-  from: userSmartAccount.address,   // delegator: the user
-  to:   AGENT_ADDRESS,              // delegate: the AI agent
-  caveats: [
-    caveat("allowedTargets", [
-      AAVE_POOL,       // Aave v3 Pool on Base
-      COMPOUND_COMET,  // Compound v3 Comet on Base
-      MOONWELL_MUSDC,  // Moonwell mUSDC on Base
-      PRIZE_POOL,      // ClovaSavingsPool contract
-      USDC_ADDRESS,    // USDC token (for transfer step in Compound/Moonwell)
-    ]),
-    caveat("allowedMethods", [
-      "supply(address,uint256,address,uint16)",   // Aave supply
-      "withdraw(address,uint256,address)",         // Aave withdraw
-      "withdraw(address,uint256)",                 // Compound withdraw
-      "redeemUnderlying(uint256)",                 // Moonwell redeem
-      "transfer(address,uint256)",                 // USDC transfer to agent
-    ]),
-  ],
-})
+extendedWalletClient.requestExecutionPermissions([{
+  chainId: CHAIN_ID,
+  to: ONESHOT_TARGET,                    // delegate: the 1Shot relayer
+  permission: {
+    type: "erc20-token-allowance",       // MetaMask built-in enforcer (amount cap)
+    data: {
+      tokenAddress: AUSDC_ADDRESS,       // aUSDC (Aave interest-bearing USDC)
+      allowanceAmount: parseUnits("5", 6), // 5 USDC ceiling — fixed, regardless of deposit size
+      justification: "CLOVA yield sweep — max 5 USDC per permission, principal protected by contract",
+    },
+    isAdjustmentAllowed: false,
+  },
+}])
 ```
 
-### What it does NOT grant
+### What it grants — and what it does NOT
 
-- Cannot call any contract outside the whitelist (no arbitrary targets)
-- Cannot call any method outside the list (no `transfer` to random addresses)
-- Cannot touch principal — enforced by an additional on-chain check in `depositYield()`
-- Cannot be used after revocation
+| The agent CAN | The agent CANNOT |
+|---|---|
+| Transfer aUSDC up to a **5 USDC** ceiling, via the 1Shot relayer | Move more than 5 USDC per permission (MetaMask enforces the cap) |
+| Trigger yield sweeps and rotations | Reduce principal — the pool's `depositYield()` reverts any deposit leaving balance < baseline |
+| — | Be used after revocation (one click, instant) |
+
+> **Honest note on scope.** ERC-7715 in the browser only supports *amount-capped* token permissions — it cannot attach a target/method whitelist or a custom yield-only enforcer to the user delegation. The yield-only guarantee therefore lives in **two on-chain layers**: the 5 USDC ceiling (caps blast radius) and the pool's `depositYield()` check (rejects principal-reducing deposits). A future `YieldSweeper` contract (see [Phase 2](./phase2.md)) will enforce the exact `balance − baseline` bound atomically, removing the static ceiling. The custom `YieldOnlyCaveatEnforcer` is already written and tested (20+ tests) for that path.
 
 ### How the user signs it (Frontend Flow)
 
@@ -101,28 +99,23 @@ The user never signs a raw transaction for sweep/rotation. They sign **once**, a
 A separate, more restricted delegation covers the agent's self-funding via x402.
 
 ```typescript
+// Signed off-line with the treasury private key (not the browser),
+// so it can use the toolkit's full createDelegation + signDelegation path.
 createDelegation({
   from: TREASURY_ADDRESS,           // delegator: protocol treasury
   to:   AGENT_ADDRESS,              // delegate: AI agent
-  caveats: [
-    caveat("allowedTargets", [
-      X402_FACILITATOR_ADDRESS,     // only the Venice payment facilitator
-    ]),
-    caveat("allowedMethods", [
-      "transfer(address,uint256)",  // USDC transfer only
-    ]),
-    caveat("erc20TransferAmount", {
-      token: USDC_ADDRESS,
-      maxAmount: DAILY_LIMIT,       // e.g., 1 USDC per day maximum
-    }),
-  ],
+  scope: {
+    type: "Erc20TransferAmount",    // amount-scoped delegation
+    tokenAddress: USDC_ADDRESS,     // USDC only
+    maxAmount: parseUnits("5", 6),  // 5 USDC cap per signing
+  },
 })
 ```
 
-This delegation allows the agent to pay for Venice API calls, but:
-- Only to the x402 facilitator address — not to any arbitrary address
-- Only USDC transfer — cannot call any other function
-- Capped at a daily limit — cannot drain the treasury
+This delegation lets the agent fund its own Venice usage (x402), but:
+- Only USDC, amount-capped at **5 USDC per signing** — cannot drain the treasury
+- Redeemed by the agent via `DelegationManager.redeemDelegations`
+- Exposure is bounded on-chain even if the agent server is fully compromised
 
 ---
 
@@ -181,21 +174,20 @@ await rpc("relayer_send7710Transaction", [{
 ### What happens on-chain
 
 ```
-1. 1Shot relayer submits transaction
-2. DelegationManager.redeemDelegation() verifies:
-   - Signature is valid (user signed this)
-   - Target (Aave Pool) is in allowedTargets
-   - Method (withdraw) is in allowedMethods
-   → If any check fails: REVERT
-3. If all checks pass: executes withdraw(USDC, yield, agentAddress)
-4. USDC arrives in agent wallet
+1. 1Shot relayer submits the transaction (gas paid in USDC)
+2. DelegationManager verifies the ERC-7715 permission:
+   - Signature is valid (user signed this permission)
+   - Transfer amount ≤ the 5 USDC aUSDC allowance ceiling
+   → If the amount exceeds the ceiling: REVERT
+3. If valid: executes aUSDC.transfer(agent, yieldAmount)
+4. Agent redeems aUSDC → USDC via Aave.withdraw(USDC, yield, agent)
 5. Agent calls pool.depositYield(user, amount)
 6. Pool contract checks: aToken balance − baseline ≥ 0
-   → If principal touched: REVERT
+   → If principal would be reduced: REVERT + refund
    → If yield only: roundYieldPool += amount
 ```
 
-The agent never "has" the user's funds in the sense of owning them — the withdrawal target is always either the agent (for yield handoff) or the user themselves (emergency exit). The agent cannot redirect the withdrawal to any other address.
+The agent's reach is bounded twice: the delegation caps how much aUSDC can move (5 USDC), and the pool's `depositYield()` guard refuses any deposit that would leave the user below their principal. Worst case, a fully compromised agent moves at most 5 USDC of a user's funds.
 
 ---
 
@@ -211,7 +203,7 @@ Different protocols return withdrawn tokens differently during sweep:
 | **Compound** | `withdraw(asset, amount)` — sends to `msg.sender` (user's wallet) | 2 executions: withdraw + `usdc.transfer(agent, amount)` |
 | **Moonwell** | `redeemUnderlying(amount)` — sends to `msg.sender` (user's wallet) | 2 executions: redeem + `usdc.transfer(agent, amount)` |
 
-For Compound and Moonwell, the second execution (transfer to agent) is also within the delegation's `allowedMethods` — `transfer(address,uint256)` is listed as allowed, but the caveat on `allowedTargets` limits it to the USDC contract only. The agent cannot redirect these transfers.
+For Compound and Moonwell, the sweep moves the protocol's receipt token (e.g. mUSDC) to the agent within the same 5 USDC allowance ceiling; the agent then redeems it to USDC before depositing. The delegation caps the amount, and the pool's `depositYield()` guard rejects any principal-reducing deposit.
 
 ### Protocol Rotation (via RotationHelper — Atomic)
 

@@ -140,11 +140,11 @@ Changes active yield adapter. Only callable by `AGENT_ROLE`. Adapter must be pre
 
 Three hard invariants enforced entirely on-chain:
 
-### I1 — Agent Cannot Touch Principal
+### I1 — Principal Guarded On-Chain
 ```
 After yield sweep: aToken balance of user ≥ principalBaseline[user]
 ```
-Enforced in `depositYield()`. If violated → revert + refund. No exceptions.
+Enforced in `depositYield()`. If violated → revert + refund. No exceptions. Paired with the 5 USDC delegation ceiling, the agent's reach into user funds is bounded to single-digit dollars.
 
 ### I2 — Funds Only Exit to Winner or Treasury
 ```

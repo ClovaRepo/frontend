@@ -363,21 +363,21 @@ function ScreenOB4({ lang, go, t }) {
       <Reveal>
         <h1 style={{ fontSize: 26, marginBottom: 8 }}>{L(lang, { id: "Beri izin terbatas ke pemelihara AI", en: "Grant the AI tender limited permission" })}</h1>
         <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.55, marginBottom: 20 }}>
-          {L(lang, { id: "Kamu menandatangani SATU izin berpagar. Pagar ini dipaksakan oleh kode di blockchain, bukan janji. Pelanggaran otomatis DITOLAK.",
-                     en: "You sign ONE fenced permission. The fence is enforced by on-chain code, not a promise. Any violation is automatically REJECTED." })}
+          {L(lang, { id: "Kamu menandatangani SATU izin berpagar. Batas ditegakkan dua lapis: MetaMask membatasi jumlah, kontrak on-chain menolak jika modal disentuh.",
+                     en: "You sign ONE fenced permission. Protection is two-layered: MetaMask caps the amount, the on-chain contract rejects if principal is touched." })}
         </p>
       </Reveal>
 
       <Reveal delay={80} className="row gap-10" style={{ alignItems: "stretch", marginBottom: 16 }}>
         <PermitCol tone="ok" title={L(lang, { id: "AI BOLEH", en: "AI MAY" })} items={[
-          L(lang, { id: "Memindahkan dana HANYA antar protokol tepercaya: Aave, Compound, Morpho, Moonwell.", en: "Move funds ONLY between trusted protocols: Aave, Compound, Morpho, Moonwell." }),
-          L(lang, { id: "Menyapu HANYA bunga (saldo − modal awal) ke Kolam Hadiah.", en: "Sweep ONLY yield (balance − baseline) into the Prize Pool." }),
+          L(lang, { id: "Menyapu bunga ke Kolam Hadiah (maks 5 USDC per izin).", en: "Sweep yield into the Prize Pool (max 5 USDC per permission)." }),
+          L(lang, { id: "Merotasi posisi antar protokol tepercaya via kontrak atomik (Aave ↔ Moonwell).", en: "Rotate position between trusted protocols via atomic contract (Aave ↔ Moonwell)." }),
           L(lang, { id: "Membayar biaya operasinya sendiri (batas harian kecil, hanya ke fasilitator resmi).", en: "Pay its own operating costs (small daily cap, official facilitator only)." }),
         ]} />
         <PermitCol tone="no" title={L(lang, { id: "AI TIDAK BISA", en: "AI CANNOT" })} items={[
-          L(lang, { id: "Menyentuh modal pokokmu.", en: "Touch your principal." }),
-          L(lang, { id: "Mengirim dana ke alamat di luar daftar putih.", en: "Send funds to any address off the whitelist." }),
-          L(lang, { id: "Mengubah daftar putih (hanya admin).", en: "Change the whitelist (admin only)." }),
+          L(lang, { id: "Mengambil lebih dari 5 USDC per izin (ditegakkan MetaMask).", en: "Take more than 5 USDC per permission (enforced by MetaMask)." }),
+          L(lang, { id: "Menyentuh modal pokok (kontrak on-chain menolak otomatis).", en: "Touch your principal (on-chain contract auto-rejects)." }),
+          L(lang, { id: "Mengubah daftar putih protokol (hanya admin).", en: "Change the protocol whitelist (admin only)." }),
           L(lang, { id: "Memilih pemenang (itu lewat undian acak/VRF).", en: "Pick the winner (that's random VRF)." }),
         ]} />
       </Reveal>
@@ -390,13 +390,14 @@ function ScreenOB4({ lang, go, t }) {
       </Reveal>
 
       <div style={{ marginBottom: 18 }}>
-        <Collapse q={L(lang, { id: "Lihat detail caveat (untuk yang penasaran)", en: "View caveat details (for the curious)" })}>
+        <Collapse q={L(lang, { id: "Lihat detail izin (untuk yang penasaran)", en: "View permission details (for the curious)" })}>
           <div className="tnum" style={{ fontFamily: "ui-monospace, monospace", fontSize: 12, lineHeight: 1.7, color: "var(--forest-70)" }}>
-            allowedTargets: [Aave, Compound, Morpho, Moonwell]<br />
-            allowedMethods: [supply, withdraw, sweepYield]<br />
-            maxSweep ≤ (balance − baseline)<br />
-            sweepDestination: PrizePool (locked)<br />
-            dailyOpsCap: small · facilitator: x402
+            type: erc20-token-allowance (MetaMask ERC-7715)<br />
+            token: aUSDC (Aave interest-bearing USDC)<br />
+            ceiling: 5 USDC per permission (MetaMask enforced)<br />
+            principal guard: depositYield() on-chain check<br />
+            rotation: RotationHelper atomic contract<br />
+            delegate: 1Shot relayer · revocable anytime
           </div>
         </Collapse>
       </div>
@@ -458,7 +459,7 @@ function ScreenOB5({ lang, go, t }) {
   // Auto-refresh balance saat layar ini aktif (user mungkin baru dapat USDC dari faucet)
   useEffect(() => {
     wallet.refreshBalance?.();
-    const id = setInterval(() => wallet.refreshBalance?.(), 5000);
+    const id = setInterval(() => wallet.refreshBalance?.(), 30000);
     return () => clearInterval(id);
   }, []);
   const grow = Math.min(1, amt / 300);

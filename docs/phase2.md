@@ -510,55 +510,55 @@ Governance token: earned by participating in the pool (not pre-mined, not sold).
 
 ### 2.11 — Venice-Driven Sweep (Intelligent Sweep Timing)
 
-**Current:** Sweep dijadwalkan oleh cron timer (misal setiap hari) — tidak peduli apakah yield sudah cukup besar atau belum.
+**Current:** Sweep is scheduled by a cron timer (e.g. daily) — regardless of whether accumulated yield is large enough to justify the gas cost.
 
-**Phase 2:** Sweep dipicu oleh Venice AI berdasarkan data yield aktual tiap user, bukan timer.
+**Phase 2:** Sweep is triggered by Venice AI based on actual per-user yield data, not a fixed timer.
 
-#### Arsitektur
+#### Architecture
 
 ```
-Scheduler (polling ringan, misal setiap jam)
+Lightweight polling scheduler (e.g. hourly)
     │
-    ├─▶ Sub-agent per user: cek yieldAdapter.valueOf(user) − principalBaseline[user]
-    │       → kumpulkan: { user, pendingYield, pendingUsd, protocol, apy }
+    ├─▶ Per-user sub-agent: read yieldAdapter.valueOf(user) − principalBaseline[user]
+    │       → collect: { user, pendingYield, pendingUsd, protocol, apy }
     │
-    ├─▶ Kirim ringkasan ke Venice AI:
-    │       "Pool memiliki 5 user. Total yield tertunda: $4.82.
-    │        User terbesar: $2.10, terkecil: $0.08.
-    │        APY aktif: 5.2%. Gas estimasi 1Shot: $0.15.
-    │        Apakah sweep sekarang worth it?"
+    ├─▶ Send summary to Venice AI:
+    │       "Pool has 5 users. Total pending yield: $4.82.
+    │        Largest: $2.10, smallest: $0.08.
+    │        Active APY: 5.2%. Estimated 1Shot gas: $0.15.
+    │        Is sweeping now worth it?"
     │
-    └─▶ Venice memutuskan:
-            SWEEP_NOW   → yield total > threshold & gas cost < % yield
-            WAIT        → yield terlalu kecil, buang-buang gas
-            SWEEP_LARGE → sweep hanya user dengan yield > X (skip yang kecil)
+    └─▶ Venice decides:
+            SWEEP_NOW   → total yield > threshold & gas cost < % of yield
+            WAIT        → yield too small, gas not justified
+            SWEEP_LARGE → sweep only users with yield > X (skip small ones)
 ```
 
-#### Contoh output Venice
+#### Example Venice output
 
 ```json
 {
   "decision": "SWEEP_LARGE",
   "minYieldThresholdUsd": 0.50,
-  "reasoning": "Total yield $4.82 tapi tersebar 5 user. 3 user di atas $0.50 — sweep mereka sekarang menghasilkan $3.75 bersih setelah gas $0.15. 2 user sisanya ($0.08, $0.12) lebih efisien ditunda 2–3 hari lagi.",
+  "reasoning": "Total yield $4.82 but spread across 5 users. 3 users above $0.50 — sweeping them now nets $3.75 after $0.15 gas. The remaining 2 users ($0.08, $0.12) are more efficient to defer 2–3 days.",
   "usersToSweep": ["0xAAA...", "0xBBB...", "0xCCC..."]
 }
 ```
 
-#### Keuntungan
+#### Comparison
 
-| Metode | Masalah | Venice-Driven |
+| Approach | Problem | Venice-Driven |
 |---|---|---|
-| Cron harian | Sweep saat yield $0.02 = buang gas | Sweep hanya saat worth it |
-| Cron harian | Semua user disweep meski ada yang kecil | Bisa selective per user |
-| Cron harian | Tidak adaptif ke kondisi gas/APY | Venice hitung efisiensi real-time |
+| Daily cron | Sweeps when yield is $0.02 — gas wasted | Sweeps only when economically justified |
+| Daily cron | All users swept even when some have negligible yield | Selective per-user sweep |
+| Daily cron | Not adaptive to gas price or APY conditions | Venice calculates real-time efficiency |
 
-#### Perubahan yang dibutuhkan
+#### What needs to be built
 
-- `scheduler.ts`: ganti `cron.schedule` dengan polling ringan + logika "tanya Venice dulu"
-- `venice.ts`: tambah prompt khusus untuk keputusan sweep (terpisah dari keputusan rotasi)
-- `executor.ts`: support `sweepYieldBatch(selectedUsers)` — sudah bisa, tinggal pass subset
-- Backend: simpan `lastSweepDecision` di decisions log untuk transparansi
+- `scheduler.ts`: replace `cron.schedule` with lightweight polling + "ask Venice first" logic
+- `venice.ts`: add dedicated sweep decision prompt (separate from rotation prompt)
+- `executor.ts`: support `sweepYieldBatch(selectedUsers)` — already capable, just needs subset pass-through
+- Backend: persist `lastSweepDecision` in decisions log for transparency
 
 ---
 
@@ -596,5 +596,5 @@ Scheduler (polling ringan, misal setiap jam)
 | EIP-7702 re-auth on every sweep | Performance overhead | Cache signed authorization with nonce tracking |
 | No retry logic for failed sweeps | Yield stays in Aave, not lost | Add sweep retry queue |
 | Venice API single point of failure | If Venice down, round skipped | Fallback to rules-based allocation |
-| ~~No contract upgrade path~~ | ✅ Sudah diselesaikan — ClovaSavingsPool di-deploy sebagai UUPS proxy (ERC1967) | — |
-| Cron-based sweep timer | Sweep dijadwalkan tanpa mempertimbangkan efisiensi gas vs. yield | Ganti dengan Venice-driven sweep (§2.11) |
+| ~~No contract upgrade path~~ | ✅ Resolved — ClovaSavingsPool deployed as UUPS proxy (ERC1967) | — |
+| Cron-based sweep timer | Sweep scheduled without considering gas efficiency vs. yield size | Replace with Venice-driven sweep (§2.11) |

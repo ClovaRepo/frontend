@@ -6,20 +6,20 @@
 
 ## The One-Paragraph Pitch
 
-CLOVA lets a group of people earn yield together and compete to win it — without any of them risking their principal. Every user's USDC stays staked inside their own smart account. An AI agent (Venice) monitors protocol health daily using live web search, sweeps only the yield into a shared prize pool, and runs a weekly provably fair draw. Winners take the combined yield. Non-winners keep 100% of their principal. The agent is mathematically incapable of stealing — if it tries to touch principal, the smart contract reverts.
+CLOVA lets a group of people earn yield together and compete to win it — without any of them risking their principal. Every user's USDC stays staked inside their own smart account. An AI agent (Venice) monitors protocol health daily using live web search, sweeps only the yield into a shared prize pool, and runs a weekly provably fair draw. Winners take the combined yield. Non-winners keep 100% of their principal. Principal is structurally protected at every layer — the agent's permissions are sealed on-chain by MetaMask's DelegationManager, and the smart contract independently reverts any action that would reduce a user's Aave balance below their recorded principal.
 
 ---
 
 ## What Makes CLOVA Genuinely Different
 
-### 1. The Agent Cannot Steal. Enforced by Math.
+### 1. Principal is Architecturally Protected. Not by Policy — by Code.
 
-Most "AI agent + DeFi" projects ask users to trust the agent not to misbehave. CLOVA does the opposite: the agent's permission is encoded in a **signed ERC-7710 delegation with on-chain enforced caveats**. MetaMask's DelegationManager rejects any call that exceeds the delegation bounds before it executes. The smart contract adds a second layer: `depositYield()` reverts if `aTokenBalance < principalBaseline`.
+Most "AI agent + DeFi" projects ask users to trust the agent not to misbehave. CLOVA does the opposite: the agent operates inside a **cryptographically sealed permission envelope** enforced by MetaMask's on-chain DelegationManager. What was not signed cannot be executed through this delegation. The smart contract adds a second independent layer: `depositYield()` reverts if `aTokenBalance < principalBaseline`.
 
-The result: even if the agent wallet is stolen, the backend is compromised, and Venice returns malicious output at the same time — principal is unreachable.
+Two enforcement points. Neither controlled by the agent. Neither bypassable through off-chain instructions.
 
 ```
-Attack → backend sends "sweep all" → DelegationManager: "target not allowed" → REVERT
+Attack → backend sends "sweep all" → DelegationManager: bounds exceeded → REVERT
 Attack → smart contract receives yield + principal → I1 guard → REVERT + refund
 ```
 
@@ -45,9 +45,11 @@ If any step fails, the EVM reverts the entire transaction. The user never loses 
 
 ### 4. The Agent Pays for Itself
 
-The agent earns 10% of swept yield to treasury. It pays Venice per call via **x402 + ERC-7710**: treasury holds a signed delegation to the agent (max 5 USDC, USDC only). Every Venice call triggers HTTP 402 → agent redeems treasury delegation → USDC flows from treasury to Venice — enforced on-chain by MetaMask's DelegationManager. Verifiable on Basescan.
+The agent earns 10% of swept yield to treasury. When Venice credits run low, the agent automatically tops up via **x402**: treasury wallet signs an ERC-3009 authorization → Venice verifies → credits added. No manual top-up, no USDC lost on failure.
 
-This is the first production example of an AI agent autonomously paying for its own intelligence using on-chain micropayments.
+**ERC-7710** bounds all other agent actions: yield sweep and rotation go through user delegations enforced by MetaMask's DelegationManager — verifiable on Basescan.
+
+x402 keeps the agent funded. ERC-7710 keeps the agent bounded. Together they make a self-sustaining, trustless AI agent.
 
 ### 5. Proportional Tickets — Economic Anti-Sybil
 
@@ -77,8 +79,8 @@ Tickets are weighted by `principalBaseline[user]`. Splitting $1,000 across 10 wa
 │     Without this: users need ETH, no batching                   │
 │                                                                 │
 │  💸 x402 + ERC-7710                                             │
-│     Agent pays Venice per call via on-chain micropayments       │
-│     Treasury delegation: bounded daily limit, one recipient     │
+│     x402: auto top-up Venice credits (treasury → ERC-3009)      │
+│     ERC-7710: bounded delegation for yield sweep & rotation     │
 │     Without this: agent needs manual top-ups, not autonomous    │
 └─────────────────────────────────────────────────────────────────┘
 ```

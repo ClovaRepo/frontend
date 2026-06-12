@@ -85,23 +85,42 @@ interface VeniceDecision {
 
 ---
 
-## x402 — Agent Pays Venice
+## x402 + ERC-7710 — Agent Pays Venice
 
-Every Venice API call is routed through the x402 proxy:
+Every Venice API call is paid autonomously by the agent via x402, funded through a **proper ERC-7710 delegation** from the treasury:
 
 ```
 Agent calls x402 proxy (POST /x402/venice)
-  → If no X-402-Payment header → proxy returns 402 with payment requirements
-  → Agent builds payment: sends USDC on-chain to treasury
+  → Proxy returns HTTP 402 with payment requirements
+  → Agent redeems treasury ERC-7710 delegation:
+       DelegationManager.redeemDelegations([treasuryDelegation], [usdcTransfer])
+  → USDC transferred on-chain to Venice facilitator
   → Agent includes X-402-Payment proof header
-  → Proxy forwards request to Venice API
-  → Venice returns AI response
+  → Proxy forwards to Venice API → AI response returned
 ```
 
 **Payment:** 0.001 USDC per Venice call  
-**Funded from:** Treasury delegation (agent has limited daily allowance)
+**Funded from:** Treasury ERC-7710 delegation — max 5 USDC total, Venice facilitator address only
 
-This satisfies the x402 + ERC-7710 hackathon track — the agent genuinely pays for its own intelligence using on-chain micropayments.
+### Treasury Delegation (ERC-7710)
+
+This is the primary ERC-7710 integration in Clova. Unlike user delegations (browser-limited ERC-7715), the treasury uses **full custom scope enforcement**:
+
+```typescript
+// Treasury wallet signs with private key (not browser — signDelegation works here)
+const treasuryDelegation = await signDelegation({
+  to: DELEGATION_MANAGER,
+  from: TREASURY_ADDRESS,
+  scope: {
+    type: ScopeType.Erc20TransferAmount,
+    tokenAddress: USDC_ADDRESS,
+    maxAmount: parseUnits("5", 6),          // 5 USDC total cap
+    allowedRecipient: VENICE_FACILITATOR,   // Venice facilitator only
+  },
+});
+```
+
+The on-chain `Erc20TransferAmountEnforcer` validates every redemption — the agent cannot exceed 5 USDC or send to any address other than the Venice facilitator, even if the agent key is compromised.
 
 **Auto top-up:** If Venice credit balance drops below $0.50, agent automatically tops up with 1 USDC via x402. Prevents AI downtime mid-round.
 
