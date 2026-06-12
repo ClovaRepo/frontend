@@ -347,9 +347,16 @@ function ScreenOB3({ lang, go, t }) {
         </div>
 
         {err && (
-          <div className="row aic gap-8" style={{ background: "color-mix(in srgb,#ef4444 10%, var(--canvas-2))", borderRadius: 12, padding: "11px 14px", marginBottom: 14 }}>
-            <Icon.x size={16} stroke="#ef4444" />
-            <span style={{ fontSize: 13, color: "#ef4444", fontWeight: 500 }}>{err}</span>
+          <div className="col gap-10" style={{ marginBottom: 14 }}>
+            <div className="row aic gap-8" style={{ background: "color-mix(in srgb,#ef4444 10%, var(--canvas-2))", borderRadius: 12, padding: "11px 14px" }}>
+              <Icon.x size={16} stroke="#ef4444" />
+              <span style={{ fontSize: 13, color: "#ef4444", fontWeight: 500 }}>{err}</span>
+            </div>
+            {err.includes("7702") && (
+              <button className="btn btn-secondary btn-block" onClick={() => { setErr(""); go("ob4"); }}>
+                {L(lang, { id: "Lewati langkah ini → Lanjut ke Izin", en: "Skip this step → Continue to Permission" })}
+              </button>
+            )}
           </div>
         )}
 
