@@ -289,6 +289,7 @@ function ScreenOB3({ lang, go, t }) {
     }
   };
 
+
   const benefits = [
     { id: "Agen hanya bisa bertindak dalam batas izin yang kamu tanda tangani", en: "Agent can only act within the permission boundaries you sign" },
     { id: "Izin bisa dicabut kapan saja — satu klik", en: "Permission revocable anytime — one click" },
@@ -346,20 +347,6 @@ function ScreenOB3({ lang, go, t }) {
           ))}
         </div>
 
-        {err && (
-          <div className="col gap-10" style={{ marginBottom: 14 }}>
-            <div className="row aic gap-8" style={{ background: "color-mix(in srgb,#ef4444 10%, var(--canvas-2))", borderRadius: 12, padding: "11px 14px" }}>
-              <Icon.x size={16} stroke="#ef4444" />
-              <span style={{ fontSize: 13, color: "#ef4444", fontWeight: 500 }}>{err}</span>
-            </div>
-            {err.includes("7702") && (
-              <button className="btn btn-secondary btn-block" onClick={() => { setErr(""); go("ob4"); }}>
-                {L(lang, { id: "Lewati langkah ini → Lanjut ke Izin", en: "Skip this step → Continue to Permission" })}
-              </button>
-            )}
-          </div>
-        )}
-
         {state === "ok" ? (
           <div className="reveal">
             <div className="row aic gap-10" style={{ background: "var(--sage-2)", borderRadius: 14, padding: "13px 16px", marginBottom: 14 }}>
@@ -374,16 +361,9 @@ function ScreenOB3({ lang, go, t }) {
             </button>
           </div>
         ) : (
-          <button
-            className="btn btn-primary btn-block btn-lg"
-            disabled={state === "loading"}
-            onClick={handleUpgrade}
-          >
-            {state === "loading" ? (
-              <>{L(lang, { id: "Menunggu konfirmasi...", en: "Waiting for confirmation..." })}<span className="spin-dot" style={{ width: 16, height: 16, borderRadius: "50%", border: "2.5px solid rgba(255,255,255,.3)", borderTopColor: "#fff", animation: "spinClover .8s linear infinite", display: "inline-block", marginLeft: 8 }} /></>
-            ) : (
-              <>{L(lang, { id: "Aktifkan Smart Account", en: "Activate Smart Account" })}<Icon.arrow size={18} stroke="#F4FBF6" /></>
-            )}
+          <button className="btn btn-primary btn-block btn-lg" onClick={() => go("ob4")}>
+            {L(lang, { id: "Mengerti, Lanjut →", en: "Got it, Continue →" })}
+            <Icon.arrow size={18} stroke="#F4FBF6" />
           </button>
         )}
       </div>
@@ -511,6 +491,7 @@ const CROSS_CHAINS = [
 function ScreenOB5({ lang, go, t }) {
   const wallet = useWallet();
   const [amt, setAmt] = useState(10);
+  const [amtRaw, setAmtRaw] = useState("10"); // string untuk input display
   const [state, setState] = useState("idle"); // idle, approve, deposit, ok
   const [srcChain, setSrcChain] = useState("base");
   const [showChains, setShowChains] = useState(false);
@@ -557,10 +538,15 @@ function ScreenOB5({ lang, go, t }) {
             <input
               className="amount-input"
               style={{ width: "auto", maxWidth: 160 }}
-              value={amt === 0 ? "" : amt}
+              value={amtRaw}
               placeholder="0"
-              onChange={(e) => { const v = +e.target.value.replace(/\D/g, "") || 0; setAmt(Math.min(balance > 0 ? balance : 999999, v)); }}
-              inputMode="numeric"
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1");
+                setAmtRaw(raw);
+                const n = parseFloat(raw) || 0;
+                setAmt(Math.min(balance > 0 ? balance : 999999, n));
+              }}
+              inputMode="decimal"
               autoComplete="off"
             />
             <span className="head" style={{ fontSize: 22, color: "var(--ink-45)" }}>USDC</span>
@@ -577,9 +563,9 @@ function ScreenOB5({ lang, go, t }) {
 
         <div className="row gap-8" style={{ marginTop: 16, justifyContent: "center" }}>
           {quick.map((q) => (
-            <button key={q} className={"chip" + (amt === q ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmt(q)}>{q}</button>
+            <button key={q} className={"chip" + (amt === q ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => { setAmt(q); setAmtRaw(String(q)); }}>{q}</button>
           ))}
-          <button className={"chip" + (amt === balance ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => setAmt(balance)}>Max</button>
+          <button className={"chip" + (amt === balance ? " chip-on" : "")} style={{ cursor: "pointer" }} onClick={() => { setAmt(balance); setAmtRaw(String(balance)); }}>Max</button>
         </div>
       </div>
 
@@ -634,7 +620,7 @@ function ScreenOB5({ lang, go, t }) {
           : state === "deposit" ? <StatePill tone="load">{srcChain !== "base" ? L(lang, { id: "Menjembatani & menanam…", en: "Bridging & planting…" }) : L(lang, { id: "Menanam…", en: "Planting…" })}</StatePill>
           : (
             <>
-              <button className="btn btn-primary btn-block btn-lg" disabled={amt < 1 || state === "approve" || state === "deposit"} onClick={async () => {
+              <button className="btn btn-primary btn-block btn-lg" disabled={amt <= 0 || state === "approve" || state === "deposit"} onClick={async () => {
                 setErr("");
                 setState("approve");
                 try {
@@ -642,7 +628,13 @@ function ScreenOB5({ lang, go, t }) {
                   await wallet.deposit(amt);
                   setState("ok");
                 } catch (e) {
-                  setErr(e.message || "Deposit failed");
+                  const msg = e.message || "";
+                  if (msg.includes("User denied") || msg.includes("rejected") || msg.includes("user rejected"))
+                    setErr(L(lang, { id: "Transaksi dibatalkan.", en: "Transaction cancelled." }));
+                  else if (msg.includes("insufficient") || msg.includes("balance"))
+                    setErr(L(lang, { id: "Saldo tidak cukup.", en: "Insufficient balance." }));
+                  else
+                    setErr(L(lang, { id: "Deposit gagal. Coba lagi.", en: "Deposit failed. Please try again." }));
                   setState("idle");
                 }
               }}>
