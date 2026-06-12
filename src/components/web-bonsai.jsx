@@ -115,12 +115,12 @@ function useBonsaiPixels() {
 const CALLOUTS = [
   {
     n: "01", kick: { id: "Modal pokok", en: "Principal" },
-    text: { id: "AI tak bisa menyentuh modal pokokmu.", en: "The AI cannot touch your principal." },
+    text: { id: "Kontrak on-chain menolak otomatis jika modal disentuh.", en: "On-chain contract auto-reverts if principal is touched." },
     anchor: [432, 150], path: [[432, 150], [672, 150], [700, 140]], labelY: 140,
   },
   {
     n: "02", kick: { id: "Daftar putih", en: "Whitelist" },
-    text: { id: "AI tak bisa kirim dana ke luar daftar putih.", en: "The AI cannot send funds outside the whitelist." },
+    text: { id: "Dana hanya bisa dikirim ke protokol dalam daftar putih admin.", en: "Funds are restricted to admin-approved whitelist protocols only." },
     anchor: [612, 250], path: [[612, 250], [672, 250], [700, 300]], labelY: 300,
   },
   {

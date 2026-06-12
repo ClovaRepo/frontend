@@ -107,14 +107,14 @@ function ScreenLanding({ lang, go, t }) {
     { icon: Icon.robot, title: { id: "AI Memelihara", en: "AI Tends It" },
       body: { id: "Agen Venice memantau kesehatan protokol, bukan cuma APY, dalam izin ketat. Tiap keputusan dijelaskan.", en: "The Venice agent watches protocol health, not just APY, under strict permissions. Every decision is explained." } },
     { icon: Icon.drop, title: { id: "Panen Bunga", en: "Harvest the Yield" },
-      body: { id: "Tiap ronde, hanya BUNGA (bukan modal) disapu jadi Kolam Hadiah bersama.", en: "Each round, only the YIELD (never principal) is swept into a shared Prize Pool." } },
+      body: { id: "Tiap ronde, hanya BUNGA yang disapu jadi Kolam Hadiah bersama. Modal tetap di posisinya.", en: "Each round, only YIELD is swept into a shared Prize Pool. Principal stays in place." } },
     { icon: Icon.trophy, title: { id: "Undian Adil", en: "Fair Draw" },
       body: { id: "Pemenang dipilih acak (VRF). Menang dapat bunga gabungan; sisanya modal utuh, bisa ditarik kapan saja.", en: "A winner is drawn at random (VRF). Win, and you get the combined yield; otherwise your principal stays whole, withdrawable anytime." } },
   ];
   const safety = [
-    { id: "AI tak bisa menyentuh modal pokok.", en: "The AI cannot touch your principal." },
-    { id: "AI tak bisa kirim ke alamat di luar daftar putih.", en: "The AI cannot send funds outside the whitelist." },
-    { id: "Kamu bisa cabut izin kapan saja, langsung.", en: "You can revoke permission anytime, instantly." },
+    { id: "Kontrak on-chain menolak otomatis jika modal disentuh — bukan hanya kebijakan.", en: "The on-chain contract auto-rejects any action that touches principal — enforced by code, not policy." },
+    { id: "AI hanya bisa kirim ke protokol dalam daftar putih yang disetujui admin.", en: "The AI can only interact with protocols on the admin-approved whitelist." },
+    { id: "Kamu bisa cabut izin kapan saja, langsung, tanpa izin siapa pun.", en: "You can revoke permission anytime, instantly, without anyone's approval." },
   ];
 
   return (
@@ -135,14 +135,14 @@ function ScreenLanding({ lang, go, t }) {
         </div>
         <Reveal delay={40}>
           <h1 style={{ fontSize: 38, lineHeight: 1.04, maxWidth: 320 }}>
-            {L(lang, { id: "Tabung. Jangan pernah rugi.", en: "Save. Never lose." })}{" "}
+            {L(lang, { id: "Tabung. Jaga modalmu.", en: "Save. Keep your principal." })}{" "}
             <span style={{ color: "var(--clover)" }}>{L(lang, { id: "Menangkan bunga semua orang.", en: "Win everyone's yield." })}</span>
           </h1>
         </Reveal>
         <Reveal delay={140}>
           <p className="muted" style={{ fontSize: 15.5, lineHeight: 1.55, maxWidth: 360, marginTop: 14 }}>
-            {L(lang, { id: "Modalmu tetap di dompetmu sendiri dan tak pernah hilang. AI menumbuhkannya di protokol DeFi teruji. Tiap ronde, bunga semua peserta jadi kolam hadiah dan diundi adil.",
-                       en: "Your principal stays in your own wallet and is never lost. AI grows it across battle-tested DeFi. Each round, everyone's yield becomes a prize pool, drawn fairly." })}
+            {L(lang, { id: "Modalmu tetap di dompetmu sendiri, dilindungi aturan kontrak on-chain. AI menumbuhkannya di protokol DeFi teruji. Tiap ronde, bunga semua peserta jadi kolam hadiah dan diundi adil.",
+                       en: "Your principal stays in your own wallet, protected by on-chain contract rules. AI grows it across battle-tested DeFi. Each round, everyone's yield becomes a prize pool, drawn fairly." })}
           </p>
         </Reveal>
         <Reveal delay={240} className="row gap-10 wrap" style={{ marginTop: 20 }}>
@@ -219,8 +219,8 @@ function ScreenLanding({ lang, go, t }) {
           {L(lang, { id: "Mulai Menanam", en: "Start Planting" })} <Icon.arrow size={18} stroke="#F4FBF6" />
         </button>
         <div className="tiny" style={{ color: "var(--ink-45)", lineHeight: 1.5, textAlign: "center" }}>
-          {L(lang, { id: "No-loss ≠ no-risk. Dana ditempatkan di protokol teruji (Aave, Compound, Morpho, Moonwell). Biaya platform ~10% dari bunga; modal tak pernah dipotong.",
-                     en: "No-loss ≠ no-risk. Funds sit in audited protocols (Aave, Compound, Morpho, Moonwell). Platform fee ~10% of yield; principal is never cut." })}
+          {L(lang, { id: "No-loss ≠ no-risk. Dana ditempatkan di protokol teruji (Aave, Compound, Morpho, Moonwell). Risiko protokol DeFi tetap ada — Clova tidak bisa menjamin protokol eksternal. Biaya platform ~10% dari bunga; modal tidak dipotong.",
+                     en: "No-loss ≠ no-risk. Funds sit in audited protocols (Aave, Compound, Morpho, Moonwell). DeFi protocol risk remains — Clova cannot guarantee external protocols. Platform fee ~10% of yield; principal is not deducted." })}
         </div>
       </div>
     </div>

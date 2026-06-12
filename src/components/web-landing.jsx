@@ -50,7 +50,7 @@ function WebLanding({ lang, setLang, t, onEnter }) {
   const steps = [
     { icon: Icon.sprout, title: { id: "Setor & Tanam", en: "Deposit & Plant" }, body: { id: "Danamu di-stake ke Aave dari dompetmu. Modal awal dicatat sebagai baseline.", en: "Your funds are staked to Aave from your own wallet. Principal is recorded as a baseline." } },
     { icon: Icon.robot, title: { id: "AI Memelihara", en: "AI Tends It" }, body: { id: "Agen Venice memantau kesehatan protokol dalam izin ketat. Tiap keputusan dijelaskan.", en: "The Venice agent watches protocol health under strict permissions. Every decision explained." } },
-    { icon: Icon.drop, title: { id: "Panen Bunga", en: "Harvest Yield" }, body: { id: "Tiap ronde, hanya bunga (bukan modal) disapu jadi Kolam Hadiah bersama.", en: "Each round, only yield (never principal) is swept into a shared Prize Pool." } },
+    { icon: Icon.drop, title: { id: "Panen Bunga", en: "Harvest Yield" }, body: { id: "Tiap ronde, hanya bunga yang disapu jadi Kolam Hadiah bersama. Modal tetap di posisinya.", en: "Each round, only yield is swept into a shared Prize Pool. Principal stays in place." } },
     { icon: Icon.trophy, title: { id: "Undian Adil", en: "Fair Draw" }, body: { id: "Pemenang dipilih acak (VRF). Sisanya modal utuh, bisa ditarik kapan saja.", en: "A winner is drawn at random (VRF). Otherwise principal stays whole, withdrawable anytime." }, accent: true },
   ];
   return (
@@ -66,12 +66,12 @@ function WebLanding({ lang, setLang, t, onEnter }) {
               <span className="badge badge-safe"><Icon.shieldLeaf size={14} stroke="var(--clover-deep)" /> {L(lang, { id: "Tabungan tanpa rugi modal", en: "No-loss savings" })}</span>
             </Reveal>
             <Reveal delay={60}><h1 className="hero-title head">
-              {L(lang, { id: "Tabung. Jangan pernah rugi.", en: "Save. Never lose." })}{" "}
+              {L(lang, { id: "Tabung. Jaga modalmu.", en: "Save. Keep your principal." })}{" "}
               <span style={{ color: "var(--clover)" }}>{L(lang, { id: "Menangkan bunga semua orang.", en: "Win everyone's yield." })}</span>
             </h1></Reveal>
             <Reveal delay={140}><p className="muted" style={{ fontSize: 18, lineHeight: 1.55, maxWidth: 520, marginTop: 26 }}>
-              {L(lang, { id: "Modalmu tetap di dompetmu sendiri dan tak pernah hilang. AI menumbuhkannya di protokol DeFi teruji. Tiap ronde, bunga semua peserta jadi kolam hadiah dan diundi adil.",
-                         en: "Your principal stays in your own wallet and is never lost. AI grows it across battle-tested DeFi. Each round, everyone's yield becomes a prize pool, drawn fairly." })}
+              {L(lang, { id: "Modalmu tetap di dompetmu sendiri, dilindungi aturan kontrak on-chain. AI menumbuhkannya di protokol DeFi teruji. Tiap ronde, bunga semua peserta jadi kolam hadiah dan diundi adil.",
+                         en: "Your principal stays in your own wallet, protected by on-chain contract rules. AI grows it across battle-tested DeFi. Each round, everyone's yield becomes a prize pool, drawn fairly." })}
             </p></Reveal>
             <Reveal delay={220} className="row gap-12 wrap" style={{ marginTop: 30 }}>
               <button className="btn btn-primary btn-lg" onClick={onEnter}><Icon.sprout size={20} stroke="#F4FBF6" /> {L(lang, { id: "Mulai Menanam", en: "Start Planting" })}</button>
@@ -126,7 +126,7 @@ function WebLanding({ lang, setLang, t, onEnter }) {
             <span className="badge badge-safe"><Icon.lock size={13} stroke="var(--clover-deep)" /> {L(lang, { id: "Dipaksa oleh kode", en: "Enforced by code" })}</span>
           </Reveal>
           <Reveal delay={60}><h2 style={{ fontSize: 40, lineHeight: 1.12, maxWidth: 560, marginBottom: 8 }}>{L(lang, { id: "Aman bukan karena percaya AI, tapi karena dipaksa kode.", en: "Safe not because you trust the AI, but because code enforces it." })}</h2></Reveal>
-          <Reveal delay={120}><p className="muted" style={{ fontSize: 16, maxWidth: 520, marginBottom: 18 }}>{L(lang, { id: "Setiap cabang dipagari batasan on-chain. Inilah yang tak bisa dilakukan agen, selamanya.", en: "Every branch is fenced by on-chain limits. Here's what the agent simply cannot do, ever." })}</p></Reveal>
+          <Reveal delay={120}><p className="muted" style={{ fontSize: 16, maxWidth: 520, marginBottom: 18 }}>{L(lang, { id: "Setiap tindakan agen dibatasi oleh kontrak on-chain, bukan kepercayaan. Inilah yang diblokir secara teknis.", en: "Every agent action is bounded by on-chain contracts, not trust. Here's what is technically blocked." })}</p></Reveal>
           <SafetyBonsai lang={lang} />
         </div>
       </div>
@@ -159,8 +159,8 @@ function WebLanding({ lang, setLang, t, onEnter }) {
             </div>
           </div>
           <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb,#F4FBF6 65%, transparent)", maxWidth: 720 }}>
-            {L(lang, { id: "No-loss \u2260 no-risk. Dana ditempatkan di protokol teruji (Aave, Compound, Morpho, Moonwell). Biaya platform ~10% dari bunga; modal pokok tak pernah dipotong. Berjalan di jaringan Base.",
-                       en: "No-loss \u2260 no-risk. Funds sit in audited protocols (Aave, Compound, Morpho, Moonwell). Platform fee ~10% of yield; principal is never cut. Runs on the Base network." })}
+            {L(lang, { id: "No-loss \u2260 no-risk. Dana ditempatkan di protokol teruji (Aave, Compound, Morpho, Moonwell). Risiko protokol DeFi tetap ada \u2014 Clova tidak menjamin protokol eksternal. Biaya platform ~10% dari bunga; modal tidak dipotong. Berjalan di jaringan Base.",
+                       en: "No-loss \u2260 no-risk. Funds sit in audited protocols (Aave, Compound, Morpho, Moonwell). DeFi protocol risk remains \u2014 Clova does not guarantee external protocols. Platform fee ~10% of yield; principal is not deducted. Runs on the Base network." })}
           </p>
         </div>
       </div>

@@ -188,7 +188,7 @@ function FeeBar({ lang }) {
     <div className="reveal row aic gap-8" style={{ background: "color-mix(in srgb,var(--forest) 5%, transparent)", borderRadius: 12, padding: "10px 14px" }}>
       <Icon.info size={16} stroke="var(--forest-70)" />
       <span className="tiny" style={{ color: "var(--forest-70)", lineHeight: 1.4 }}>
-        {L(lang, { id: "Biaya platform 10% dari bunga. Modal tak pernah dipotong.", en: "Platform fee 10% of yield. Principal is never cut." })}
+        {L(lang, { id: "Biaya platform 10% dari bunga. Modal tidak dipotong.", en: "Platform fee 10% of yield. Principal is not deducted." })}
       </span>
     </div>
   );
@@ -254,7 +254,7 @@ function ScreenDashboard({ lang, go, t, openModal }) {
           <div className="col gap-14">
             <div className="reveal card" style={{ ...stagger(0), padding: "24px 22px", textAlign: "center", overflow: "hidden" }}>
               <CloverWatermark corner="tr" size={130} opacity={0.05} />
-              <div className="muted tiny" style={{ fontWeight: 600, marginBottom: 4 }}>{L(lang, { id: "Modalku, aman & utuh", en: "My principal, safe & whole" })}</div>
+              <div className="muted tiny" style={{ fontWeight: 600, marginBottom: 4 }}>{"My principal, protected on-chain"}</div>
               <div className="head tnum" style={{ fontSize: 52, lineHeight: 1 }}><CountUp value={principal} /></div>
               <div className="head" style={{ fontSize: 16, color: "var(--ink-45)", marginTop: 2 }}>USDC</div>
               <div className="vine-divide" />

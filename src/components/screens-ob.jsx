@@ -164,7 +164,7 @@ function ScreenOB1({ lang, go, t }) {
         <h1 style={{ fontSize: 27, marginBottom: 8 }}>{L(lang, { id: "Hubungkan dompetmu", en: "Connect your wallet" })}</h1>
         <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.55, marginBottom: 20 }}>
           {L(lang, { id: "Pilih dompet untuk mulai. Kami tidak pernah menyimpan kunci atau danamu, semuanya tetap milikmu.",
-                     en: "Pick a wallet to get started. We never hold your keys or your funds, everything stays yours." })}
+                     en: "Pick a wallet to get started. We don't hold your keys or your funds — everything stays in your wallet." })}
         </p>
 
         {state === "connected" ? (
@@ -212,7 +212,7 @@ function ScreenOB1({ lang, go, t }) {
       <div className="col gap-10" style={{ marginTop: 16 }}>
         <Collapse q={L(lang, { id: "Apakah aman?", en: "Is it safe?" })}>
           {L(lang, { id: "Ya. Clova tidak pernah memegang kunci privatmu. Dompet tetap di kendalimu; kamu hanya menandatangani izin berpagar yang bisa dicabut kapan saja.",
-                     en: "Yes. Clova never holds your private key. Your wallet stays under your control; you only sign a fenced permission that you can revoke anytime." })}
+                     en: "Yes. Clova does not hold your private key. Your wallet stays under your control; you only sign a bounded permission that you can revoke anytime." })}
         </Collapse>
         <Collapse q={L(lang, { id: "Jaringan apa?", en: "Which network?" })}>
           {L(lang, { id: "Clova berjalan di jaringan Base, cepat dan biaya rendah.", en: "Clova runs on the Base network, fast and low-cost." })}
