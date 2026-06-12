@@ -276,55 +276,109 @@ function ScreenOB3({ lang, go, t }) {
   const wallet = useWallet();
   const [state, setState] = useState(wallet.isUpgraded ? "ok" : "idle");
   const [err, setErr] = useState("");
+
+  const handleUpgrade = async () => {
+    setState("loading");
+    setErr("");
+    try {
+      await wallet.upgradeToSmartAccount();
+      setState("ok");
+    } catch (e) {
+      setErr(e.message || L(lang, { id: "Upgrade gagal. Coba lagi.", en: "Upgrade failed. Please try again." }));
+      setState("idle");
+    }
+  };
+
   const benefits = [
-    { id: "Izin presisi & bisa dicabut", en: "Precise, revocable permission" },
-    { id: "Hemat langkah", en: "Fewer steps" },
-    { id: "Tetap non-custodial", en: "Still non-custodial" },
+    { id: "Agen hanya bisa bertindak dalam batas izin yang kamu tanda tangani", en: "Agent can only act within the permission boundaries you sign" },
+    { id: "Izin bisa dicabut kapan saja — satu klik", en: "Permission revocable anytime — one click" },
+    { id: "Dompet & kunci tetap sepenuhnya milikmu", en: "Wallet and keys remain entirely yours" },
   ];
+
   return (
     <OBShell lang={lang} step={3} t={t}>
       <div className="card reveal" style={{ padding: "26px 22px", overflow: "hidden" }}>
         <CloverWatermark corner="br" size={120} opacity={0.05} />
-        <h1 style={{ fontSize: 25, marginBottom: 8 }}>{L(lang, { id: "Cara kerja Akun Pintar Clova", en: "How Clova Smart Accounts work" })}</h1>
+        <h1 style={{ fontSize: 25, marginBottom: 8 }}>
+          {L(lang, { id: "Aktifkan Smart Account", en: "Activate Smart Account" })}
+        </h1>
         <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.55, marginBottom: 20 }}>
-          {L(lang, { id: "Agen AI Clova berjalan sebagai Smart Account (EIP-7702) yang di-relay lewat 1Shot. Ini artinya agen bisa bertindak atas namamu — tapi HANYA dalam batas izin yang kamu tanda tangani di langkah berikutnya.",
-                     en: "Clova's AI agent runs as a Smart Account (EIP-7702) relayed through 1Shot. This means the agent can act on your behalf — but ONLY within the permission boundaries you sign in the next step." })}
+          {L(lang, {
+            id: "Dompetmu perlu di-upgrade ke Smart Account (EIP-7702) agar Clova bisa memberi izin presisi ke agen di langkah berikutnya. Kunci tetap milikmu — ini hanya menambah kemampuan izin.",
+            en: "Your wallet needs to be upgraded to a Smart Account (EIP-7702) so Clova can grant the agent a precise, bounded permission in the next step. Your keys stay yours — this only adds permission capability.",
+          })}
         </p>
 
-        {/* visual: agent as smart account */}
+        {/* visual: EOA → Smart Account */}
         <div className="row aic between" style={{ background: "var(--sage)", borderRadius: 18, padding: "18px 16px", marginBottom: 18 }}>
           <div className="col aic gap-6" style={{ flex: 1 }}>
             <Icon.wallet size={34} stroke="var(--forest-70)" />
-            <span className="tiny muted" style={{ textAlign: "center" }}>{L(lang, { id: "Dompetmu", en: "Your wallet" })}</span>
+            <span className="tiny muted" style={{ textAlign: "center" }}>
+              {L(lang, { id: "EOA biasa", en: "Regular EOA" })}
+            </span>
           </div>
-          <div style={{ flex: "0 0 auto", color: "var(--clover)", textAlign: "center" }}>
-            <svg width="46" height="20" viewBox="0 0 46 20" fill="none"><path d="M2 10 Q 23 -4 44 10" stroke="var(--clover)" strokeWidth="2.4" strokeDasharray="2 4" strokeLinecap="round" /><path d="M38 5l6 5-6 5" stroke="var(--clover)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
-            <div className="tiny" style={{ color: "var(--clover-deep)", fontWeight: 600, marginTop: 2 }}>izin berpagar</div>
+          <div style={{ flex: "0 0 auto", textAlign: "center" }}>
+            <svg width="46" height="20" viewBox="0 0 46 20" fill="none">
+              <path d="M2 10 H 40" stroke="var(--clover)" strokeWidth="2.4" strokeDasharray="2 4" strokeLinecap="round" />
+              <path d="M36 5l6 5-6 5" stroke="var(--clover)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            </svg>
+            <div className="tiny" style={{ color: "var(--clover-deep)", fontWeight: 600, marginTop: 2 }}>EIP-7702</div>
           </div>
           <div className="col aic gap-6" style={{ flex: 1 }}>
             <div style={{ position: "relative" }}>
-              <div style={{ position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)" }}><Clover size={20} color="var(--leaf)" stem={false} /></div>
-              <Icon.robot size={34} stroke="var(--clover)" />
+              <div style={{ position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)" }}>
+                <Clover size={20} color="var(--leaf)" stem={false} />
+              </div>
+              <Icon.wallet size={34} stroke="var(--clover)" />
             </div>
-            <span className="tiny" style={{ fontWeight: 700, color: "var(--clover-deep)", textAlign: "center" }}>{L(lang, { id: "Agen Smart Account", en: "Agent Smart Account" })}</span>
+            <span className="tiny" style={{ fontWeight: 700, color: "var(--clover-deep)", textAlign: "center" }}>
+              {L(lang, { id: "Smart Account", en: "Smart Account" })}
+            </span>
           </div>
         </div>
 
         <div className="col gap-10" style={{ marginBottom: 20 }}>
           {benefits.map((b, i) => (
-            <div key={i} className="row gap-10 aic"><Icon.shield size={19} stroke="var(--clover)" /><span style={{ fontSize: 14, fontWeight: 500 }}>{L(lang, b)}</span></div>
+            <div key={i} className="row gap-10 aic">
+              <Icon.shield size={19} stroke="var(--clover)" />
+              <span style={{ fontSize: 13.5, fontWeight: 500 }}>{L(lang, b)}</span>
+            </div>
           ))}
         </div>
 
-        <div className="reveal">
-          <div className="row aic gap-10" style={{ background: "var(--sage-2)", borderRadius: 14, padding: "13px 16px", marginBottom: 14 }}>
-            <Icon.robot size={20} stroke="var(--clover-deep)" />
-            <span className="tiny" style={{ fontWeight: 600, color: "var(--forest)" }}>
-              {L(lang, { id: "Agen Clova sudah aktif sebagai Smart Account via 1Shot + EIP-7702.", en: "Clova agent is active as a Smart Account via 1Shot + EIP-7702." })}
-            </span>
+        {err && (
+          <div className="row aic gap-8" style={{ background: "color-mix(in srgb,#ef4444 10%, var(--canvas-2))", borderRadius: 12, padding: "11px 14px", marginBottom: 14 }}>
+            <Icon.x size={16} stroke="#ef4444" />
+            <span style={{ fontSize: 13, color: "#ef4444", fontWeight: 500 }}>{err}</span>
           </div>
-          <button className="btn btn-primary btn-block btn-lg" onClick={() => go("ob4")}>{L(lang, { id: "Lanjut — Beri Izin", en: "Continue — Grant Permission" })} <Icon.arrow size={18} stroke="#F4FBF6" /></button>
-        </div>
+        )}
+
+        {state === "ok" ? (
+          <div className="reveal">
+            <div className="row aic gap-10" style={{ background: "var(--sage-2)", borderRadius: 14, padding: "13px 16px", marginBottom: 14 }}>
+              <Icon.check size={18} stroke="var(--clover)" sw={2.4} />
+              <span className="tiny" style={{ fontWeight: 600, color: "var(--forest)" }}>
+                {L(lang, { id: "Smart Account aktif. Kamu siap memberi izin di langkah berikutnya.", en: "Smart Account active. You're ready to grant permission in the next step." })}
+              </span>
+            </div>
+            <button className="btn btn-primary btn-block btn-lg" onClick={() => go("ob4")}>
+              {L(lang, { id: "Lanjut — Beri Izin", en: "Continue — Grant Permission" })}
+              <Icon.arrow size={18} stroke="#F4FBF6" />
+            </button>
+          </div>
+        ) : (
+          <button
+            className="btn btn-primary btn-block btn-lg"
+            disabled={state === "loading"}
+            onClick={handleUpgrade}
+          >
+            {state === "loading" ? (
+              <>{L(lang, { id: "Menunggu konfirmasi...", en: "Waiting for confirmation..." })}<span className="spin-dot" style={{ width: 16, height: 16, borderRadius: "50%", border: "2.5px solid rgba(255,255,255,.3)", borderTopColor: "#fff", animation: "spinClover .8s linear infinite", display: "inline-block", marginLeft: 8 }} /></>
+            ) : (
+              <>{L(lang, { id: "Aktifkan Smart Account", en: "Activate Smart Account" })}<Icon.arrow size={18} stroke="#F4FBF6" /></>
+            )}
+          </button>
+        )}
       </div>
     </OBShell>
   );

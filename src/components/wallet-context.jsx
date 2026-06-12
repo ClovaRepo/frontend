@@ -141,14 +141,18 @@ export function WalletProvider({ children }) {
       await publicClient.waitForTransactionReceipt({ hash });
     } catch (err) {
       if (err.code === -32601 || err.code === 4200) {
-        // Method not supported — older MetaMask. Mark as upgraded anyway so
-        // user can proceed to OB4 (delegation signing is the key feature).
-        console.warn("[7702] eth_signAuthorization not supported, skipping upgrade. Delegation signing still works.");
-      } else {
-        throw err;
+        // Method not supported — older MetaMask. Do NOT fake success:
+        // surface a clear error so the UI shows "gagal", not a false "berhasil".
+        console.warn("[7702] eth_signAuthorization not supported by this wallet.");
+        throw new Error(
+          "Wallet belum mendukung EIP-7702 (eth_signAuthorization). " +
+          "Perbarui MetaMask ke versi terbaru lalu coba lagi."
+        );
       }
+      throw err;
     }
 
+    // Only reached on a real, confirmed upgrade.
     setIsUpgraded(true);
     return null;
   }, [account, publicClient]);
