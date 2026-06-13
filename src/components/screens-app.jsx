@@ -138,7 +138,7 @@ function ScreenDetailRonde({ lang, go, t }) {
   const [status, setStatus] = useState(null);
   const [decisions, setDecisions] = useState([]);
 
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? "http://localhost:3001";
+  const BACKEND_URL = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_BACKEND_URL) || "http://localhost:3001";
 
   useEffect(() => {
     fetch(`${BACKEND_URL}/status`).then(r => r.json()).then(setStatus).catch(() => {});

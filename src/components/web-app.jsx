@@ -138,12 +138,10 @@ function MainHead({ lang, title, sub, onDraw, go, poolYield, round }) {
 /* ===================== DASHBOARD ===================== */
 const BACKEND_URL_WEB = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_BACKEND_URL) || "http://localhost:3001";
 
-const BACKEND_URL_APP = (typeof import.meta !== "undefined" && import.meta.env?.VITE_BACKEND_URL) || "http://localhost:3001";
-
 function WinHistory({ lang }) {
   const [wins, setWins] = useState([]);
   useEffect(() => {
-    fetch(`${BACKEND_URL_APP}/wins?limit=5`).then(r => r.json()).then(d => Array.isArray(d) && setWins(d)).catch(() => {});
+    fetch(`${BACKEND_URL_WEB}/wins?limit=5`).then(r => r.json()).then(d => Array.isArray(d) && setWins(d)).catch(() => {});
   }, []);
   return (
     <div className="card card-pad-lg" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
