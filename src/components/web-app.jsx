@@ -154,6 +154,12 @@ function WinHistory({ lang }) {
                 <div className="col gap-2">
                   <span className="tiny" style={{ fontWeight: 700, color: "var(--ink-45)" }}>{L(lang, { id: "Ronde", en: "Round" })} #{w.round}</span>
                   <span className="tiny muted tnum">{w.winner !== "—" ? `${w.winner.slice(0,6)}…${w.winner.slice(-4)}` : "—"}</span>
+                  {w.txHash && (
+                    <a href={`https://basescan.org/tx/${w.txHash}`} target="_blank" rel="noopener noreferrer"
+                       className="tiny" style={{ color: "var(--clover)", fontWeight: 700, textDecoration: "none" }}>
+                      {L(lang, { id: "Verifikasi on-chain ↗", en: "Verify on-chain ↗" })}
+                    </a>
+                  )}
                 </div>
                 <span className="head tnum" style={{ fontSize: 14, color: "var(--gold-deep)" }}>{Number(w.prizeUsdc).toFixed(4)} USDC</span>
               </div>
