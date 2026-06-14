@@ -18,9 +18,14 @@ Most "AI agent + DeFi" projects ask users to trust the agent not to misbehave. C
 
 Two enforcement points. Neither controlled by the agent. Neither bypassable through off-chain instructions.
 
-```
-Attack → backend sends "sweep all" → DelegationManager: bounds exceeded → REVERT
-Attack → smart contract receives yield + principal → I1 guard → REVERT + refund
+```mermaid
+flowchart LR
+  A1["Backend sends<br/>'sweep all'"] --> DM{"DelegationManager<br/>bounds exceeded?"}
+  DM -->|"yes"| R1["REVERT"]
+  A2["Contract receives<br/>yield + principal"] --> I1{"I1 guard<br/>balance < baseline?"}
+  I1 -->|"yes"| R2["REVERT + refund"]
+  style R1 fill:#fde2e2,stroke:#c0392b
+  style R2 fill:#fde2e2,stroke:#c0392b
 ```
 
 ### 2. Venice Judges Protocols, Not Just Measures Them
@@ -59,31 +64,32 @@ Tickets are weighted by `principalBaseline[user]`. Splitting $1,000 across 10 wa
 
 ## Four Sponsor Technologies as Load-Bearing Pillars
 
+```mermaid
+flowchart TB
+  subgraph MM["🔐 MetaMask Smart Accounts"]
+    M1["EIP-7702: upgrade EOA → smart account"]
+    M2["ERC-7710: bounded delegation, yield-only"]
+  end
+  subgraph VE["🧠 Venice AI (web search)"]
+    V1["Daily: APY + TVL + audits + sentiment"]
+    V2["Output: recommendation + risk + reasoning"]
+  end
+  subgraph OS["⛽ 1Shot Relayer"]
+    O1["relayer_send7710Transaction"]
+    O2["EIP-7702 authList + USDC gas + batching"]
+  end
+  subgraph X4["💸 x402 + ERC-7710"]
+    XX1["x402: auto top-up Venice credits"]
+    XX2["ERC-7710: bounded treasury budget"]
+  end
+
+  MM -->|"permission envelope"| AGENT["Clova Agent"]
+  VE -->|"decision"| AGENT
+  AGENT -->|"execute"| OS
+  AGENT -->|"self-fund"| X4
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         CLOVA SYSTEM                            │
-│                                                                 │
-│  🔐 MetaMask Smart Accounts                                     │
-│     EIP-7702: upgrade user EOA → smart account                  │
-│     ERC-7710: bounded delegation → agent can only sweep yield   │
-│     Without this: agent must be custodial                       │
-│                                                                 │
-│  🧠 Venice AI (web search ON)                                   │
-│     Daily: evaluate APY + TVL + audits + sentiment              │
-│     Output: recommendation + risk score + human reasoning       │
-│     Without this: blind rule-based bot                          │
-│                                                                 │
-│  ⛽ 1Shot Relayer                                               │
-│     All execution via relayer_send7710Transaction               │
-│     EIP-7702 authorizationList + USDC gas payment               │
-│     Without this: users need ETH, no batching                   │
-│                                                                 │
-│  💸 x402 + ERC-7710                                             │
-│     x402: auto top-up Venice credits (treasury → ERC-3009)      │
-│     ERC-7710: bounded delegation for yield sweep & rotation     │
-│     Without this: agent needs manual top-ups, not autonomous    │
-└─────────────────────────────────────────────────────────────────┘
-```
+
+> Remove any one pillar and the model breaks: without MetaMask the agent is custodial, without Venice it is a blind rule-bot, without 1Shot users need ETH, without x402 the agent needs manual top-ups.
 
 ---
 

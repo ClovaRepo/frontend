@@ -10,6 +10,27 @@ Security in Clova is enforced at **multiple independent layers**. No single poin
 
 ## Three On-Chain Invariants
 
+Every agent action passes through three independent on-chain gates. A compromised agent, hacked Venice, or attacker-controlled backend still cannot get past them.
+
+```mermaid
+flowchart TB
+  ATK["Agent action<br/>(even if malicious / buggy)"] --> C0{"Delegation ceiling<br/>amount ≤ 5 USDC?"}
+  C0 -->|"no"| R0["REVERT<br/>(DelegationManager)"]
+  C0 -->|"yes"| C1{"I1 · balance ≥<br/>principalBaseline?"}
+  C1 -->|"no · touches principal"| R1["REVERT + refund"]
+  C1 -->|"yes · yield only"| C2{"I3 · target in<br/>whitelist?"}
+  C2 -->|"no"| R2["REVERT<br/>(approvedProtocols)"]
+  C2 -->|"yes"| C3{"I2 · exit to<br/>winner or treasury?"}
+  C3 -->|"no"| R3["impossible<br/>(no arbitrary transfer fn)"]
+  C3 -->|"yes"| OK["Execute ·<br/>yield → prize pool"]
+
+  style R0 fill:#fde2e2,stroke:#c0392b
+  style R1 fill:#fde2e2,stroke:#c0392b
+  style R2 fill:#fde2e2,stroke:#c0392b
+  style R3 fill:#fde2e2,stroke:#c0392b
+  style OK fill:#dff5e6,stroke:#2FA56B
+```
+
 ### I1 — Principal Guarded On-Chain
 
 ```solidity

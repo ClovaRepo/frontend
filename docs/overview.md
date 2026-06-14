@@ -59,6 +59,24 @@ Existing prize savings protocols either:
 
 ## The Solution
 
+```mermaid
+flowchart TB
+  subgraph L1["Layer 1 · Non-custodial"]
+    A["Principal stays in user's<br/>own smart account"]
+  end
+  subgraph L2["Layer 2 · AI yield hunting"]
+    B["Venice judges protocol<br/>health via web search"]
+  end
+  subgraph L3["Layer 3 · Provably fair"]
+    C["Pyth Entropy VRF<br/>picks winners on-chain"]
+  end
+  subgraph L4["Layer 4 · Self-funded"]
+    D["x402 tops up Venice<br/>from treasury"]
+  end
+  A --> B --> C
+  D -. funds .-> B
+```
+
 ### Layer 1 — Non-Custodial Principal Protection (ERC-7710 + EIP-7702)
 
 Users upgrade their EOA to a smart account (EIP-7702) and sign a single bounded delegation. The agent receives exactly one capability:
@@ -147,42 +165,25 @@ Together: x402 keeps the agent funded autonomously, ERC-7710 keeps the agent's p
 
 ## Round Flow
 
+```mermaid
+flowchart TD
+  O["1 · ONBOARD (once)<br/>Connect → EIP-7702 upgrade<br/>→ sign one delegation → deposit USDC"]
+  AC["2 · ACCUMULATE (continuous)<br/>aTokens accrue yield in user's<br/>own smart account"]
+  AI["3 · AI ANALYSIS (daily)<br/>Venice + web search →<br/>STAY or ROTATE + reasoning"]
+  SW["4 · SWEEP YIELD (daily)<br/>yield = balance − baseline<br/>batched via 1Shot relayer"]
+  RO["5 · ROTATE (if recommended)<br/>move positions within whitelist<br/>gas paid in USDC"]
+  DR["6 · DRAW (weekly)<br/>Pyth Entropy VRF picks winner<br/>weighted by principal"]
+  GUARD{"On-chain guard<br/>balance ≥ baseline?"}
+
+  O --> AC --> AI --> SW
+  SW --> GUARD
+  GUARD -->|"yes · yield only"| RO
+  GUARD -->|"no · touches principal"| REV["REVERT<br/>principal protected"]
+  RO --> DR
+  DR -->|"90% → winner · 10% → treasury<br/>losers keep 100% principal"| AI
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         CLOVA ROUND FLOW                            │
-└─────────────────────────────────────────────────────────────────────┘
 
-  1. ONBOARD (one time)
-     Connect MetaMask → upgrade EOA to Smart Account (EIP-7702)
-     → sign ONE bounded delegation (ERC-7710) → deposit USDC into Aave
-
-  2. ACCUMULATE (continuous)
-     aTokens accrue yield directly in user's own smart account wallet
-     User can deposit more or withdraw principal anytime
-
-  3. AI ANALYSIS (daily — Venice + web search)
-     Venice evaluates: APY, TVL, utilization, audits, sentiment, switching cost
-     → "TETAP" (stay) or "PINDAH ke [Protocol]" (rotate to better option)
-     Every decision logged with full reasoning + citations
-
-  4. SWEEP YIELD (daily — batch via 1Shot relayer)
-     Agent computes yield = aToken balance − principalBaseline per user
-     → Withdraws yield via ERC-7710 delegation → deposits into prize pool
-     On-chain guard: if remaining < baseline → REVERT (principal protected)
-     All users swept in ONE on-chain transaction (1Shot batch)
-
-  5. ROTATE (if AI recommends — same day as sweep)
-     Agent moves all user positions from current protocol to recommended one
-     Delegation caveats limit targets to whitelist (Aave/Compound/Moonwell)
-     Gas paid in USDC via 1Shot — users need no ETH
-
-  6. DRAW (weekly — Pyth Entropy VRF)
-     Smart contract requests randomness from Pyth Entropy
-     On-chain callback selects winner proportional to principalBaseline
-     10% of prize → treasury. 90% → winner. Loser: principal intact.
-
-  ↻ Repeat from step 3
-```
+> One winner per draw. Everyone else keeps their full principal and can withdraw anytime.
 
 ---
 

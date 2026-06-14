@@ -22,11 +22,49 @@
 | Moonwell mUSDC | `0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22` |
 | Pyth Entropy | `0x6E7D74FA7d5c90FEF9F0512987605a6d546181Bb` |
 
+### Contract Relationships
+
+```mermaid
+flowchart TB
+  POOL["ClovaSavingsPool<br/>(UUPS proxy)"]
+  IFACE["IYieldAdapter"]
+  AA["AaveAdapter"]
+  CA["CompoundAdapter"]
+  MA["MoonwellAdapter"]
+  RH["RotationHelper<br/>(atomic swaps)"]
+  PYTH["Pyth Entropy"]
+
+  POOL -->|"active adapter"| IFACE
+  IFACE --- AA & CA & MA
+  AA --> AAVE[("Aave v3")]
+  CA --> COMP[("Compound Comet")]
+  MA --> MOON[("Moonwell mToken")]
+  POOL -->|"requestDraw → callback"| PYTH
+  RH --> AAVE & MOON
+```
+
 ---
 
 ## RotationHelper
 
 Kontrak helper untuk rotasi protokol yang **atomic** — seluruh perpindahan dana terjadi dalam 1 transaksi EVM. Jika ada langkah yang gagal, EVM otomatis revert dan user tetap memegang token aslinya.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Agent
+  participant RH as RotationHelper
+  participant Aave
+  participant Moonwell
+  participant User
+
+  Agent->>RH: rotateAaveToMoonwell(user, amount)
+  RH->>User: transferFrom aUSDC
+  RH->>Aave: withdraw(USDC) → USDC
+  RH->>Moonwell: mint(USDC) → mUSDC
+  RH->>User: transfer mUSDC
+  Note over RH,User: 1 atomic tx · any failure reverts all<br/>user keeps original tokens · zero custody window
+```
 
 ### Alur Aave → Moonwell
 

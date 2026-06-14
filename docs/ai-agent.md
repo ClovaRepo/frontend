@@ -6,6 +6,17 @@ The Clova agent is an autonomous backend process that runs on a cron schedule. I
 
 The agent has a **private key** but never holds user funds. It redeems ERC-7710 delegations to act on behalf of users — always within the mathematical bounds of those delegations.
 
+```mermaid
+flowchart LR
+  DL["DeFiLlama +<br/>LI.FI Earn API"] --> N["Normalizer<br/>+ on-chain utilization"]
+  N --> V["Venice Reasoner<br/>web search"]
+  V --> G["Guardrail<br/>whitelist + risk checks"]
+  G -->|"approved"| E["Executor<br/>1Shot redeem (7702 + 7710)"]
+  G -->|"blocked / halt"| LOG
+  E --> LOG["Decision Log<br/>GET /decisions"]
+  X["x402 · treasury<br/>ERC-7710 delegation"] -. "pays per call" .-> V
+```
+
 ---
 
 ## Agent Wallet
@@ -89,14 +100,22 @@ interface VeniceDecision {
 
 Every Venice API call is paid autonomously by the agent via x402, funded through a **proper ERC-7710 delegation** from the treasury:
 
-```
-Agent calls x402 proxy (POST /x402/venice)
-  → Proxy returns HTTP 402 with payment requirements
-  → Agent redeems treasury ERC-7710 delegation:
-       DelegationManager.redeemDelegations([treasuryDelegation], [usdcTransfer])
-  → USDC transferred on-chain to Venice facilitator
-  → Agent includes X-402-Payment proof header
-  → Proxy forwards to Venice API → AI response returned
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Agent
+  participant Proxy as x402 Proxy
+  participant DM as DelegationManager
+  participant Venice
+
+  Agent->>Proxy: POST /x402/venice (no payment)
+  Proxy-->>Agent: 402 Payment Required (amount, facilitator, token)
+  Agent->>DM: redeemDelegations([treasuryDelegation], [usdcTransfer])
+  Note over DM: Erc20TransferAmountEnforcer<br/>≤ 5 USDC · Venice facilitator only
+  DM->>Venice: USDC transferred on-chain
+  Agent->>Proxy: retry with X-402-Payment proof
+  Proxy->>Venice: forward request
+  Venice-->>Agent: AI response
 ```
 
 **Payment:** 0.001 USDC per Venice call  

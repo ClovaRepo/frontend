@@ -19,6 +19,14 @@ Clova uses a third option: **bounded delegation**. The user signs a permission t
 
 ## Two Technologies Working Together
 
+```mermaid
+flowchart LR
+  EOA["Plain EOA<br/>(no code)"] -->|"EIP-7702<br/>signAuthorization"| SA["Smart Account<br/>EIP7702StatelessDeleGator"]
+  SA -->|"ERC-7710 / 7715<br/>sign permission + caveats"| DEL["Signed delegation<br/>(permissionContext)"]
+  DEL -->|"redeem on behalf"| AGENT["AI Agent"]
+  AGENT -.->|"every action checked by"| DM["DelegationManager<br/>reverts if out of bounds"]
+```
+
 ### EIP-7702 — Upgrade EOA to Smart Account
 
 An ordinary Ethereum wallet (EOA) cannot enforce delegation logic — it has no code. EIP-7702 solves this by pointing the EOA's code slot to a smart contract implementation (MetaMask's `EIP7702StatelessDeleGator`).
@@ -173,18 +181,30 @@ await rpc("relayer_send7710Transaction", [{
 
 ### What happens on-chain
 
-```
-1. 1Shot relayer submits the transaction (gas paid in USDC)
-2. DelegationManager verifies the ERC-7715 permission:
-   - Signature is valid (user signed this permission)
-   - Transfer amount ≤ the 5 USDC aUSDC allowance ceiling
-   → If the amount exceeds the ceiling: REVERT
-3. If valid: executes aUSDC.transfer(agent, yieldAmount)
-4. Agent redeems aUSDC → USDC via Aave.withdraw(USDC, yield, agent)
-5. Agent calls pool.depositYield(user, amount)
-6. Pool contract checks: aToken balance − baseline ≥ 0
-   → If principal would be reduced: REVERT + refund
-   → If yield only: roundYieldPool += amount
+```mermaid
+sequenceDiagram
+  autonumber
+  participant 1Shot
+  participant DM as DelegationManager
+  participant SA as User Smart Account
+  participant Aave
+  participant Pool as ClovaSavingsPool
+
+  1Shot->>DM: submit tx (gas paid in USDC)
+  DM->>DM: verify signature + amount ≤ 5 USDC ceiling
+  alt amount exceeds ceiling
+    DM-->>1Shot: REVERT
+  else valid
+    DM->>SA: aUSDC.transfer(agent, yield)
+    SA->>Aave: withdraw(USDC, yield, agent)
+    SA->>Pool: depositYield(user, amount)
+    Pool->>Pool: check balance − baseline ≥ 0
+    alt principal would drop
+      Pool-->>SA: REVERT + refund
+    else yield only
+      Pool->>Pool: roundYieldPool += amount
+    end
+  end
 ```
 
 The agent's reach is bounded twice: the delegation caps how much aUSDC can move (5 USDC), and the pool's `depositYield()` guard refuses any deposit that would leave the user below their principal. Worst case, a fully compromised agent moves at most 5 USDC of a user's funds.
@@ -245,34 +265,14 @@ Revocation is **immediate** — the agent cannot perform any further actions on 
 
 ## Delegation Lifecycle Summary
 
-```
-USER SIDE                                    AGENT SIDE
-
-[Onboarding]
-  ↓
-wallet_grantPermissions()
-  → permissionContext signed
-  → stored in backend
-                                             [Daily sweep cycle]
-                                               ↓
-                                             Load permissionContext per user
-                                               ↓
-                                             Build executions (withdraw yield)
-                                               ↓
-                                             encodeRedeemDelegations()
-                                               ↓
-                                             relayer_send7710Transaction (1Shot)
-                                               ↓
-                                             DelegationManager verifies caveats
-                                               ↓
-                                             Execute on-chain (withdraw + depositYield)
-
-[Revoke]
-  ↓
-DELETE /delegation/:address
-                                             [Next cycle]
-                                               ↓
-                                             User not in delegation store → skipped
+```mermaid
+stateDiagram-v2
+  [*] --> Signed: onboarding · wallet_grantPermissions()
+  Signed --> Stored: permissionContext saved in backend
+  Stored --> Redeemed: daily sweep · 1Shot redeem + DelegationManager check
+  Redeemed --> Stored: next round (delegation reused)
+  Stored --> Revoked: user clicks "Cabut Izin" · DELETE /delegation
+  Revoked --> [*]: agent skips user, zero access
 ```
 
 ---

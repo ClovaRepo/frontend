@@ -2,43 +2,41 @@
 
 ## System Overview
 
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                              CLOVA SYSTEM                                    │
-├──────────────────┬───────────────────────────┬──────────────────────────────┤
-│   FRONTEND       │       BACKEND AGENT        │     BLOCKCHAIN (Base)         │
-│   (Next.js)      │     (Node + TypeScript)    │                              │
-│                  │                            │  ┌─────────────────────────┐ │
-│  ┌────────────┐  │  ┌─────────────────────┐  │  │   ClovaSavingsPool      │ │
-│  │  Onboarding│  │  │  Signal Collector   │  │  │   principalBaseline[]   │ │
-│  │  EIP-7702  │  │  │  LI.FI Earn API     │  │  │   roundYieldPool        │ │
-│  │  Upgrade   │──┼─▶│  + DeFiLlama fallbk │  │  │   Pyth Entropy VRF      │ │
-│  └────────────┘  │  └─────────────────────┘  │  └─────────────────────────┘ │
-│                  │            │               │              │               │
-│  ┌────────────┐  │  ┌─────────▼───────────┐  │  ┌──────────▼──────────────┐ │
-│  │  Delegation│  │  │  Venice AI Reasoner │  │  │   AaveAdapter           │ │
-│  │  Signer    │  │  │  Web Search ON      │  │  │   CompoundAdapter       │ │
-│  │  ERC-7710  │──┼─▶│  JSON output guard  │  │  │   MoonwellAdapter       │ │
-│  └────────────┘  │  └─────────────────────┘  │  └─────────────────────────┘ │
-│                  │            │               │                              │
-│  ┌────────────┐  │  ┌─────────▼───────────┐  │  ┌─────────────────────────┐ │
-│  │  Dashboard │  │  │  Guardrail Layer    │  │  │   User Smart Accounts   │ │
-│  │  AI Panel  │◀─┼──│  TVL / RiskScore /  │  │  │   (EIP-7702 upgraded)   │ │
-│  │  Win Chance│  │  │  APY delta checks   │  │  │   aTokens held here     │ │
-│  └────────────┘  │  └─────────────────────┘  │  └─────────────────────────┘ │
-│                  │            │               │                              │
-│                  │  ┌─────────▼───────────┐  │                              │
-│                  │  │  Executor           │──┼─▶  1Shot Relayer              │
-│                  │  │  sweepYieldBatch()  │  │    relayer_send7710Tx         │
-│                  │  │  rotateProtocol()   │  │    (EIP-7702 + ERC-7710)     │
-│                  │  │  requestDraw()      │  │                              │
-│                  │  └─────────────────────┘  │                              │
-│                  │            │               │                              │
-│                  │  ┌─────────▼───────────┐  │                              │
-│                  │  │  x402 Payer         │──┼─▶  Venice API (paid/call)     │
-│                  │  │  Treasury delegation│  │                              │
-│                  │  └─────────────────────┘  │                              │
-└──────────────────┴───────────────────────────┴──────────────────────────────┘
+```mermaid
+flowchart LR
+  subgraph FE["Frontend · Next.js"]
+    OB["Onboarding<br/>EIP-7702 upgrade"]
+    DS["Delegation signer<br/>ERC-7710"]
+    DB["Dashboard +<br/>AI Transparency Panel"]
+  end
+
+  subgraph BE["Backend Agent · Node + TS"]
+    SIG["Signal Collector<br/>LI.FI + DeFiLlama"]
+    VEN["Venice Reasoner<br/>web search"]
+    GR["Guardrail Layer"]
+    EX["Executor<br/>sweep · rotate · draw"]
+    X4["x402 Payer"]
+  end
+
+  subgraph CH["Base Mainnet"]
+    POOL["ClovaSavingsPool<br/>baseline · yield pool · VRF"]
+    ADP["Aave / Compound /<br/>Moonwell adapters"]
+    SA["User Smart Accounts<br/>hold aTokens"]
+  end
+
+  ONE["1Shot Relayer<br/>7702 + 7710"]
+  VAPI["Venice API"]
+  PYTH["Pyth Entropy VRF"]
+
+  OB --> SA
+  DS --> EX
+  SIG --> VEN --> GR --> EX
+  EX --> ONE --> POOL
+  POOL --> ADP --> SA
+  X4 --> VAPI
+  VEN -. paid per call .-> X4
+  POOL --> PYTH
+  EX --> DB
 ```
 
 ---
@@ -95,81 +93,74 @@
 
 ## Data Flow: Daily Sweep Cycle
 
-```
-node-cron fires (ROUND_CRON)
-    │
-    ├─▶ collectSignals()
-    │       LI.FI Earn API → APY, TVL per protocol
-    │       DeFiLlama fallback if LI.FI fails
-    │       On-chain RPC → utilization rates (Aave, Compound, Moonwell)
-    │
-    ├─▶ veniceReason(summary)  ← pays Venice via x402
-    │       Venice AI + web search
-    │       Returns: { recommendation, riskScore, reasoning, citations }
-    │
-    ├─▶ checkGuardrails(signals, decision)
-    │       Emergency: Aave TVL < $10M → halt
-    │       Block: riskScore ≥ 70 → stay
-    │       Block: target TVL < $500K → stay
-    │       Block: APY delta < 0.5% → stay
-    │
-    ├─▶ sweepYieldBatch(users, yields, delegations)
-    │       Build withdrawExecutions per user (protocol-aware)
-    │       1Shot: single relayer_send7710Transaction (all users, 1 tx)
-    │       Wait confirm → approve USDC → depositYield per user
-    │       Contract enforces I1: remaining ≥ baseline or REVERT
-    │
-    ├─▶ rotateProtocolWithFunds() [if recommendation ≠ TETAP]
-    │       For each user: RotationHelper.rotateAaveToMoonwell() OR rotateMoonwellToAave()
-    │       Single atomic tx per user — EVM reverts if any step fails, user keeps original tokens
-    │       Call pool.rotateProtocol(newProtocol) to update active adapter
-    │
-    └─▶ saveDecision() → GET /decisions (AI transparency panel)
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Cron as node-cron
+  participant Agent
+  participant Venice
+  participant Guard as Guardrail
+  participant 1Shot
+  participant Pool as ClovaSavingsPool
 
-node-cron fires (DRAW_CRON — weekly)
-    │
-    └─▶ requestDraw()
-            pool.requestDraw() → Pyth Entropy request
-            → entropyCallback(randomBytes32)
-            → weighted selection (proportional to principalBaseline)
-            → fee to treasury, prize to winner
-            → _startNewRound()
+  Cron->>Agent: ROUND_CRON fires (daily)
+  Agent->>Agent: collectSignals() · LI.FI + DeFiLlama + RPC
+  Agent->>Venice: veniceReason(summary) — paid via x402
+  Venice-->>Agent: { recommendation, riskScore, reasoning, citations }
+  Agent->>Guard: checkGuardrails(signals, decision)
+  Note over Guard: halt if Aave TVL < $10M<br/>stay if risk ≥ 70 / TVL < $500K / Δapy < 0.5%
+  loop all users (batched in 1 tx)
+    Agent->>1Shot: relayer_send7710Transaction (sweep executions)
+    1Shot->>Pool: withdraw yield → depositYield(user, amount)
+    Pool-->>Pool: require remaining ≥ baseline (I1) else REVERT
+  end
+  opt recommendation ≠ STAY
+    Agent->>1Shot: RotationHelper.rotate (atomic, per user)
+  end
+  Agent->>Agent: saveDecision() → GET /decisions
+```
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Cron as node-cron
+  participant Pool as ClovaSavingsPool
+  participant Pyth as Pyth Entropy
+
+  Cron->>Pool: DRAW_CRON fires (weekly) · requestDraw()
+  Pool->>Pyth: request randomness
+  Pyth-->>Pool: entropyCallback(randomBytes32)
+  Pool->>Pool: weighted winner (∝ principalBaseline)
+  Pool->>Pool: 10% → treasury, 90% → winner, _startNewRound()
 ```
 
 ---
 
 ## Data Flow: User Onboarding
 
-```
-User opens Clova
-    │
-    ├─▶ Connect MetaMask
-    │       wallet_requestAccounts
-    │       Switch to Base Mainnet (chain 8453)
-    │
-    ├─▶ Upgrade to Smart Account (EIP-7702)
-    │       walletClient.signAuthorization({ contractAddress: EIP7702_IMPL })
-    │       MetaMask signs 7702 authorization → agent EOA becomes smart account
-    │
-    ├─▶ Sign Delegation (ERC-7715)
-    │       erc7715ProviderActions → requestExecutionPermissions
-    │       Permission: erc20-token-allowance on aUSDC, 5 USDC ceiling
-    │       Delegate: 1Shot relayer · principal guarded on-chain by depositYield()
-    │       → permissionContext stored in backend via POST /delegation
-    │
-    ├─▶ Approve tokens (one-time setup)
-    │       usdc.approve(AAVE_POOL, amount)
-    │       aUSDC.approve(ROTATION_HELPER, max)   ← untuk rotasi Aave→Moonwell
-    │       mUSDC.approve(ROTATION_HELPER, max)   ← untuk rotasi Moonwell→Aave
-    │
-    ├─▶ Supply to Aave
-    │       aave.supply(USDC, amount, userAddress, 0)
-    │       User receives aUSDC in their own wallet
-    │
-    └─▶ Record Principal
-            POST /record-principal → backend reads aToken balance on-chain
-            pool.recordPrincipal(user, actualBalance) via agent wallet
-            eligibleFromRound = currentRound + 1 (anti-sniping)
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant FE as Frontend
+  participant MM as MetaMask
+  participant BE as Backend
+  participant Aave
+  participant Pool as ClovaSavingsPool
+
+  U->>FE: open Clova → Connect wallet
+  FE->>MM: wallet_requestAccounts + switch to Base (8453)
+  FE->>MM: signAuthorization (EIP-7702 → EIP7702_IMPL)
+  MM-->>FE: EOA upgraded to smart account
+  FE->>MM: requestExecutionPermissions (ERC-7715)
+  Note over MM: erc20-token-allowance on aUSDC<br/>5 USDC ceiling · delegate = 1Shot relayer
+  MM-->>FE: permissionContext
+  FE->>BE: POST /delegation (store permissionContext)
+  U->>FE: approve USDC + aUSDC/mUSDC to RotationHelper
+  FE->>Aave: supply(USDC, amount, user, 0) → user holds aUSDC
+  FE->>BE: POST /record-principal
+  BE->>Pool: recordPrincipal(user, onchainBalance)
+  Note over Pool: eligibleFromRound = currentRound + 1 (anti-sniping)
 ```
 
 ---

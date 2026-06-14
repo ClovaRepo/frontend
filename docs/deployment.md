@@ -2,10 +2,15 @@
 
 ## Architecture
 
-```
-Vercel    → Frontend (Next.js static)
-Railway   → Backend Agent (Node.js persistent process + cron)
-Base      → Smart Contracts (already deployed)
+```mermaid
+flowchart LR
+  U["User browser"] --> V["Vercel<br/>Next.js frontend"]
+  V -->|"REST + delegation"| R["Railway<br/>Node agent + cron"]
+  R --> ONE["1Shot Relayer"]
+  R --> VE["Venice API"]
+  R --> PY["Pyth Entropy"]
+  ONE --> B[("Base Mainnet<br/>ClovaSavingsPool · adapters · RotationHelper")]
+  R -. reads/writes .-> B
 ```
 
 ---

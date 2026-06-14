@@ -26,24 +26,25 @@ In Phase 1, one Venice AI instance does everything: analyze, decide, and supervi
 
 **Phase 2 introduces a specialized multi-agent architecture** where each agent is an expert at one job:
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    CLOVA MULTI-AGENT SYSTEM (Phase 2)                   │
-│                                                                         │
-│  ┌──────────────────┐   ┌──────────────────┐   ┌──────────────────┐   │
-│  │  ANALYST AGENTS  │   │  STRATEGY AGENT  │   │    RISK AGENT    │   │
-│  │  (one per        │   │  (synthesizes    │   │  (portfolio-     │   │
-│  │   protocol)      │──▶│   all analyst    │──▶│   level safety   │   │
-│  │                  │   │   reports)       │   │   checks)        │   │
-│  └──────────────────┘   └──────────────────┘   └──────────────────┘   │
-│                                                          │              │
-│  ┌──────────────────┐   ┌──────────────────┐            │              │
-│  │  OPPORTUNITY     │   │  EXECUTION AGENT │◀───────────┘              │
-│  │  AGENT           │──▶│  (builds txs,    │                           │
-│  │  (finds new      │   │   calls 1Shot,   │                           │
-│  │   protocols)     │   │   sweeps yield)  │                           │
-│  └──────────────────┘   └──────────────────┘                           │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+  subgraph Analysts["Analyst Agents · one per protocol (parallel)"]
+    A1["Aave analyst"]
+    A2["Compound analyst"]
+    A3["Moonwell analyst"]
+  end
+  OPP["Opportunity Agent<br/>scans new protocols"]
+  STRAT["Strategy Agent<br/>allocation %"]
+  RISK["Risk Agent<br/>portfolio safety · can veto"]
+  EXEC["Execution Agent<br/>builds txs · RotationHelper · 1Shot"]
+
+  A1 --> STRAT
+  A2 --> STRAT
+  A3 --> STRAT
+  OPP -.-> STRAT
+  STRAT --> RISK
+  RISK -->|"approved"| EXEC
+  RISK -->|"veto / adjust"| STRAT
 ```
 
 ### Agent Roles
