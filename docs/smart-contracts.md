@@ -26,21 +26,26 @@
 
 ```mermaid
 flowchart TB
-  POOL["ClovaSavingsPool<br/>(UUPS proxy)"]
+  POOL["ClovaSavingsPool (UUPS proxy)"]
   IFACE["IYieldAdapter"]
   AA["AaveAdapter"]
   CA["CompoundAdapter"]
   MA["MoonwellAdapter"]
-  RH["RotationHelper<br/>(atomic swaps)"]
+  RH["RotationHelper (atomic swaps)"]
   PYTH["Pyth Entropy"]
-
-  POOL -->|"active adapter"| IFACE
-  IFACE --- AA & CA & MA
-  AA --> AAVE[("Aave v3")]
-  CA --> COMP[("Compound Comet")]
-  MA --> MOON[("Moonwell mToken")]
-  POOL -->|"requestDraw → callback"| PYTH
-  RH --> AAVE & MOON
+  AAVE[("Aave v3")]
+  COMP[("Compound Comet")]
+  MOON[("Moonwell mToken")]
+  POOL -->|active adapter| IFACE
+  IFACE --- AA
+  IFACE --- CA
+  IFACE --- MA
+  AA --> AAVE
+  CA --> COMP
+  MA --> MOON
+  POOL -->|"requestDraw then callback"| PYTH
+  RH --> AAVE
+  RH --> MOON
 ```
 
 ---
@@ -63,7 +68,7 @@ sequenceDiagram
   RH->>Aave: withdraw(USDC) → USDC
   RH->>Moonwell: mint(USDC) → mUSDC
   RH->>User: transfer mUSDC
-  Note over RH,User: 1 atomic tx · any failure reverts all<br/>user keeps original tokens · zero custody window
+  Note over RH,User: 1 atomic tx; any failure reverts all; user keeps original tokens; zero custody window
 ```
 
 ### Alur Aave → Moonwell

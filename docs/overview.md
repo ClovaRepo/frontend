@@ -61,20 +61,12 @@ Existing prize savings protocols either:
 
 ```mermaid
 flowchart TB
-  subgraph L1["Layer 1 · Non-custodial"]
-    A["Principal stays in user's<br/>own smart account"]
-  end
-  subgraph L2["Layer 2 · AI yield hunting"]
-    B["Venice judges protocol<br/>health via web search"]
-  end
-  subgraph L3["Layer 3 · Provably fair"]
-    C["Pyth Entropy VRF<br/>picks winners on-chain"]
-  end
-  subgraph L4["Layer 4 · Self-funded"]
-    D["x402 tops up Venice<br/>from treasury"]
-  end
+  A["Layer 1 - Non-custodial: principal stays in user's own smart account"]
+  B["Layer 2 - AI hunting: Venice judges protocol health via web search"]
+  C["Layer 3 - Provably fair: Pyth Entropy VRF picks winners on-chain"]
+  D["Layer 4 - Self-funded: x402 tops up Venice from treasury"]
   A --> B --> C
-  D -. funds .-> B
+  D -.->|funds| B
 ```
 
 ### Layer 1 — Non-Custodial Principal Protection (ERC-7710 + EIP-7702)
@@ -167,20 +159,19 @@ Together: x402 keeps the agent funded autonomously, ERC-7710 keeps the agent's p
 
 ```mermaid
 flowchart TD
-  O["1 · ONBOARD (once)<br/>Connect → EIP-7702 upgrade<br/>→ sign one delegation → deposit USDC"]
-  AC["2 · ACCUMULATE (continuous)<br/>aTokens accrue yield in user's<br/>own smart account"]
-  AI["3 · AI ANALYSIS (daily)<br/>Venice + web search →<br/>STAY or ROTATE + reasoning"]
-  SW["4 · SWEEP YIELD (daily)<br/>yield = balance − baseline<br/>batched via 1Shot relayer"]
-  RO["5 · ROTATE (if recommended)<br/>move positions within whitelist<br/>gas paid in USDC"]
-  DR["6 · DRAW (weekly)<br/>Pyth Entropy VRF picks winner<br/>weighted by principal"]
-  GUARD{"On-chain guard<br/>balance ≥ baseline?"}
-
-  O --> AC --> AI --> SW
-  SW --> GUARD
-  GUARD -->|"yes · yield only"| RO
-  GUARD -->|"no · touches principal"| REV["REVERT<br/>principal protected"]
+  O["1 - Onboard once: connect, EIP-7702 upgrade, sign one delegation, deposit USDC"]
+  AC["2 - Accumulate: aTokens accrue yield in user's own smart account"]
+  AI["3 - AI analysis daily: Venice + web search, stay or rotate with reasoning"]
+  SW["4 - Sweep yield daily: yield = balance minus baseline, batched via 1Shot"]
+  RO["5 - Rotate if recommended: move positions within whitelist, gas in USDC"]
+  DR["6 - Draw weekly: Pyth Entropy VRF picks winner, weighted by principal"]
+  GUARD{"On-chain guard: balance ≥ baseline?"}
+  REV["REVERT - principal protected"]
+  O --> AC --> AI --> SW --> GUARD
+  GUARD -->|"yes, yield only"| RO
+  GUARD -->|"no, touches principal"| REV
   RO --> DR
-  DR -->|"90% → winner · 10% → treasury<br/>losers keep 100% principal"| AI
+  DR -->|"winner 90%, treasury 10%, losers keep principal"| AI
 ```
 
 > One winner per draw. Everyone else keeps their full principal and can withdraw anytime.

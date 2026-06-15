@@ -21,10 +21,10 @@ Clova uses a third option: **bounded delegation**. The user signs a permission t
 
 ```mermaid
 flowchart LR
-  EOA["Plain EOA<br/>(no code)"] -->|"EIP-7702<br/>signAuthorization"| SA["Smart Account<br/>EIP7702StatelessDeleGator"]
-  SA -->|"ERC-7710 / 7715<br/>sign permission + caveats"| DEL["Signed delegation<br/>(permissionContext)"]
-  DEL -->|"redeem on behalf"| AGENT["AI Agent"]
-  AGENT -.->|"every action checked by"| DM["DelegationManager<br/>reverts if out of bounds"]
+  EOA["Plain EOA (no code)"] -->|"EIP-7702 signAuthorization"| SA["Smart Account (EIP7702StatelessDeleGator)"]
+  SA -->|"ERC-7710 / 7715 sign permission + caveats"| DEL["Signed delegation (permissionContext)"]
+  DEL -->|redeem on behalf| AGENT["AI Agent"]
+  AGENT -.->|every action checked by| DM["DelegationManager - reverts if out of bounds"]
 ```
 
 ### EIP-7702 — Upgrade EOA to Smart Account
@@ -191,7 +191,7 @@ sequenceDiagram
   participant Pool as ClovaSavingsPool
 
   1Shot->>DM: submit tx (gas paid in USDC)
-  DM->>DM: verify signature + amount ≤ 5 USDC ceiling
+  DM->>DM: verify signature and amount ≤ 5 USDC ceiling
   alt amount exceeds ceiling
     DM-->>1Shot: REVERT
   else valid
@@ -267,11 +267,11 @@ Revocation is **immediate** — the agent cannot perform any further actions on 
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Signed: onboarding · wallet_grantPermissions()
+  [*] --> Signed: onboarding - wallet_grantPermissions()
   Signed --> Stored: permissionContext saved in backend
-  Stored --> Redeemed: daily sweep · 1Shot redeem + DelegationManager check
+  Stored --> Redeemed: daily sweep - 1Shot redeem + DelegationManager check
   Redeemed --> Stored: next round (delegation reused)
-  Stored --> Revoked: user clicks "Cabut Izin" · DELETE /delegation
+  Stored --> Revoked: user clicks "Cabut Izin" - DELETE /delegation
   Revoked --> [*]: agent skips user, zero access
 ```
 

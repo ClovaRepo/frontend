@@ -8,13 +8,13 @@ The agent has a **private key** but never holds user funds. It redeems ERC-7710 
 
 ```mermaid
 flowchart LR
-  DL["DeFiLlama +<br/>LI.FI Earn API"] --> N["Normalizer<br/>+ on-chain utilization"]
-  N --> V["Venice Reasoner<br/>web search"]
-  V --> G["Guardrail<br/>whitelist + risk checks"]
-  G -->|"approved"| E["Executor<br/>1Shot redeem (7702 + 7710)"]
-  G -->|"blocked / halt"| LOG
-  E --> LOG["Decision Log<br/>GET /decisions"]
-  X["x402 · treasury<br/>ERC-7710 delegation"] -. "pays per call" .-> V
+  DL["DeFiLlama + LI.FI Earn API"] --> N["Normalizer + on-chain utilization"]
+  N --> V["Venice reasoner web search"]
+  V --> G["Guardrail whitelist + risk checks"]
+  G -->|approved| E["Executor 1Shot redeem 7702 + 7710"]
+  G -->|"blocked or halt"| LOG
+  E --> LOG["Decision log GET /decisions"]
+  X["x402 treasury ERC-7710 delegation"] -.->|pays per call| V
 ```
 
 ---
@@ -111,7 +111,7 @@ sequenceDiagram
   Agent->>Proxy: POST /x402/venice (no payment)
   Proxy-->>Agent: 402 Payment Required (amount, facilitator, token)
   Agent->>DM: redeemDelegations([treasuryDelegation], [usdcTransfer])
-  Note over DM: Erc20TransferAmountEnforcer<br/>≤ 5 USDC · Venice facilitator only
+  Note over DM: Erc20TransferAmountEnforcer; ≤ 5 USDC; Venice facilitator only
   DM->>Venice: USDC transferred on-chain
   Agent->>Proxy: retry with X-402-Payment proof
   Proxy->>Venice: forward request

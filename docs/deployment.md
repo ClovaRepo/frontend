@@ -4,13 +4,13 @@
 
 ```mermaid
 flowchart LR
-  U["User browser"] --> V["Vercel<br/>Next.js frontend"]
-  V -->|"REST + delegation"| R["Railway<br/>Node agent + cron"]
-  R --> ONE["1Shot Relayer"]
+  U["User browser"] --> V["Vercel - Next.js frontend"]
+  V -->|REST + delegation| R["Railway - Node agent + cron"]
+  R --> ONE["1Shot relayer"]
   R --> VE["Venice API"]
   R --> PY["Pyth Entropy"]
-  ONE --> B[("Base Mainnet<br/>ClovaSavingsPool · adapters · RotationHelper")]
-  R -. reads/writes .-> B
+  ONE --> B[("Base Mainnet - ClovaSavingsPool, adapters, RotationHelper")]
+  R -.->|reads/writes| B
 ```
 
 ---

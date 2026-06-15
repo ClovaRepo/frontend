@@ -20,12 +20,10 @@ Two enforcement points. Neither controlled by the agent. Neither bypassable thro
 
 ```mermaid
 flowchart LR
-  A1["Backend sends<br/>'sweep all'"] --> DM{"DelegationManager<br/>bounds exceeded?"}
-  DM -->|"yes"| R1["REVERT"]
-  A2["Contract receives<br/>yield + principal"] --> I1{"I1 guard<br/>balance < baseline?"}
-  I1 -->|"yes"| R2["REVERT + refund"]
-  style R1 fill:#fde2e2,stroke:#c0392b
-  style R2 fill:#fde2e2,stroke:#c0392b
+  A1["Backend sends 'sweep all'"] --> DM{"DelegationManager: bounds exceeded?"}
+  DM -->|yes| R1["REVERT"]
+  A2["Contract receives yield + principal"] --> I1{"I1 guard: below baseline?"}
+  I1 -->|yes| R2["REVERT + refund"]
 ```
 
 ### 2. Venice Judges Protocols, Not Just Measures Them
@@ -66,27 +64,15 @@ Tickets are weighted by `principalBaseline[user]`. Splitting $1,000 across 10 wa
 
 ```mermaid
 flowchart TB
-  subgraph MM["🔐 MetaMask Smart Accounts"]
-    M1["EIP-7702: upgrade EOA → smart account"]
-    M2["ERC-7710: bounded delegation, yield-only"]
-  end
-  subgraph VE["🧠 Venice AI (web search)"]
-    V1["Daily: APY + TVL + audits + sentiment"]
-    V2["Output: recommendation + risk + reasoning"]
-  end
-  subgraph OS["⛽ 1Shot Relayer"]
-    O1["relayer_send7710Transaction"]
-    O2["EIP-7702 authList + USDC gas + batching"]
-  end
-  subgraph X4["💸 x402 + ERC-7710"]
-    XX1["x402: auto top-up Venice credits"]
-    XX2["ERC-7710: bounded treasury budget"]
-  end
-
-  MM -->|"permission envelope"| AGENT["Clova Agent"]
-  VE -->|"decision"| AGENT
-  AGENT -->|"execute"| OS
-  AGENT -->|"self-fund"| X4
+  MM["MetaMask Smart Accounts: EIP-7702 upgrade + ERC-7710 bounded delegation"]
+  VE["Venice AI: daily APY, TVL, audits, sentiment to decision + reasoning"]
+  OS["1Shot Relayer: relayer_send7710Transaction, 7702 auth, USDC gas, batching"]
+  X4["x402 + ERC-7710: auto top-up Venice from bounded treasury"]
+  AGENT["Clova Agent"]
+  MM -->|permission envelope| AGENT
+  VE -->|decision| AGENT
+  AGENT -->|execute| OS
+  AGENT -->|self-fund| X4
 ```
 
 > Remove any one pillar and the model breaks: without MetaMask the agent is custodial, without Venice it is a blind rule-bot, without 1Shot users need ETH, without x402 the agent needs manual top-ups.

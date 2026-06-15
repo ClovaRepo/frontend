@@ -4,37 +4,33 @@
 
 ```mermaid
 flowchart LR
-  subgraph FE["Frontend · Next.js"]
-    OB["Onboarding<br/>EIP-7702 upgrade"]
-    DS["Delegation signer<br/>ERC-7710"]
-    DB["Dashboard +<br/>AI Transparency Panel"]
+  subgraph FE[Frontend Next.js]
+    OB[Onboarding EIP-7702 upgrade]
+    DS[Delegation signer ERC-7710]
+    DB[Dashboard + AI panel]
   end
-
-  subgraph BE["Backend Agent · Node + TS"]
-    SIG["Signal Collector<br/>LI.FI + DeFiLlama"]
-    VEN["Venice Reasoner<br/>web search"]
-    GR["Guardrail Layer"]
-    EX["Executor<br/>sweep · rotate · draw"]
-    X4["x402 Payer"]
+  subgraph BE[Backend Agent Node TS]
+    SIG[Signal collector LI.FI + DeFiLlama]
+    VEN[Venice reasoner web search]
+    GR[Guardrail layer]
+    EX[Executor sweep rotate draw]
+    X4[x402 payer]
   end
-
-  subgraph CH["Base Mainnet"]
-    POOL["ClovaSavingsPool<br/>baseline · yield pool · VRF"]
-    ADP["Aave / Compound /<br/>Moonwell adapters"]
-    SA["User Smart Accounts<br/>hold aTokens"]
+  subgraph CH[Base Mainnet]
+    POOL[ClovaSavingsPool baseline yield-pool VRF]
+    ADP[Aave Compound Moonwell adapters]
+    SA[User smart accounts hold aTokens]
   end
-
-  ONE["1Shot Relayer<br/>7702 + 7710"]
-  VAPI["Venice API"]
-  PYTH["Pyth Entropy VRF"]
-
+  ONE[1Shot relayer 7702 + 7710]
+  VAPI[Venice API]
+  PYTH[Pyth Entropy VRF]
   OB --> SA
   DS --> EX
   SIG --> VEN --> GR --> EX
   EX --> ONE --> POOL
   POOL --> ADP --> SA
   X4 --> VAPI
-  VEN -. paid per call .-> X4
+  VEN -.->|paid per call| X4
   POOL --> PYTH
   EX --> DB
 ```
@@ -104,11 +100,11 @@ sequenceDiagram
   participant Pool as ClovaSavingsPool
 
   Cron->>Agent: ROUND_CRON fires (daily)
-  Agent->>Agent: collectSignals() · LI.FI + DeFiLlama + RPC
+  Agent->>Agent: collectSignals() - LI.FI + DeFiLlama + RPC
   Agent->>Venice: veniceReason(summary) — paid via x402
   Venice-->>Agent: { recommendation, riskScore, reasoning, citations }
   Agent->>Guard: checkGuardrails(signals, decision)
-  Note over Guard: halt if Aave TVL < $10M<br/>stay if risk ≥ 70 / TVL < $500K / Δapy < 0.5%
+  Note over Guard: halt if Aave TVL below $10M; stay if risk ≥ 70, TVL below $500K, or apy delta below 0.5%
   loop all users (batched in 1 tx)
     Agent->>1Shot: relayer_send7710Transaction (sweep executions)
     1Shot->>Pool: withdraw yield → depositYield(user, amount)
@@ -127,7 +123,7 @@ sequenceDiagram
   participant Pool as ClovaSavingsPool
   participant Pyth as Pyth Entropy
 
-  Cron->>Pool: DRAW_CRON fires (weekly) · requestDraw()
+  Cron->>Pool: DRAW_CRON fires (weekly) - requestDraw()
   Pool->>Pyth: request randomness
   Pyth-->>Pool: entropyCallback(randomBytes32)
   Pool->>Pool: weighted winner (∝ principalBaseline)
@@ -153,7 +149,7 @@ sequenceDiagram
   FE->>MM: signAuthorization (EIP-7702 → EIP7702_IMPL)
   MM-->>FE: EOA upgraded to smart account
   FE->>MM: requestExecutionPermissions (ERC-7715)
-  Note over MM: erc20-token-allowance on aUSDC<br/>5 USDC ceiling · delegate = 1Shot relayer
+  Note over MM: erc20-token-allowance on aUSDC; 5 USDC ceiling; delegate = 1Shot relayer
   MM-->>FE: permissionContext
   FE->>BE: POST /delegation (store permissionContext)
   U->>FE: approve USDC + aUSDC/mUSDC to RotationHelper
