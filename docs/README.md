@@ -2,7 +2,7 @@
 
 > **No-loss prize-linked savings, autonomously managed by AI. Non-custodial by design. Live on Base.**
 
-![Clova landing](./images/01-landing-hero.png)
+<figure><img src="./images/01-landing-hero.png" alt="Clova landing page" width="100%"><figcaption></figcaption></figure>
 
 ---
 
