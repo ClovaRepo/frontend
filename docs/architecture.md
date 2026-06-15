@@ -179,9 +179,9 @@ Both configurable via env vars. Manual triggers available via `/admin/run-cycle`
 
 ## Mobile
 
-![Mobile dashboard](./images/09-mobile-dashboard.png)
+![Mobile landing](./images/09-mobile-landing.png)
 
-The same state layer drives a responsive mobile layout (bottom nav, address chip → popup with copy/disconnect).
+The same state layer drives a fully responsive mobile layout (bottom nav, address chip → popup with copy/disconnect).
 
 ---
 

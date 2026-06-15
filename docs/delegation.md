@@ -75,6 +75,8 @@ extendedWalletClient.requestExecutionPermissions([{
 }])
 ```
 
+![Delegation details — 5 AUSDC cap, recipient, Base](./images/11-delegation-details.png)
+
 ### What it grants — and what it does NOT
 
 | The agent CAN | The agent CANNOT |
