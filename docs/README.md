@@ -81,31 +81,6 @@ flowchart TB
 
 ---
 
-## Demo Script (2 Minutes)
-
-**0:00 — Problem (15s)**
-"Giving AI access to your crypto is scary. DeFi is complex. Individual yields are too small to be motivating. Clova fixes all three."
-
-**0:15 — Onboarding (20s)**
-User connects MetaMask → one EIP-7702 upgrade popup → one ERC-7710 delegation popup (caveats shown in plain language) → deposits USDC. Done.
-
-**0:35 — Dashboard (15s)**
-"Principal: $100 intact. Yield accruing. Win probability: 34% (proportional to deposit). Current protocol: Aave."
-
-**0:50 — AI Transparency Panel (20s)**
-Venice declined rotation last round because web search found TVL drop on Compound. Full reasoning shown. This is not a black box.
-
-**1:10 — Security Demo (15s)**
-Agent tries to sweep principal → smart contract reverts. On-screen. "Technically impossible, not just policy."
-
-**1:25 — x402 + Draw (20s)**
-x402 payment log: agent paid 0.001 USDC to Venice. Agent calls requestDraw() → Pyth Entropy → winner selected proportionally → yield distributed.
-
-**1:45 — Close (15s)**
-"MetaMask guards permissions. 1Shot handles gas. Venice provides intelligence. x402 makes the agent autonomous. Four technologies, one product."
-
----
-
 ## Live Contracts (Base Mainnet)
 
 | Contract | Address | Basescan |
