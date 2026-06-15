@@ -87,6 +87,8 @@ extendedWalletClient.requestExecutionPermissions([{
 
 ### How the user signs it (Frontend Flow)
 
+![Delegation popup](./images/05-delegation-popup.png)
+
 ```
 1. User clicks "Mulai Nabung" in onboarding
 2. Frontend calls wallet_grantPermissions (ERC-7715) via MetaMask SDK
@@ -251,6 +253,8 @@ Moonwell → Aave:
 ## Revocation
 
 Users can revoke their delegation at any time by clicking **"Cabut Izin"** in the dashboard.
+
+![Revoke permission](./images/08-revoke.png)
 
 ```
 1. Frontend calls backend: DELETE /delegation/:userAddress

@@ -2,6 +2,8 @@
 
 > **No-loss prize-linked savings, autonomously managed by AI. Non-custodial by design. Live on Base.**
 
+![Clova landing](./images/01-landing-hero.png)
+
 ---
 
 ## The One-Paragraph Pitch

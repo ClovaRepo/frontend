@@ -108,6 +108,8 @@ Venice AI is not a simple alert system. It actively evaluates whether there is a
 
 This reasoning is displayed word-for-word in the AI Transparency Panel. Users see exactly what the AI was thinking.
 
+![AI Transparency Panel](./images/03-ai-panel.png)
+
 **Guardrails block the AI when:**
 - Risk score ≥ 70/100
 - Target TVL < $500K
@@ -115,6 +117,8 @@ This reasoning is displayed word-for-word in the AI Transparency Panel. Users se
 - Aave TVL drops below $10M (emergency halt)
 
 ### Layer 3 — Provably Fair Winner Selection (Pyth Entropy VRF)
+
+![Prize draw](./images/07-prize-draw.png)
 
 Winner selection is not performed by the AI, the contract owner, or any off-chain randomness. Pyth Entropy generates a **verifiable random number on-chain** — the seed is committed before reveal, and anyone can verify on Basescan that the result was not manipulated.
 

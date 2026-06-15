@@ -41,6 +41,8 @@ flowchart LR
 
 ### Frontend (Next.js + Wagmi + viem)
 
+![Dashboard](./images/02-dashboard.png)
+
 | Component | File | Responsibility |
 |---|---|---|
 | Landing Page | `web-landing.jsx` | Marketing, connect CTA |
@@ -134,6 +136,9 @@ sequenceDiagram
 
 ## Data Flow: User Onboarding
 
+![Connect wallet](./images/04-onboarding-connect.png)
+![Deposit USDC](./images/06-deposit.png)
+
 ```mermaid
 sequenceDiagram
   autonumber
@@ -169,6 +174,14 @@ sequenceDiagram
 | `DRAW_CRON` | `0 0 * * 0` (Sunday midnight) | Prize draw via Pyth VRF |
 
 Both configurable via env vars. Manual triggers available via `/admin/run-cycle` and `/admin/draw` (deployer wallet signature required).
+
+---
+
+## Mobile
+
+![Mobile dashboard](./images/09-mobile-dashboard.png)
+
+The same state layer drives a responsive mobile layout (bottom nav, address chip → popup with copy/disconnect).
 
 ---
 

@@ -6,6 +6,8 @@
 
 Security in Clova is enforced at **multiple independent layers**. No single point of failure can result in user fund loss.
 
+![Why it's safe](./images/10-safety-bonsai.png)
+
 ---
 
 ## Three On-Chain Invariants
