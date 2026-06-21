@@ -2,6 +2,8 @@
 
 > **No-loss prize-linked savings, autonomously managed by AI. Non-custodial by design. Live on Base.**
 
+> 🌐 **Try it live:** [clova-lake.vercel.app](https://clova-lake.vercel.app) — live on Base mainnet.
+
 ![Clova landing](./images/01-landing-hero.png)
 
 ---
