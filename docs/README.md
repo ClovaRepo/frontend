@@ -4,7 +4,7 @@
 
 > 🌐 **Try it live:** [clova-lake.vercel.app](https://clova-lake.vercel.app) — live on Base mainnet.
 
-![Clova landing](./images/01-landing-hero.png)
+<figure><img src="./images/01-landing-hero.png" alt="Clova landing page" width="100%"><figcaption></figcaption></figure>
 
 ---
 
